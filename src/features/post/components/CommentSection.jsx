@@ -1,4 +1,5 @@
 import { Avatar, Button } from '@/components/ui'
+import { AiOutlineSend } from 'react-icons/ai'
 import { timeAgo } from '@/utils/formatDate'
 
 /**
@@ -65,8 +66,10 @@ const CommentSection = ({
           size="sm"
           isLoading={isCommenting}
           disabled={!newComment.trim()}
+          className="!px-3"
+          aria-label="Gửi bình luận"
         >
-          Gửi
+          <AiOutlineSend size={16} />
         </Button>
       </form>
     </div>

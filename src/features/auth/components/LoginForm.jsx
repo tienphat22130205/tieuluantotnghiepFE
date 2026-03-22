@@ -1,21 +1,11 @@
 import { Input, Button } from '@/components/ui'
-
-/**
- * LoginForm – Form đăng nhập gồm email, mật khẩu và nút submit.
- *
- * Props:
- *   - form: { email, password }
- *   - onChange: handler cập nhật form
- *   - onSubmit: handler submit form
- *   - isLoading: đang xử lý
- */
 const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Input
         name="email"
         type="email"
-        placeholder="Email hoặc số điện thoại"
+        placeholder="Email"
         value={form.email}
         onChange={onChange}
         required

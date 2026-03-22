@@ -1,11 +1,16 @@
 import axios from 'axios'
 
+const normalizeBaseUrl = (url) => {
+  if (!url) return '/api'
+  return `${url.replace(/\/$/, '')}/api`
+}
+
 /**
  * Axios instance cấu hình sẵn baseURL & interceptors.
  * Tất cả service đều import instance này để gọi API.
  */
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: normalizeBaseUrl(import.meta.env.VITE_API_URL),
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })
@@ -36,7 +41,18 @@ api.interceptors.response.use(
       window.location.href = '/login'
     }
 
-    return Promise.reject(error.response?.data || error.message)
+    const responseData = error.response?.data
+    const normalizedError = {
+      status,
+      message:
+        responseData?.message ||
+        responseData?.error ||
+        error.message ||
+        'Đã xảy ra lỗi khi gọi API',
+      details: responseData,
+    }
+
+    return Promise.reject(normalizedError)
   }
 )
 

@@ -15,7 +15,7 @@ const HomePage = () => {
   const { posts, isLoading, hasMore } = useSelector((state) => state.posts)
   const { user, token } = useSelector((state) => state.auth)
 
-  const isDemoMode = token === mockToken
+  const isDemoMode = token?.startsWith(mockToken)
 
   // Fetch feed khi mount
   useEffect(() => {

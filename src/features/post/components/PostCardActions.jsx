@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import {
   AiOutlineHeart,
   AiFillHeart,
@@ -9,16 +8,16 @@ import { BsBookmark, BsBookmarkFill } from 'react-icons/bs'
 
 /**
  * PostCardActions – Nút tương tác: Like, Comment, Share, Save.
- * Props: postId, likesCount, commentsCount, isLiked, saved, onLike, onSave
+ * Props: likesCount, commentsCount, isLiked, saved, onLike, onSave, onCommentClick
  */
 const PostCardActions = ({
-  postId,
   likesCount,
   commentsCount,
   isLiked,
   saved,
   onLike,
   onSave,
+  onCommentClick,
 }) => {
   return (
     <div className="px-4 py-2.5 flex items-center justify-between">
@@ -35,13 +34,13 @@ const PostCardActions = ({
         </button>
 
         {/* Comment */}
-        <Link
-          to={`/post/${postId}`}
+        <button
+          onClick={onCommentClick}
           className="flex items-center gap-1.5 text-gray-500 hover:text-primary-600 transition-colors"
         >
           <AiOutlineComment size={22} />
           <span className="text-sm font-medium">{commentsCount}</span>
-        </Link>
+        </button>
 
         {/* Share */}
         <button className="text-gray-500 hover:text-primary-600 transition-colors">

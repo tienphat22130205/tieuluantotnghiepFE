@@ -8,10 +8,10 @@
 // Pages
 export { default as LoginPage } from './pages/LoginPage'
 export { default as RegisterPage } from './pages/RegisterPage'
+export { default as VerifyEmailPage } from './pages/VerifyEmailPage'
 
 // Components
 export { default as LoginForm } from './components/LoginForm'
-export { default as DemoLoginSection } from './components/DemoLoginSection'
 export { default as RegisterForm } from './components/RegisterForm'
 
 // Hooks & Services
@@ -20,4 +20,4 @@ export { default as authService } from './services/authService'
 
 // Store
 export { default as authReducer } from './store/authSlice'
-export { login, register, getMe, logout, clearError, loginDemo } from './store/authSlice'
+export { login, register, getMe, logout, clearError } from './store/authSlice'

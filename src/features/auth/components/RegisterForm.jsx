@@ -1,15 +1,15 @@
 import { Input, Button } from '@/components/ui'
 
 /**
- * RegisterForm – Form đăng ký gồm tên, email, mật khẩu, xác nhận mật khẩu.
+ * RegisterForm – Form đăng ký gồm username, email, phone, mật khẩu, xác nhận mật khẩu.
  */
 const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Input
-        name="full_name"
-        placeholder="Họ và tên"
-        value={form.full_name}
+        name="username"
+        placeholder="Tên tài khoản"
+        value={form.username}
         onChange={onChange}
         required
         className="!py-4 !text-[15px] !rounded-full !border-gray-300 !px-5"
@@ -20,6 +20,16 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
         type="email"
         placeholder="Email"
         value={form.email}
+        onChange={onChange}
+        required
+        className="!py-4 !text-[15px] !rounded-full !border-gray-300 !px-5"
+      />
+
+      <Input
+        name="phone"
+        type="tel"
+        placeholder="Số điện thoại"
+        value={form.phone}
         onChange={onChange}
         required
         className="!py-4 !text-[15px] !rounded-full !border-gray-300 !px-5"

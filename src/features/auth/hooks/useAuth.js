@@ -1,6 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { login, register, logout, clearError } from '../store/authSlice'
+import { isAdminUser } from '@/utils/auth'
 
 /**
  * Custom Hook quản lý xác thực.
@@ -20,7 +21,8 @@ const useAuth = () => {
   const handleLogin = async (credentials) => {
     const result = await dispatch(login(credentials))
     if (result.meta.requestStatus === 'fulfilled') {
-      navigate('/')
+      const nextUser = result.payload?.user
+      navigate(isAdminUser(nextUser) ? '/admin' : '/')
     }
     return result
   }
@@ -28,8 +30,9 @@ const useAuth = () => {
   // Đăng ký
   const handleRegister = async (userData) => {
     const result = await dispatch(register(userData))
-    if (result.meta.requestStatus === 'fulfilled') {
-      navigate('/')
+    if (result.meta.requestStatus === 'fulfilled' && result.payload?.token) {
+      const nextUser = result.payload?.user
+      navigate(isAdminUser(nextUser) ? '/admin' : '/')
     }
     return result
   }

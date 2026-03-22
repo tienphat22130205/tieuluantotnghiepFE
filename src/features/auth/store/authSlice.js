@@ -1,6 +1,41 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import authService from '../services/authService'
 
+const storedToken = localStorage.getItem('token')
+const storedUser = localStorage.getItem('user')
+
+const parseStoredUser = () => {
+  if (!storedUser) return null
+  try {
+    return JSON.parse(storedUser)
+  } catch {
+    return null
+  }
+}
+
+const getErrorMessage = (err, fallbackMessage) => {
+  if (!err) return fallbackMessage
+  if (typeof err === 'string') return err
+
+  const detailError = err.details?.error
+
+  if (typeof detailError === 'string' && detailError.trim()) {
+    return detailError
+  }
+
+  if (Array.isArray(detailError) && detailError.length > 0) {
+    const firstError = detailError[0]
+    if (typeof firstError === 'string') return firstError
+    if (typeof firstError?.message === 'string') return firstError.message
+  }
+
+  if (typeof detailError?.message === 'string') {
+    return detailError.message
+  }
+
+  return err.message || err.details?.message || fallbackMessage
+}
+
 // ──── Async Thunks ────
 
 // Đăng ký
@@ -9,11 +44,13 @@ export const register = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const data = await authService.register(userData)
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      if (data?.token && data?.user) {
+        localStorage.setItem('token', data.token)
+        localStorage.setItem('user', JSON.stringify(data.user))
+      }
       return data
     } catch (err) {
-      return rejectWithValue(err.message || 'Đăng ký thất bại')
+      return rejectWithValue(getErrorMessage(err, 'Đăng ký thất bại'))
     }
   }
 )
@@ -24,11 +61,16 @@ export const login = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const data = await authService.login(credentials)
+
+      if (!data?.token || !data?.user) {
+        return rejectWithValue('Đăng nhập thất bại: dữ liệu trả về không hợp lệ')
+      }
+
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
       return data
     } catch (err) {
-      return rejectWithValue(err.message || 'Đăng nhập thất bại')
+      return rejectWithValue(getErrorMessage(err, 'Đăng nhập thất bại'))
     }
   }
 )
@@ -40,17 +82,14 @@ export const getMe = createAsyncThunk(
     try {
       return await authService.getMe()
     } catch (err) {
-      return rejectWithValue(err.message)
+      return rejectWithValue(getErrorMessage(err, 'Không lấy được thông tin người dùng'))
     }
   }
 )
 
-// ──── Khởi tạo state từ localStorage ────
-const userFromStorage = localStorage.getItem('user')
-
 const initialState = {
-  user: userFromStorage ? JSON.parse(userFromStorage) : null,
-  token: localStorage.getItem('token') || null,
+  user: parseStoredUser(),
+  token: storedToken,
   isLoading: false,
   error: null,
 }
@@ -72,15 +111,6 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
-    // Demo Mode - Đăng nhập giả lập (chỉ để test UI)
-    loginDemo: (state, action) => {
-      const { user, token } = action.payload
-      state.user = user
-      state.token = token
-      state.error = null
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
-    },
   },
   extraReducers: (builder) => {
     builder
@@ -91,8 +121,10 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false
-        state.user = action.payload.user
-        state.token = action.payload.token
+        if (action.payload?.token && action.payload?.user) {
+          state.user = action.payload.user
+          state.token = action.payload.token
+        }
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false
@@ -117,9 +149,10 @@ const authSlice = createSlice({
       // ── GetMe ──
       .addCase(getMe.fulfilled, (state, action) => {
         state.user = action.payload
+        localStorage.setItem('user', JSON.stringify(action.payload))
       })
   },
 })
 
-export const { logout, clearError, loginDemo } = authSlice.actions
+export const { logout, clearError } = authSlice.actions
 export default authSlice.reducer
