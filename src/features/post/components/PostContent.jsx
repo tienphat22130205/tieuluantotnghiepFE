@@ -8,22 +8,26 @@ import { timeAgo } from '@/utils/formatDate'
  * Props: post, isLiked, onLike
  */
 const PostContent = ({ post, isLiked, onLike }) => {
+  const postUserId = post?.user?.id || post?.user?._id
+  const profilePath = postUserId ? `/profile/${postUserId}` : '#'
+  const displayName = post?.user?.full_name || post?.user?.fullName || `${post?.user?.firstName || ''} ${post?.user?.lastName || ''}`.trim() || 'Người dùng'
+
   return (
     <>
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4">
         <Avatar
           src={post.user?.avatar}
-          name={post.user?.full_name}
+          name={displayName}
           size="md"
-          to={`/profile/${post.user?._id}`}
+          to={profilePath}
         />
         <div>
           <Link
-            to={`/profile/${post.user?._id}`}
+            to={profilePath}
             className="font-semibold text-gray-900 hover:text-primary-600 text-sm"
           >
-            {post.user?.full_name}
+            {displayName}
           </Link>
           <p className="text-xs text-gray-400">{timeAgo(post.created_at)}</p>
         </div>

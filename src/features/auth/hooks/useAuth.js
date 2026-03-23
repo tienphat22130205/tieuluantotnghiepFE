@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { login, register, logout, clearError } from '../store/authSlice'
+import { login, register, logout, clearError, suggestUsername, setUsername } from '../store/authSlice'
 import { isAdminUser } from '@/utils/auth'
 
 /**
@@ -27,10 +27,23 @@ const useAuth = () => {
     return result
   }
 
-  // Đăng ký
+  // Đăng ký (Bước 1: giới hạn tại form, không auto-navigate)
   const handleRegister = async (userData) => {
     const result = await dispatch(register(userData))
-    if (result.meta.requestStatus === 'fulfilled' && result.payload?.token) {
+    // Không navigate ở đây vì user chưa xác thực email và chưa chọn username
+    return result
+  }
+
+  // Gợi ý username (Bước 3)
+  const handleSuggestUsername = async (data) => {
+    const result = await dispatch(suggestUsername(data))
+    return result
+  }
+
+  // Set username (Bước 3)
+  const handleSetUsername = async (data) => {
+    const result = await dispatch(setUsername(data))
+    if (result.meta.requestStatus === 'fulfilled') {
       const nextUser = result.payload?.user
       navigate(isAdminUser(nextUser) ? '/admin' : '/')
     }
@@ -54,6 +67,8 @@ const useAuth = () => {
     isAuthenticated,
     handleLogin,
     handleRegister,
+    handleSuggestUsername,
+    handleSetUsername,
     handleLogout,
     handleClearError,
   }

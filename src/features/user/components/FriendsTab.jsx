@@ -1,14 +1,13 @@
 import { Link } from 'react-router-dom'
 import { AiOutlineSearch } from 'react-icons/ai'
-import { mockFriends } from '@/utils/mockData'
 
 /**
  * FriendsTab – Nội dung tab "Bạn bè" (full page version).
  * Giao diện Facebook-style: Avatar lớn, tên, số bạn chung.
- * Props: friendCount (number)
+ * Props: friendCount (number), friends (array)
  */
-const FriendsTab = ({ friendCount = 0 }) => {
-  const friends = mockFriends
+const FriendsTab = ({ friendCount = 0, friends = [] }) => {
+  const normalizedFriends = friends.filter((friend) => friend && typeof friend === 'object')
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -35,22 +34,22 @@ const FriendsTab = ({ friendCount = 0 }) => {
 
       {/* Friends Grid - Facebook style */}
       <div className="grid grid-cols-2 gap-3">
-        {friends.map((friend) => (
+        {normalizedFriends.map((friend) => (
           <Link
-            key={friend._id}
-            to={`/profile/${friend._id}`}
+            key={friend._id || friend.id}
+            to={`/profile/${friend._id || friend.id}`}
             className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition group"
           >
             <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
               <img
                 src={friend.avatar}
-                alt={friend.full_name}
+                alt={friend.full_name || friend.fullName || friend.username}
                 className="w-full h-full object-cover group-hover:opacity-90 transition"
               />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900 truncate">
-                {friend.full_name}
+                {friend.full_name || friend.fullName || friend.username}
               </p>
               {friend.mutualFriends > 0 && (
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -62,7 +61,7 @@ const FriendsTab = ({ friendCount = 0 }) => {
         ))}
       </div>
 
-      {friends.length === 0 && (
+      {normalizedFriends.length === 0 && (
         <p className="text-center text-gray-500 py-8">Chưa có bạn bè nào</p>
       )}
     </div>

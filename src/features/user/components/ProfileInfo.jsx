@@ -6,12 +6,31 @@ import {
   AiOutlineUser,
 } from 'react-icons/ai'
 import { Avatar, Button } from '@/components/ui'
+import { useId } from 'react'
 
 /**
  * ProfileInfo – Avatar, tên, username, stats, nút hành động.
- * Props: profile, posts, isMyProfile, isFollowing, onFollowToggle
+ * Props: profile, posts, isMyProfile, isFollowing, onFollowToggle, onEditProfile, onAvatarUpload, isUploadingAvatar
  */
-const ProfileInfo = ({ profile, posts, isMyProfile, isFollowing, onFollowToggle }) => {
+const ProfileInfo = ({
+  profile,
+  posts,
+  isMyProfile,
+  isFollowing,
+  onFollowToggle,
+  onEditProfile,
+  onAvatarUpload,
+  isUploadingAvatar,
+}) => {
+  const avatarInputId = useId()
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0]
+    if (!file || !onAvatarUpload) return
+    onAvatarUpload(file)
+    event.target.value = ''
+  }
+
   return (
     <div className="relative px-4 sm:px-6 bg-white">
       <div className="flex flex-col sm:flex-row sm:items-end gap-4 pb-4">
@@ -25,9 +44,22 @@ const ProfileInfo = ({ profile, posts, isMyProfile, isFollowing, onFollowToggle 
               className="ring-4 ring-white"
             />
             {isMyProfile && (
-              <button className="absolute bottom-2 right-2 bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition opacity-0 group-hover:opacity-100 cursor-pointer">
-                <AiOutlineCamera size={18} className="text-gray-700" />
-              </button>
+              <>
+                <input
+                  id={avatarInputId}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+                <label
+                  htmlFor={avatarInputId}
+                  className="absolute bottom-2 right-2 bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition opacity-0 group-hover:opacity-100 cursor-pointer"
+                  title={isUploadingAvatar ? 'Đang tải ảnh...' : 'Đổi ảnh đại diện'}
+                >
+                  <AiOutlineCamera size={18} className="text-gray-700" />
+                </label>
+              </>
             )}
           </div>
         </div>
@@ -63,7 +95,13 @@ const ProfileInfo = ({ profile, posts, isMyProfile, isFollowing, onFollowToggle 
         {/* Action Buttons */}
         <div className="flex gap-2 sm:self-end sm:mb-2">
           {isMyProfile ? (
-            <Button variant="primary" size="sm" className="flex-1 sm:flex-initial cursor-pointer">
+            <Button
+              variant="primary"
+              size="sm"
+              className="flex-1 sm:flex-initial cursor-pointer"
+              onClick={onEditProfile}
+              disabled={isUploadingAvatar}
+            >
               <AiOutlineEdit size={16} />
               Chỉnh sửa trang cá nhân
             </Button>

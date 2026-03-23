@@ -7,14 +7,24 @@ import RegisterForm from '../components/RegisterForm'
 
 /**
  * Register Page – Trang đăng ký tài khoản mới (orchestrator).
+ * 
+ * Luồng đăng ký:
+ * 1. Điền form: firstName, lastName, email, phone, password, confirmPassword
+ * 2. Xác thực email
+ * 3. Đăng nhập
+ * 4. Chọn username sau đăng nhập
  */
 const RegisterPage = () => {
   const { isLoading, error, handleRegister, handleClearError } = useAuth()
 
   const [form, setForm] = useState({
-    username: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
+    day: '',
+    month: '',
+    year: '',
     password: '',
     confirmPassword: '',
   })
@@ -28,8 +38,32 @@ const RegisterPage = () => {
     if (formError) setFormError('')
   }
 
+  // Hàm kiểm tra tuổi >= 13
+  const isAgeValid = (day, month, year) => {
+    if (!day || !month || !year) return false
+    const birthDate = new Date(year, month - 1, day)
+    const today = new Date()
+    const age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      return age - 1 >= 13
+    }
+    return age >= 13
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!form.day || !form.month || !form.year) {
+      setFormError('Vui lòng nhập ngày sinh!')
+      return
+    }
+
+    if (!isAgeValid(form.day, form.month, form.year)) {
+      setFormError('Bạn phải từ 13 tuổi trở lên để đăng ký')
+      return
+    }
 
     if (form.password !== form.confirmPassword) {
       setFormError('Mật khẩu xác nhận không khớp!')
@@ -41,10 +75,15 @@ const RegisterPage = () => {
       return
     }
 
+    // Payload cho bước 1: Đăng ký (không có username)
+    const dateOfBirth = `${form.year}-${String(form.month).padStart(2, '0')}-${String(form.day).padStart(2, '0')}`
+
     const registerPayload = {
-      username: form.username.trim(),
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
       email: form.email.trim().toLowerCase(),
       phone: form.phone.trim(),
+      dateOfBirth,
       password: form.password,
       confirmPassword: form.confirmPassword,
     }
@@ -117,7 +156,7 @@ const RegisterPage = () => {
               </div>
 
               <p className="mt-2 text-sm leading-6 text-gray-600">
-                Sau khi nhấn link trong email, bạn có thể đăng nhập và sử dụng đầy đủ chức năng hệ thống.
+                Sau khi nhấn link trong email, hãy đăng nhập. Hệ thống sẽ yêu cầu bạn chọn tên người dùng sau khi đăng nhập.
               </p>
             </div>
 
@@ -135,13 +174,13 @@ const RegisterPage = () => {
                 onClick={() => window.open('https://mail.google.com', '_blank', 'noopener,noreferrer')}
                 className="rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-700"
               >
-                Xác nhận ngay
+                Mở Gmail
               </button>
             </div>
 
             <div className="mt-4 flex items-center gap-2 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm text-gray-700">
               <AiOutlineCheckCircle className="text-accent-500" size={18} />
-              Sau khi xác minh xong, bạn có thể đăng nhập bình thường.
+              Sau khi xác minh email thành công, hãy đăng nhập để tiếp tục.
             </div>
 
             <div className="mt-4 text-center">

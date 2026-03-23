@@ -8,9 +8,11 @@ import { formatDate } from '@/utils/formatDate'
 
 /**
  * IntroCard – Sidebar card hiển thị thông tin giới thiệu.
- * Props: profile, isMyProfile
+ * Props: profile, isMyProfile, onEditProfile
  */
-const IntroCard = ({ profile, isMyProfile }) => {
+const IntroCard = ({ profile, isMyProfile, onEditProfile }) => {
+  const joinedDate = profile.created_at ? formatDate(profile.created_at) : 'Chưa cập nhật'
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
       <h3 className="font-bold text-gray-900 mb-3">Giới thiệu</h3>
@@ -43,11 +45,11 @@ const IntroCard = ({ profile, isMyProfile }) => {
         )}
         <div className="flex items-center gap-2 text-sm text-gray-700">
           <AiOutlineCalendar className="text-gray-400" size={18} />
-          <span>Tham gia {formatDate(profile.created_at)}</span>
+          <span>Tham gia {joinedDate}</span>
         </div>
       </div>
       {isMyProfile && (
-        <Button variant="outline" size="sm" className="w-full mt-4">
+        <Button variant="outline" size="sm" className="w-full mt-4" onClick={onEditProfile}>
           Chỉnh sửa chi tiết
         </Button>
       )}

@@ -5,12 +5,15 @@ import { Link } from 'react-router-dom'
  * Props: post
  */
 const PostCardBody = ({ post }) => {
+  const postUserId = post?.user?.id || post?.user?._id
+  const profilePath = postUserId ? `/profile/${postUserId}` : '#'
+
   return (
     <div className="px-4 pb-3">
       {post.caption && (
         <p className="text-sm text-gray-800 leading-relaxed">
           <Link
-            to={`/profile/${post.user?._id}`}
+            to={profilePath}
             className="font-semibold mr-1.5 hover:text-primary-600"
           >
             {post.user?.username}

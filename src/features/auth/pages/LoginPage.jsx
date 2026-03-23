@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import { login } from '../store/authSlice'
 import LoginForm from '../components/LoginForm'
+import { isAdminUser } from '@/utils/auth'
 
 /**
  * Login Page – Trang đăng nhập (orchestrator).
@@ -22,9 +23,9 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await dispatch(login(form)).unwrap()
+      const response = await dispatch(login(form)).unwrap()
       toast.success('Đăng nhập thành công! 🎉', { autoClose: 2000 })
-      navigate('/')
+      navigate(isAdminUser(response?.user) ? '/admin' : '/')
     } catch (err) {
       const errorMsg = err || 'Đăng nhập thất bại. Vui lòng thử lại'
       toast.error(errorMsg, { autoClose: 3000 })

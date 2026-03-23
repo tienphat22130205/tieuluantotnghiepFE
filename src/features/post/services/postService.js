@@ -1,20 +1,71 @@
 import api from '@/services/api'
 
+const FEED_ENDPOINT = import.meta.env.VITE_POST_FEED_ENDPOINT || '/posts/feed'
+const USER_POSTS_ENDPOINT_TEMPLATE = import.meta.env.VITE_POST_USER_ENDPOINT || '/posts/user/:userId'
+
+const buildUserPostsEndpoint = (userId) =>
+  USER_POSTS_ENDPOINT_TEMPLATE.replace(':userId', encodeURIComponent(String(userId)))
+
+const resolvedEndpoints = {
+  feed: null,
+  byUser: null,
+}
+
+const unavailableEndpoints = {
+  feed: false,
+  byUser: false,
+}
+
+const tryGetWithCachedFallback = async (key, candidateFactory) => {
+  if (unavailableEndpoints[key]) {
+    return []
+  }
+
+  const cachedCandidate = resolvedEndpoints[key] || candidateFactory
+
+  if (cachedCandidate) {
+    try {
+      return await cachedCandidate()
+    } catch (error) {
+      if (error?.status === 404) {
+        unavailableEndpoints[key] = true
+        resolvedEndpoints[key] = null
+        return []
+      }
+
+      if (error?.status !== 404) {
+        throw error
+      }
+      resolvedEndpoints[key] = null
+    }
+  }
+
+  return []
+}
+
 /**
  * Post Service – API layer xử lý bài viết.
  * Gọi các endpoint: /posts/*
  */
 const postService = {
   // Lấy danh sách bài viết (Newsfeed) – có phân trang
-  getFeed: (page = 1, limit = 10) =>
-    api.get('/posts/feed', { params: { page, limit } }),
+  getFeed: async (page = 1, limit = 10) =>
+    tryGetWithCachedFallback('feed', () => api.get(FEED_ENDPOINT, { params: { page, limit } })),
 
   // Lấy bài viết theo ID
   getById: (postId) => api.get(`/posts/${postId}`),
 
   // Lấy bài viết của 1 user cụ thể
-  getByUser: (userId, page = 1) =>
-    api.get(`/posts/user/${userId}`, { params: { page } }),
+  getByUser: async (userId, page = 1) => {
+    if (!userId || userId === 'undefined' || userId === 'null') {
+      return []
+    }
+
+    return tryGetWithCachedFallback(
+      'byUser',
+      () => api.get(buildUserPostsEndpoint(userId), { params: { page } })
+    )
+  },
 
   // Tạo bài viết mới (có ảnh → dùng FormData)
   create: (formData) =>

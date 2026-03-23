@@ -38,19 +38,71 @@ const getErrorMessage = (err, fallbackMessage) => {
 
 // ──── Async Thunks ────
 
-// Đăng ký
+// Đăng ký (Bước 1)
 export const register = createAsyncThunk(
   'auth/register',
   async (userData, { rejectWithValue }) => {
     try {
       const data = await authService.register(userData)
-      if (data?.token && data?.user) {
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('user', JSON.stringify(data.user))
-      }
+      // LƯU Ý: Không lưu token vào localStorage ở bước 1
+      // Vì user chưa xác thực email và chưa chọn username
       return data
     } catch (err) {
       return rejectWithValue(getErrorMessage(err, 'Đăng ký thất bại'))
+    }
+  }
+)
+
+// Gợi ý username (Bước 3)
+export const suggestUsername = createAsyncThunk(
+  'auth/suggestUsername',
+  async (data, { rejectWithValue }) => {
+    try {
+      return await authService.suggestUsername(data)
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, 'Gợi ý username thất bại'))
+    }
+  }
+)
+
+// Set username (Bước 3)
+export const setUsername = createAsyncThunk(
+  'auth/setUsername',
+  async (data, { rejectWithValue, getState }) => {
+    try {
+      const response = await authService.setUsername(data)
+
+      const currentState = getState()
+      const currentUser = currentState?.auth?.user
+      const currentToken = currentState?.auth?.token
+
+      // Backend có thể chỉ trả message khi set username thành công.
+      // Fallback: merge vào user hiện tại để tránh reload bị hiện modal lặp lại.
+      const nextUser = response?.user || (currentUser
+        ? {
+            ...currentUser,
+            username: data?.username,
+            usernameSelected: true,
+          }
+        : null)
+
+      const nextToken = response?.token || currentToken
+
+      if (nextToken) {
+        localStorage.setItem('token', nextToken)
+      }
+
+      if (nextUser) {
+        localStorage.setItem('user', JSON.stringify(nextUser))
+      }
+
+      return {
+        ...response,
+        user: nextUser,
+        token: nextToken,
+      }
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, 'Đặt username thất bại'))
     }
   }
 )
@@ -119,14 +171,44 @@ const authSlice = createSlice({
         state.isLoading = true
         state.error = null
       })
-      .addCase(register.fulfilled, (state, action) => {
+      .addCase(register.fulfilled, (state) => {
         state.isLoading = false
-        if (action.payload?.token && action.payload?.user) {
+        // Không set user/token ở đây vì còn phải xác thực email và chọn username
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload
+      })
+
+      // ── Suggest Username ──
+      .addCase(suggestUsername.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(suggestUsername.fulfilled, (state) => {
+        state.isLoading = false
+      })
+      .addCase(suggestUsername.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload
+      })
+
+      // ── Set Username ──
+      .addCase(setUsername.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(setUsername.fulfilled, (state, action) => {
+        state.isLoading = false
+        if (action.payload?.user) {
           state.user = action.payload.user
+        }
+
+        if (action.payload?.token) {
           state.token = action.payload.token
         }
       })
-      .addCase(register.rejected, (state, action) => {
+      .addCase(setUsername.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload
       })

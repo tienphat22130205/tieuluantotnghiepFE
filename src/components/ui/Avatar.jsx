@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { resolveMediaUrl } from '@/utils/mediaUrl'
 
 /**
  * Avatar Component – Hình đại diện người dùng.
@@ -28,6 +29,8 @@ const Avatar = ({
     '2xl': 'w-36 h-36 text-4xl',
   }
 
+  const avatarSrc = resolveMediaUrl(src)
+
   // Lấy chữ cái đầu tiên của tên
   const initials = name
     .split(' ')
@@ -38,9 +41,9 @@ const Avatar = ({
 
   const avatarContent = (
     <div className="relative inline-block">
-      {src ? (
+      {avatarSrc ? (
         <img
-          src={src}
+          src={avatarSrc}
           alt={name}
           className={`${sizes[size]} rounded-full object-cover border-2 border-white shadow-sm ${className}`}
         />

@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { toggleLike } from '../store/postSlice'
 import postService from '../services/postService'
 import { mockComments, mockToken } from '@/utils/mockData'
+import { resolveMediaUrl } from '@/utils/mediaUrl'
 import PostCardHeader from './PostCardHeader'
 import PostCardActions from './PostCardActions'
 import PostCardBody from './PostCardBody'
@@ -26,6 +27,7 @@ const PostCard = ({ post }) => {
 
   const isLiked = post.likes?.includes(user?._id)
   const isDemoMode = token === mockToken
+  const postImageUrl = resolveMediaUrl(post.image_url)
 
   const handleLike = () => dispatch(toggleLike(post._id))
   const handleSave = () => setSaved(!saved)
@@ -91,10 +93,10 @@ const PostCard = ({ post }) => {
       <PostCardHeader user={post.user} createdAt={post.created_at} />
 
       {/* Hình ảnh */}
-      {post.image_url && (
+      {postImageUrl && (
         <Link to={`/post/${post._id}`}>
           <img
-            src={post.image_url}
+            src={postImageUrl}
             alt="Post"
             className="w-full max-h-[500px] object-cover"
             loading="lazy"

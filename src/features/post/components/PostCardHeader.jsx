@@ -8,21 +8,25 @@ import { timeAgo } from '@/utils/formatDate'
  * Props: user (object), createdAt (string)
  */
 const PostCardHeader = ({ user, createdAt }) => {
+  const userId = user?.id || user?._id
+  const profilePath = userId ? `/profile/${userId}` : '#'
+  const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
+
   return (
     <div className="flex items-center justify-between px-4 py-3">
       <div className="flex items-center gap-3">
         <Avatar
           src={user?.avatar}
-          name={user?.full_name}
+          name={displayName}
           size="md"
-          to={`/profile/${user?._id}`}
+          to={profilePath}
         />
         <div>
           <Link
-            to={`/profile/${user?._id}`}
+            to={profilePath}
             className="font-semibold text-gray-900 hover:text-primary-600 transition-colors text-sm"
           >
-            {user?.full_name}
+            {displayName}
           </Link>
           <p className="text-xs text-gray-400">{timeAgo(createdAt)}</p>
         </div>

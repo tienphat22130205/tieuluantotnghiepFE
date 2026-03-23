@@ -1,20 +1,27 @@
 import { Link } from 'react-router-dom'
 import { AiOutlinePlusCircle } from 'react-icons/ai'
+import { Avatar } from '@/components/ui'
 
 /**
  * ProfileSidebar – Sidebar trái hiển thị profile nhanh.
  * Props: user
  */
 const ProfileSidebar = ({ user }) => {
+  const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
+  const profileId = user?.id || user?._id
+  const profilePath = profileId ? `/profile/${profileId}` : '/'
+  const followingCount = user?.stats?.followingCount ?? user?.following?.length ?? 0
+  const followerCount = user?.stats?.followerCount ?? user?.followers?.length ?? 0
+
   return (
     <aside className="hidden lg:block">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sticky top-24">
         {/* Mini profile */}
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xl font-bold mb-3">
-            {user?.full_name?.[0]?.toUpperCase() || '?'}
-          </div>
-          <h3 className="font-semibold text-gray-900">{user?.full_name}</h3>
+          <Link to={profilePath} className="inline-flex flex-col items-center hover:opacity-90 transition-opacity">
+            <Avatar src={user?.avatar} name={displayName} size="xl" className="mb-3" />
+          </Link>
+          <h3 className="font-semibold text-gray-900">{displayName}</h3>
           <p className="text-sm text-gray-500 mt-0.5">@{user?.username}</p>
         </div>
 
@@ -23,11 +30,11 @@ const ProfileSidebar = ({ user }) => {
         {/* Thống kê nhanh */}
         <div className="flex justify-around text-center">
           <div>
-            <p className="font-bold text-gray-900">{user?.following?.length || 0}</p>
+            <p className="font-bold text-gray-900">{followingCount}</p>
             <p className="text-xs text-gray-500">Đang theo dõi</p>
           </div>
           <div>
-            <p className="font-bold text-gray-900">{user?.followers?.length || 0}</p>
+            <p className="font-bold text-gray-900">{followerCount}</p>
             <p className="text-xs text-gray-500">Người theo dõi</p>
           </div>
         </div>

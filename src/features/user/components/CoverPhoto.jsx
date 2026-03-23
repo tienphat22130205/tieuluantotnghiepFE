@@ -1,15 +1,18 @@
 import { AiOutlineCamera } from 'react-icons/ai'
+import { resolveMediaUrl } from '@/utils/mediaUrl'
 
 /**
  * CoverPhoto – Ảnh bìa trang cá nhân.
  * Props: coverPhoto (url), isMyProfile (boolean)
  */
 const CoverPhoto = ({ coverPhoto, isMyProfile }) => {
+  const coverPhotoUrl = resolveMediaUrl(coverPhoto)
+
   return (
     <div className="relative h-40 sm:h-52 md:h-64 bg-gradient-to-r from-primary-500 via-primary-600 to-accent-500 overflow-hidden group">
-      {coverPhoto && (
+      {coverPhotoUrl && (
         <img
-          src={coverPhoto}
+          src={coverPhotoUrl}
           alt="Cover"
           className="w-full h-full object-cover"
         />
