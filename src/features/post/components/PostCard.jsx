@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { toggleLike } from '../store/postSlice'
+import { toast } from 'react-toastify'
+import { deletePost, toggleLike } from '../store/postSlice'
 import postService from '../services/postService'
 import { mockComments, mockToken } from '@/utils/mockData'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
@@ -9,6 +10,8 @@ import PostCardHeader from './PostCardHeader'
 import PostCardActions from './PostCardActions'
 import PostCardBody from './PostCardBody'
 import CommentSection from './CommentSection'
+import ImageLightbox from './ImageLightbox'
+import { ConfirmModal } from '@/components/ui'
 
 /**
  * PostCard Component – Card hiển thị 1 bài viết trên Newsfeed.
@@ -16,6 +19,7 @@ import CommentSection from './CommentSection'
  */
 const PostCard = ({ post }) => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { user, token } = useSelector((state) => state.auth)
   const [saved, setSaved] = useState(false)
   const [showComments, setShowComments] = useState(false)
@@ -24,13 +28,63 @@ const PostCard = ({ post }) => {
   const [newComment, setNewComment] = useState('')
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isCommenting, setIsCommenting] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false)
 
   const isLiked = post.likes?.includes(user?._id)
   const isDemoMode = token === mockToken
-  const postImageUrl = resolveMediaUrl(post.image_url)
+  const currentUserId = user?._id || user?.id
+  const postAuthorId = post?.user?._id || post?.user?.id
+  const canManage = Boolean(currentUserId && postAuthorId && String(currentUserId) === String(postAuthorId))
+  const postImages = [
+    ...(Array.isArray(post.images) ? post.images : []),
+    ...(post.image_url ? [post.image_url] : []),
+  ]
+    .map((image) => resolveMediaUrl(image))
+    .filter(Boolean)
+  const uniquePostImages = [...new Set(postImages)]
 
   const handleLike = () => dispatch(toggleLike(post._id))
   const handleSave = () => setSaved(!saved)
+  const handleEditPost = () => navigate(`/post/${post._id}/edit`)
+
+  const handleImageClick = (index, e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setLightboxIndex(index)
+    setLightboxOpen(true)
+  }
+
+  const handleLightboxClose = () => {
+    setLightboxOpen(false)
+  }
+
+  const handleLightboxPrev = () => {
+    setLightboxIndex((prev) => (prev === 0 ? uniquePostImages.length - 1 : prev - 1))
+  }
+
+  const handleLightboxNext = () => {
+    setLightboxIndex((prev) => (prev === uniquePostImages.length - 1 ? 0 : prev + 1))
+  }
+
+  const handleDeletePost = () => {
+    setIsConfirmDeleteOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    setIsConfirmDeleteOpen(false)
+    try {
+      await dispatch(deletePost(post._id)).unwrap()
+      toast.success('Xóa bài viết thành công!')
+    } catch (_err) {
+      toast.error('Xóa bài viết thất bại!')
+    }
+  }
+
+  const cancelDelete = () => {
+    setIsConfirmDeleteOpen(false)
+  }
 
   const loadComments = async () => {
     setIsLoadingComments(true)
@@ -90,19 +144,38 @@ const PostCard = ({ post }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
-      <PostCardHeader user={post.user} createdAt={post.created_at} />
+      <PostCardHeader
+        user={post.user}
+        createdAt={post.created_at}
+        visibility={post.visibility}
+        canManage={canManage}
+        onEdit={handleEditPost}
+        onDelete={handleDeletePost}
+      />
 
       {/* Hình ảnh */}
-      {postImageUrl && (
-        <Link to={`/post/${post._id}`}>
-          <img
-            src={postImageUrl}
-            alt="Post"
-            className="w-full max-h-[500px] object-cover"
-            loading="lazy"
-          />
-        </Link>
+      {uniquePostImages.length > 0 && (
+        <div className={`grid gap-1 ${uniquePostImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {uniquePostImages.map((imageUrl, index) => (
+            <img
+              key={`${post._id}-${index}`}
+              src={imageUrl}
+              alt={`Post ${index + 1}`}
+              onClick={(e) => handleImageClick(index, e)}
+              className={`w-full object-cover cursor-pointer transition-opacity hover:opacity-80 ${
+                uniquePostImages.length === 1
+                  ? 'max-h-[500px]'
+                  : uniquePostImages.length === 3 && index === 0
+                    ? 'col-span-2 max-h-[420px]'
+                    : 'max-h-[260px]'
+              }`}
+              loading="lazy"
+            />
+          ))}
+        </div>
       )}
+
+      <PostCardBody post={post} />
 
       <PostCardActions
         likesCount={post.likes?.length || 0}
@@ -113,8 +186,6 @@ const PostCard = ({ post }) => {
         onSave={handleSave}
         onCommentClick={handleToggleComments}
       />
-
-      <PostCardBody post={post} />
 
       {showComments && (
         isLoadingComments ? (
@@ -132,6 +203,24 @@ const PostCard = ({ post }) => {
           />
         )
       )}
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        isOpen={lightboxOpen}
+        images={uniquePostImages}
+        currentIndex={lightboxIndex}
+        onClose={handleLightboxClose}
+        onPrev={handleLightboxPrev}
+        onNext={handleLightboxNext}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isConfirmDeleteOpen}
+        message="Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   )
 }

@@ -94,6 +94,7 @@ const App = () => {
         >
           <Route path="/" element={<RoleHomeRedirect />} />
           <Route path="/create" element={<CreatePostPage />} />
+          <Route path="/post/:postId/edit" element={<CreatePostPage />} />
           <Route path="/profile/:userId" element={<ProfilePage />} />
           <Route path="/post/:postId" element={<PostDetailPage />} />
           <Route

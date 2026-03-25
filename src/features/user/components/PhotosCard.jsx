@@ -1,9 +1,19 @@
+import { resolveMediaUrl } from '@/utils/mediaUrl'
+
 /**
  * PhotosCard – Sidebar card hiển thị preview ảnh.
  * Props: posts (array of post objects)
  */
 const PhotosCard = ({ posts }) => {
-  const photoPosts = posts.filter((p) => p.image_url)
+  const photoUrls = (posts || [])
+    .flatMap((post) => {
+      const images = Array.isArray(post?.images) ? post.images : []
+      const fallback = post?.image_url ? [post.image_url] : []
+      return [...images, ...fallback]
+    })
+    .map((image) => resolveMediaUrl(image))
+    .filter(Boolean)
+  const uniquePhotoUrls = [...new Set(photoUrls)]
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
@@ -14,20 +24,20 @@ const PhotosCard = ({ posts }) => {
         </button>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        {photoPosts.slice(0, 9).map((post, idx) => (
+        {uniquePhotoUrls.slice(0, 9).map((url, idx) => (
           <div
             key={idx}
             className="aspect-square bg-gray-100 rounded-lg overflow-hidden"
           >
             <img
-              src={post.image_url}
+              src={url}
               alt=""
               className="w-full h-full object-cover hover:opacity-90 transition cursor-pointer"
             />
           </div>
         ))}
       </div>
-      {photoPosts.length === 0 && (
+      {uniquePhotoUrls.length === 0 && (
         <p className="text-center text-gray-400 text-sm py-6">
           Chưa có ảnh
         </p>

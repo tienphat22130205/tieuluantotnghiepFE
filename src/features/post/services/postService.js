@@ -67,14 +67,31 @@ const postService = {
     )
   },
 
-  // Tạo bài viết mới (có ảnh → dùng FormData)
-  create: (formData) =>
-    api.post('/posts', formData, {
+  // Đăng status (không ảnh)
+  createStatus: ({ content, hashtags = [], visibility = 'public' }) =>
+    api.post('/posts/status', {
+      content,
+      hashtags,
+      visibility,
+    }),
+
+  // Đăng bài có ảnh
+  createImages: (formData) =>
+    api.post('/posts/images', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
 
+  // Tạo bài viết theo loại payload
+  create: (payload) => {
+    if (payload instanceof FormData) {
+      return postService.createImages(payload)
+    }
+
+    return postService.createStatus(payload)
+  },
+
   // Cập nhật bài viết
-  update: (postId, data) => api.put(`/posts/${postId}`, data),
+  update: (postId, data) => api.patch(`/posts/${postId}`, data),
 
   // Xóa bài viết
   delete: (postId) => api.delete(`/posts/${postId}`),

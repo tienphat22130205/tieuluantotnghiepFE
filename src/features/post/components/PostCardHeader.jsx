@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HiOutlineDotsHorizontal } from 'react-icons/hi'
 import { Avatar } from '@/components/ui'
@@ -5,12 +6,32 @@ import { timeAgo } from '@/utils/formatDate'
 
 /**
  * PostCardHeader – Header bài viết (Avatar, tên, thời gian, menu).
- * Props: user (object), createdAt (string)
+ * Props: user (object), createdAt (string), visibility (string), canManage, onEdit, onDelete
  */
-const PostCardHeader = ({ user, createdAt }) => {
+const PostCardHeader = ({ user, createdAt, visibility, canManage = false, onEdit, onDelete }) => {
   const userId = user?.id || user?._id
   const profilePath = userId ? `/profile/${userId}` : '#'
   const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
+  const visibilityLabel = {
+    public: 'Công khai',
+    friends: 'Bạn bè',
+    me: 'Chỉ mình tôi',
+  }[visibility] || 'Công khai'
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    if (!showMenu) return undefined
+
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showMenu])
 
   return (
     <div className="flex items-center justify-between px-4 py-3">
@@ -28,14 +49,47 @@ const PostCardHeader = ({ user, createdAt }) => {
           >
             {displayName}
           </Link>
-          <p className="text-xs text-gray-400">{timeAgo(createdAt)}</p>
+          <p className="text-xs text-gray-400">{timeAgo(createdAt)} | {visibilityLabel}</p>
         </div>
       </div>
 
       {/* Menu 3 chấm */}
-      <button className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
-        <HiOutlineDotsHorizontal size={20} />
-      </button>
+      {canManage && (
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setShowMenu((prev) => !prev)}
+            className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
+          >
+            <HiOutlineDotsHorizontal size={20} />
+          </button>
+
+          {showMenu && (
+            <div className="absolute right-0 mt-2 w-36 rounded-lg border border-gray-100 bg-white shadow-lg z-10 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMenu(false)
+                  onEdit?.()
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+              >
+                Chỉnh sửa
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMenu(false)
+                  onDelete?.()
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+              >
+                Xóa bài viết
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

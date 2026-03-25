@@ -32,6 +32,8 @@ export { default as postReducer } from './store/postSlice'
 export {
   fetchFeed,
   createPost,
+  updatePost,
+  deletePost,
   toggleLike,
   addComment,
   clearPosts,

@@ -1,29 +1,37 @@
 import { useRef } from 'react'
-import { AiOutlineCloudUpload, AiOutlineClose } from 'react-icons/ai'
+import { AiOutlineCloudUpload, AiOutlineClose, AiOutlinePlus } from 'react-icons/ai'
 
 /**
  * ImageUploader – Khu vực upload và preview ảnh.
- * Props: preview (url), onImageChange (fn), onRemoveImage (fn)
+ * Props: previews (array url), onImageChange (fn), onRemoveImage (fn)
  */
-const ImageUploader = ({ preview, onImageChange, onRemoveImage }) => {
+const ImageUploader = ({ previews = [], onImageChange, onRemoveImage }) => {
   const fileInputRef = useRef(null)
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
 
-    // Validate file
+    const acceptedFiles = []
+
+    // Validate files
     const validTypes = ['image/jpeg', 'image/png', 'image/webp']
-    if (!validTypes.includes(file.type)) {
-      alert('Chỉ chấp nhận ảnh JPG, PNG hoặc WebP!')
-      return
+    for (const file of files) {
+      if (!validTypes.includes(file.type)) {
+        continue
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        continue
+      }
+      acceptedFiles.push(file)
     }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Kích thước ảnh không được vượt quá 5MB!')
+
+    if (acceptedFiles.length === 0) {
+      alert('Chỉ chấp nhận ảnh JPG/PNG/WebP, mỗi ảnh tối đa 5MB!')
       return
     }
 
-    onImageChange(file)
+    onImageChange(acceptedFiles)
   }
 
   return (
@@ -32,7 +40,7 @@ const ImageUploader = ({ preview, onImageChange, onRemoveImage }) => {
         Hình ảnh
       </label>
 
-      {!preview ? (
+      {previews.length === 0 ? (
         // Drop zone
         <div
           onClick={() => fileInputRef.current?.click()}
@@ -48,22 +56,47 @@ const ImageUploader = ({ preview, onImageChange, onRemoveImage }) => {
         </div>
       ) : (
         // Preview ảnh đã chọn
-        <div className="relative rounded-xl overflow-hidden border border-gray-200">
-          <img
-            src={preview}
-            alt="Preview"
-            className="w-full max-h-[400px] object-cover"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              onRemoveImage()
-              if (fileInputRef.current) fileInputRef.current.value = ''
-            }}
-            className="absolute top-3 right-3 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition"
-          >
-            <AiOutlineClose size={16} />
-          </button>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {previews.map((preview, index) => (
+              <div key={`${preview}-${index}`} className="relative rounded-xl overflow-hidden border border-gray-200 aspect-square">
+                <img
+                  src={preview}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="aspect-square rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:text-primary-600 hover:border-primary-400 hover:bg-primary-50/40 transition flex flex-col items-center justify-center"
+            >
+              <AiOutlinePlus size={24} />
+              <span className="text-xs mt-1">Thêm ảnh</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition"
+            >
+              <AiOutlinePlus size={16} />
+              Chọn thêm ảnh
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onRemoveImage()
+                if (fileInputRef.current) fileInputRef.current.value = ''
+              }}
+              className="inline-flex items-center justify-center p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+            >
+              <AiOutlineClose size={16} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -71,6 +104,7 @@ const ImageUploader = ({ preview, onImageChange, onRemoveImage }) => {
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        multiple
         onChange={handleImageChange}
         className="hidden"
       />

@@ -1,21 +1,24 @@
 import { Button } from '@/components/ui'
 
 /**
- * PostForm – Form nhập caption, hashtags và nút đăng bài.
- * Props: caption, hashtags, aiUsed, isPosting, onCaptionChange, onHashtagsChange, onSubmit
+ * PostForm – Form nhập content, hashtags, visibility và nút đăng bài.
  */
 const PostForm = ({
-  caption,
+  content,
   hashtags,
+  visibility,
   aiUsed,
+  hasImages,
+  submitLabel,
   isPosting,
-  onCaptionChange,
+  onContentChange,
   onHashtagsChange,
+  onVisibilityChange,
   onSubmit,
 }) => {
   return (
     <>
-      {/* Caption */}
+      {/* Content */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
           Nội dung bài viết
@@ -26,9 +29,9 @@ const PostForm = ({
           )}
         </label>
         <textarea
-          value={caption}
-          onChange={(e) => onCaptionChange(e.target.value)}
-          placeholder="Viết gì đó về bức ảnh này..."
+          value={content}
+          onChange={(e) => onContentChange(e.target.value)}
+          placeholder={hasImages ? 'Viết gì đó về những bức ảnh này...' : 'Hôm nay bạn thấy thế nào?'}
           rows={4}
           className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none resize-none transition"
         />
@@ -50,9 +53,25 @@ const PostForm = ({
         </p>
       </div>
 
+      {/* Visibility */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          Đối tượng xem
+        </label>
+        <select
+          value={visibility}
+          onChange={(e) => onVisibilityChange(e.target.value)}
+          className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none transition bg-white"
+        >
+          <option value="public">Công khai</option>
+          <option value="friends">Bạn bè</option>
+          <option value="me">Chỉ mình tôi</option>
+        </select>
+      </div>
+
       {/* Nút đăng bài */}
       <Button type="submit" fullWidth isLoading={isPosting} size="lg" onClick={onSubmit}>
-        Đăng bài
+        {submitLabel || (hasImages ? 'Đăng ảnh' : 'Đăng trạng thái')}
       </Button>
     </>
   )
