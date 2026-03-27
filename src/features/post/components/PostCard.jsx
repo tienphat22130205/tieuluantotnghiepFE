@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
@@ -23,20 +23,27 @@ const PostCard = ({ post }) => {
   const { user, token } = useSelector((state) => state.auth)
   const [saved, setSaved] = useState(false)
   const [showComments, setShowComments] = useState(false)
-  const [comments, setComments] = useState([])
+  const [comments, setComments] = useState(Array.isArray(post.comments) ? post.comments : [])
   const [commentsCount, setCommentsCount] = useState(post.comments_count || 0)
   const [newComment, setNewComment] = useState('')
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isCommenting, setIsCommenting] = useState(false)
+  const [deletingCommentId, setDeletingCommentId] = useState(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false)
 
-  const isLiked = post.likes?.includes(user?._id)
-  const isDemoMode = token === mockToken
   const currentUserId = user?._id || user?.id
+  const isLiked = post.isLiked ?? (post.likes?.includes(currentUserId) || false)
+  const isDemoMode = token === mockToken
   const postAuthorId = post?.user?._id || post?.user?.id
   const canManage = Boolean(currentUserId && postAuthorId && String(currentUserId) === String(postAuthorId))
+
+  useEffect(() => {
+    if (Array.isArray(post.comments)) {
+      setComments(post.comments)
+    }
+  }, [post.comments])
   const postImages = [
     ...(Array.isArray(post.images) ? post.images : []),
     ...(post.image_url ? [post.image_url] : []),
@@ -45,7 +52,7 @@ const PostCard = ({ post }) => {
     .filter(Boolean)
   const uniquePostImages = [...new Set(postImages)]
 
-  const handleLike = () => dispatch(toggleLike(post._id))
+  const handleLike = () => dispatch(toggleLike({ postId: post._id, isLiked, currentUserId }))
   const handleSave = () => setSaved(!saved)
   const handleEditPost = () => navigate(`/post/${post._id}/edit`)
 
@@ -94,10 +101,20 @@ const PostCard = ({ post }) => {
         setComments(mock)
         setCommentsCount((prev) => Math.max(prev, mock.length))
       } else {
-        const data = await postService.getComments(post._id)
-        const list = Array.isArray(data) ? data : (data?.comments || [])
+        let list = []
+        try {
+          if (Array.isArray(post.comments) && post.comments.length > 0) {
+            list = post.comments
+          } else {
+            list = await postService.getComments(post._id)
+          }
+        } catch (getErr) {
+          console.warn('Cannot fetch comments via GET, using post.comments fallback:', getErr)
+          list = Array.isArray(post.comments) ? post.comments : []
+        }
+        
         setComments(list)
-        setCommentsCount((prev) => Math.max(prev, list.length))
+        setCommentsCount((prev) => Math.max(prev, list.length || post.comments_count || 0))
       }
     } catch (err) {
       console.error('Load comments failed:', err)
@@ -131,14 +148,41 @@ const PostCard = ({ post }) => {
         setComments((prev) => [...prev, optimistic])
       } else {
         const result = await postService.addComment(post._id, content)
-        setComments((prev) => [...prev, result.comment || result])
+        const incomingComment = result?.comment || null
+        if (incomingComment) {
+          setComments((prev) => [...prev, incomingComment])
+        }
+        if (typeof result?.commentCount === 'number') {
+          setCommentsCount(result.commentCount)
+        } else {
+          setCommentsCount((prev) => prev + 1)
+        }
       }
-      setCommentsCount((prev) => prev + 1)
       setNewComment('')
     } catch (err) {
       console.error('Add comment failed:', err)
     } finally {
       setIsCommenting(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    if (!commentId || isDemoMode) return
+
+    setDeletingCommentId(commentId)
+    try {
+      const result = await postService.deleteComment(post._id, commentId)
+      setComments((prev) => prev.filter((comment) => comment?._id !== commentId))
+      if (typeof result?.commentCount === 'number') {
+        setCommentsCount(result.commentCount)
+      } else {
+        setCommentsCount((prev) => Math.max(0, prev - 1))
+      }
+    } catch (err) {
+      console.error('Delete comment failed:', err)
+      toast.error('Xoa binh luan that bai!')
+    } finally {
+      setDeletingCommentId(null)
     }
   }
 
@@ -178,7 +222,7 @@ const PostCard = ({ post }) => {
       <PostCardBody post={post} />
 
       <PostCardActions
-        likesCount={post.likes?.length || 0}
+        likesCount={post.likeCount ?? post.likes?.length ?? 0}
         commentsCount={commentsCount}
         isLiked={isLiked}
         saved={saved}
@@ -198,8 +242,12 @@ const PostCard = ({ post }) => {
             commentsCount={commentsCount}
             newComment={newComment}
             isCommenting={isCommenting}
+            currentUserId={currentUserId}
+            currentUser={user}
+            deletingCommentId={deletingCommentId}
             onCommentChange={setNewComment}
             onSubmitComment={handleSubmitComment}
+            onDeleteComment={handleDeleteComment}
           />
         )
       )}

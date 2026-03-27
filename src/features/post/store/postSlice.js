@@ -39,12 +39,15 @@ const normalizePostForUi = (post) => {
     images,
     hashtags: normalizeHashtags(post.hashtags),
     created_at: post.created_at || post.createdAt,
-    comments_count: post.comments_count || post.commentsCount || 0,
+    comments_count: post.comments_count || post.commentsCount || post.commentCount || (Array.isArray(post.comments) ? post.comments.length : 0),
+    comments: Array.isArray(post.comments) ? post.comments : [],
     likes: Array.isArray(post.likes) ? post.likes : [],
+    isLiked: post.isLiked ?? post.liked ?? (Array.isArray(post.likes) ? undefined : false),
+    likeCount: post.likeCount ?? post.likesCount ?? post.likes_count,
     user: {
       _id: author._id || author.id || (typeof post.author === 'string' ? post.author : null),
       username: author.username || post.authorUsername || 'user',
-      full_name: author.full_name || author.fullName || post.authorName || 'Người dùng',
+      full_name: author.full_name || author.fullName || post.authorName,
       avatar: author.avatar || post.authorAvatar || null,
     },
   }
@@ -131,9 +134,13 @@ export const deletePost = createAsyncThunk(
 // Like / Unlike
 export const toggleLike = createAsyncThunk(
   'posts/toggleLike',
-  async (postId, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      return await postService.toggleLike(postId)
+      const postId = typeof payload === 'string' ? payload : payload?.postId
+      const isLiked = typeof payload === 'object' ? payload?.isLiked : false
+      const currentUserId = typeof payload === 'object' ? payload?.currentUserId : null
+      const result = await postService.toggleLike(postId, isLiked)
+      return { ...result, postId, currentUserId }
     } catch (err) {
       return rejectWithValue(err.message)
     }
@@ -146,6 +153,17 @@ export const addComment = createAsyncThunk(
   async ({ postId, content }, { rejectWithValue }) => {
     try {
       return await postService.addComment(postId, content)
+    } catch (err) {
+      return rejectWithValue(err.message)
+    }
+  }
+)
+
+export const removeComment = createAsyncThunk(
+  'posts/removeComment',
+  async ({ postId, commentId }, { rejectWithValue }) => {
+    try {
+      return await postService.deleteComment(postId, commentId)
     } catch (err) {
       return rejectWithValue(err.message)
     }
@@ -240,17 +258,49 @@ const postSlice = createSlice({
 
       // ── Toggle Like ──
       .addCase(toggleLike.fulfilled, (state, action) => {
-        const updated = action.payload
-        const idx = state.posts.findIndex((p) => p._id === updated._id)
-        if (idx !== -1) state.posts[idx] = updated
+        const { postId, liked, likeCount, currentUserId } = action.payload || {}
+        const idx = state.posts.findIndex((p) => p._id === postId)
+        if (idx === -1) return
+
+        const likes = Array.isArray(state.posts[idx].likes) ? state.posts[idx].likes : []
+        const userId = currentUserId || null
+        let nextLikes = likes
+
+        if (userId) {
+          nextLikes = liked
+            ? [...likes.filter((id) => id !== userId), userId]
+            : likes.filter((id) => id !== userId)
+        }
+
+        if (typeof likeCount === 'number' && likeCount !== nextLikes.length) {
+          const keep = userId && liked ? [userId] : []
+          const placeholders = Array.from({ length: Math.max(0, likeCount - keep.length) }, (_, i) => `like-${i}`)
+          nextLikes = [...keep, ...placeholders]
+        }
+
+        state.posts[idx].likes = nextLikes
+        state.posts[idx].isLiked = liked
       })
 
       // ── Add Comment ──
       .addCase(addComment.fulfilled, (state, action) => {
-        const { postId } = action.payload
+        const { postId, commentCount } = action.payload || {}
         const idx = state.posts.findIndex((p) => p._id === postId)
         if (idx !== -1) {
-          state.posts[idx].comments_count += 1
+          state.posts[idx].comments_count = typeof commentCount === 'number'
+            ? commentCount
+            : (state.posts[idx].comments_count || 0) + 1
+        }
+      })
+
+      // ── Remove Comment ──
+      .addCase(removeComment.fulfilled, (state, action) => {
+        const { postId, commentCount } = action.payload || {}
+        const idx = state.posts.findIndex((p) => p._id === postId)
+        if (idx !== -1) {
+          state.posts[idx].comments_count = typeof commentCount === 'number'
+            ? commentCount
+            : Math.max(0, (state.posts[idx].comments_count || 0) - 1)
         }
       })
   },

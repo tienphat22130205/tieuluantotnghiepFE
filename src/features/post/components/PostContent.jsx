@@ -16,7 +16,7 @@ const PostContent = ({ post, isLiked, onLike }) => {
 
   const postUserId = post?.user?.id || post?.user?._id
   const profilePath = postUserId ? `/profile/${postUserId}` : '#'
-  const displayName = post?.user?.full_name || post?.user?.fullName || `${post?.user?.firstName || ''} ${post?.user?.lastName || ''}`.trim() || 'Người dùng'
+  const displayName = post?.user?.full_name || post?.user?.fullName || post?.user?.username || `${post?.user?.firstName || ''} ${post?.user?.lastName || ''}`.trim() || 'Người dùng'
   const visibilityLabel = {
     public: 'Công khai',
     friends: 'Bạn bè',
@@ -120,7 +120,7 @@ const PostContent = ({ post, isLiked, onLike }) => {
             }`}
           >
             {isLiked ? <AiFillHeart size={24} /> : <AiOutlineHeart size={24} />}
-            <span className="text-sm font-medium">{post.likes?.length || 0} lượt thích</span>
+            <span className="text-sm font-medium">{post.likeCount ?? post.likes?.length ?? 0} lượt thích</span>
           </button>
         </div>
       </div>

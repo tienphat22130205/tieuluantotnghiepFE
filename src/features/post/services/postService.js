@@ -16,6 +16,8 @@ const unavailableEndpoints = {
   byUser: false,
 }
 
+const unwrapDataPayload = (payload) => payload?.data || payload
+
 const tryGetWithCachedFallback = async (key, candidateFactory) => {
   if (unavailableEndpoints[key]) {
     return []
@@ -96,19 +98,79 @@ const postService = {
   // Xóa bài viết
   delete: (postId) => api.delete(`/posts/${postId}`),
 
-  // Like / Unlike bài viết (Toggle)
-  toggleLike: (postId) => api.put(`/posts/${postId}/like`),
+  // Like bài viết
+  likePost: async (postId) => {
+    const response = await api.post(`/posts/${postId}/like`)
+    const data = unwrapDataPayload(response)
+    return {
+      postId: data?.postId || postId,
+      likeCount: data?.likeCount,
+      liked: data?.liked ?? true,
+    }
+  },
+
+  // Bỏ like bài viết
+  unlikePost: async (postId) => {
+    const response = await api.delete(`/posts/${postId}/like`)
+    const data = unwrapDataPayload(response)
+    return {
+      postId: data?.postId || postId,
+      likeCount: data?.likeCount,
+      liked: data?.liked ?? false,
+    }
+  },
+
+  // Toggle like theo trạng thái hiện tại
+  toggleLike: (postId, isLiked) => (isLiked ? postService.unlikePost(postId) : postService.likePost(postId)),
 
   // Lấy danh sách comment của bài viết
-  getComments: (postId) => api.get(`/posts/${postId}/comments`),
+  getComments: async (postId) => {
+    try {
+      const response = await api.get(`/posts/${postId}/comments`)
+      const data = unwrapDataPayload(response)
+      if (Array.isArray(data)) return data
+      if (Array.isArray(data?.comments)) return data.comments
+      if (data?.data && Array.isArray(data.data)) return data.data
+      if (data?.data?.comments && Array.isArray(data.data.comments)) return data.data.comments
+      return []
+    } catch (error) {
+      if (error?.status === 404) {
+        // Fallback: Nếu không có endpoint GET comments riêng, lấy post detail và trích xuất comments
+        try {
+          const postResponse = await api.get(`/posts/${postId}`)
+          const postData = unwrapDataPayload(postResponse) || postResponse
+          const fromPost = postData?.comments || postData?.post?.comments
+          if (Array.isArray(fromPost)) return fromPost
+          return []
+        } catch (innerErr) {
+          console.warn('Fallback getComments also failed', innerErr)
+        }
+      }
+      throw error
+    }
+  },
 
   // Thêm comment
-  addComment: (postId, content) =>
-    api.post(`/posts/${postId}/comments`, { content }),
+  addComment: async (postId, content) => {
+    const response = await api.post(`/posts/${postId}/comments`, { content })
+    const data = unwrapDataPayload(response)
+    return {
+      postId: data?.postId || postId,
+      comment: data?.comment || null,
+      commentCount: data?.commentCount,
+    }
+  },
 
   // Xóa comment
-  deleteComment: (postId, commentId) =>
-    api.delete(`/posts/${postId}/comments/${commentId}`),
+  deleteComment: async (postId, commentId) => {
+    const response = await api.delete(`/posts/${postId}/comments/${commentId}`)
+    const data = unwrapDataPayload(response)
+    return {
+      postId: data?.postId || postId,
+      commentId,
+      commentCount: data?.commentCount,
+    }
+  },
 
   // ──── AI Feature ────
   // Gửi ảnh để AI sinh caption & hashtag

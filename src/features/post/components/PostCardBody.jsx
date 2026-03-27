@@ -7,10 +7,11 @@ import { Link } from 'react-router-dom'
 const PostCardBody = ({ post }) => {
   const postUserId = post?.user?.id || post?.user?._id
   const profilePath = postUserId ? `/profile/${postUserId}` : '#'
+  const content = post?.caption || post?.content || ''
 
   return (
     <div className="px-4 pb-3">
-      {post.caption && (
+      {content && (
         <p className="text-sm text-gray-800 leading-relaxed">
           <Link
             to={profilePath}
@@ -18,7 +19,7 @@ const PostCardBody = ({ post }) => {
           >
             {post.user?.username}
           </Link>
-          {post.caption}
+          {content}
         </p>
       )}
 

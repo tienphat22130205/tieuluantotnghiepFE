@@ -22,7 +22,7 @@ const getApiOrigin = () => {
 export const resolveMediaUrl = (url) => {
   if (!url || typeof url !== 'string') return ''
 
-  if (/^https?:\/\//i.test(url)) {
+  if (/^(https?:\/\/|blob:|data:)/i.test(url)) {
     return url
   }
 

@@ -7,7 +7,7 @@ import { Avatar } from '@/components/ui'
  * Props: user
  */
 const ProfileSidebar = ({ user }) => {
-  const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
+  const displayName = user?.full_name || user?.fullName || user?.username || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
   const profileId = user?.id || user?._id
   const profilePath = profileId ? `/profile/${profileId}` : '/'
   const followingCount = user?.stats?.followingCount ?? user?.following?.length ?? 0

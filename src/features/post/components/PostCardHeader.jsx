@@ -11,7 +11,7 @@ import { timeAgo } from '@/utils/formatDate'
 const PostCardHeader = ({ user, createdAt, visibility, canManage = false, onEdit, onDelete }) => {
   const userId = user?.id || user?._id
   const profilePath = userId ? `/profile/${userId}` : '#'
-  const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
+  const displayName = user?.full_name || user?.fullName || user?.username || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
   const visibilityLabel = {
     public: 'Công khai',
     friends: 'Bạn bè',

@@ -36,6 +36,7 @@ export {
   deletePost,
   toggleLike,
   addComment,
+  removeComment,
   clearPosts,
   setCurrentPost,
   loadMockPosts,
