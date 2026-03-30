@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import ImageUploader from '../components/ImageUploader'
 import AIGenerateButton from '../components/AIGenerateButton'
+import AIOptionsModal from '../components/AIOptionsModal'
+import AICaptionPickerModal from '../components/AICaptionPickerModal'
 import PostForm from '../components/PostForm'
 import useCreatePostPage from '../hooks/useCreatePostPage'
 
@@ -10,6 +13,9 @@ import useCreatePostPage from '../hooks/useCreatePostPage'
 const CreatePostPage = () => {
   const { postId } = useParams()
   const isEditMode = Boolean(postId)
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false)
+  const [isCaptionModalOpen, setIsCaptionModalOpen] = useState(false)
+  const [pickedAiHashtags, setPickedAiHashtags] = useState([])
 
   const {
     images,
@@ -20,15 +26,73 @@ const CreatePostPage = () => {
     isAILoading,
     isPosting,
     aiUsed,
+    aiOptions,
+    aiCaptions,
+    aiHashtags,
+    aiCaptionHashtags,
+    selectedCaptionIndex,
     isLoadingPost,
     setContent,
     setHashtags,
     setVisibility,
     handleImageChange,
     handleRemoveImage,
+    handleAiOptionChange,
     handleAIGenerate,
+    handleUseAICaption,
     handleSubmit,
   } = useCreatePostPage({ postId, isEditMode })
+
+  const openAIModal = () => {
+    setIsAIModalOpen(true)
+  }
+
+  const normalizeHashtagInput = (value) =>
+    value
+      .split(/[\s,]+/)
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`))
+
+  const closeAIModal = () => {
+    if (isAILoading) return
+    setIsAIModalOpen(false)
+  }
+
+  const handleGenerateFromModal = async () => {
+    setIsAIModalOpen(false)
+    setPickedAiHashtags(normalizeHashtagInput(hashtags))
+    setIsCaptionModalOpen(true)
+
+    const isSuccess = await handleAIGenerate()
+    if (isSuccess) {
+      return
+    }
+
+    setIsCaptionModalOpen(false)
+  }
+
+  const closeCaptionModal = () => {
+    if (isAILoading) return
+    setIsCaptionModalOpen(false)
+  }
+
+  const handleUseCaptionFromModal = (caption, index) => {
+    handleUseAICaption(caption, index)
+  }
+
+  const handleApplyHashtagsFromModal = (pickedTags) => {
+    setHashtags(pickedTags.join(' '))
+  }
+
+  const handleToggleAiHashtag = (tag) => {
+    setPickedAiHashtags((prev) => {
+      if (prev.includes(tag)) {
+        return prev.filter((item) => item !== tag)
+      }
+      return [...prev, tag]
+    })
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -64,8 +128,35 @@ const CreatePostPage = () => {
 
         {!isEditMode && previews.length > 0 && (
           <AIGenerateButton
+            disabled={isAILoading}
+            onClick={openAIModal}
+          />
+        )}
+
+        {!isEditMode && (
+          <AIOptionsModal
+            isOpen={isAIModalOpen}
+            options={aiOptions}
             isLoading={isAILoading}
-            onClick={handleAIGenerate}
+            onClose={closeAIModal}
+            onChangeOption={handleAiOptionChange}
+            onGenerate={handleGenerateFromModal}
+          />
+        )}
+
+        {!isEditMode && (
+          <AICaptionPickerModal
+            isOpen={isCaptionModalOpen}
+            captions={aiCaptions}
+            hashtags={aiHashtags}
+            captionHashtags={aiCaptionHashtags}
+            selectedTags={pickedAiHashtags}
+            selectedIndex={selectedCaptionIndex}
+            isLoading={isAILoading}
+            onClose={closeCaptionModal}
+            onToggleTag={handleToggleAiHashtag}
+            onApplyHashtags={handleApplyHashtagsFromModal}
+            onUseCaption={handleUseCaptionFromModal}
           />
         )}
 

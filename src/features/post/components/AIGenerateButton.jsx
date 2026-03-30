@@ -1,23 +1,19 @@
-import { Button } from '@/components/ui'
-import { HiOutlineSparkles } from 'react-icons/hi'
-
-/**
- * AIGenerateButton – Nút gọi AI sinh nội dung (tính năng cốt lõi).
- * Props: isLoading (bool), onClick (fn)
- */
-const AIGenerateButton = ({ isLoading, onClick }) => {
+const AIGenerateButton = ({ onClick, disabled }) => {
   return (
     <div className="flex justify-center">
-      <Button
+      <button
         type="button"
-        variant="secondary"
         onClick={onClick}
-        isLoading={isLoading}
-        className="gap-2"
+        disabled={disabled}
+        title="AI sinh nội dung"
+        className="group rounded-full p-1.5 bg-white border border-gray-200 shadow-sm transition hover:shadow-md hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        <HiOutlineSparkles size={18} />
-        {isLoading ? 'Đang phân tích ảnh...' : '✨ AI Sinh nội dung'}
-      </Button>
+        <img
+          src="/botAI.jpeg"
+          alt="AI bot"
+          className="h-12 w-12 rounded-full object-cover"
+        />
+      </button>
     </div>
   )
 }

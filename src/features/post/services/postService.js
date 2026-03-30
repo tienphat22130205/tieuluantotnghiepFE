@@ -174,10 +174,25 @@ const postService = {
 
   // ──── AI Feature ────
   // Gửi ảnh để AI sinh caption & hashtag
-  generateCaption: (formData) =>
-    api.post('/ai/generate-caption', formData, {
+  generateContentUpload: async (formData) => {
+    const aiTimeout = Number(import.meta.env.VITE_AI_TIMEOUT_MS || 90000)
+    const config = {
       headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+      timeout: aiTimeout,
+    }
+
+    try {
+      return await api.post('/ai/generate-content-upload', formData, config)
+    } catch (error) {
+      if (error?.status === 404) {
+        return api.post('/generate-content-upload', formData, config)
+      }
+      throw error
+    }
+  },
+
+  // Alias giữ tương thích ngược với code cũ
+  generateCaption: (formData) => postService.generateContentUpload(formData),
 
   // Lưu / Bỏ lưu bài viết (Bookmark)
   toggleSave: (postId) => api.put(`/posts/${postId}/save`),
