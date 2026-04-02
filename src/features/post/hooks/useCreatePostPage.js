@@ -5,6 +5,7 @@ import { toast } from 'react-toastify'
 import postService from '../services/postService'
 import { createPost, updatePost } from '../store/postSlice'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
+import { normalizeVisibility } from '@/utils/friendship'
 
 const useCreatePostPage = ({ postId, isEditMode }) => {
   const dispatch = useDispatch()
@@ -73,7 +74,7 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
         }
 
         setContent(currentPost?.content || currentPost?.caption || '')
-        setVisibility(currentPost?.visibility || 'public')
+        setVisibility(normalizeVisibility(currentPost?.visibility || 'public'))
         setHashtags(Array.isArray(currentPost?.hashtags) ? currentPost.hashtags.join(' ') : '')
 
         const existingImages = [
@@ -418,13 +419,14 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
     setIsPosting(true)
     try {
       const normalizedHashtags = parseHashtags(hashtags)
+      const normalizedVisibility = normalizeVisibility(visibility)
 
       if (isEditMode) {
         await dispatch(updatePost({
           postId,
           payload: {
             content,
-            visibility,
+            visibility: normalizedVisibility,
             hashtags: normalizedHashtags,
           },
         })).unwrap()
@@ -439,14 +441,14 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
         images.forEach((file) => formData.append('images', file))
         formData.append('content', content)
         formData.append('hashtags', normalizedHashtags.join(','))
-        formData.append('visibility', visibility)
+        formData.append('visibility', normalizedVisibility)
         formData.append('is_ai_generated', String(aiUsed))
         await dispatch(createPost(formData)).unwrap()
       } else {
         await dispatch(createPost({
           content,
           hashtags: normalizedHashtags,
-          visibility,
+          visibility: normalizedVisibility,
         })).unwrap()
       }
 

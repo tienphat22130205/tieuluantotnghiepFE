@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import postService from '../services/postService'
+import { normalizeVisibility } from '@/utils/friendship'
 
 const normalizeHashtags = (hashtags) => {
   if (!hashtags) return []
@@ -44,6 +45,7 @@ const normalizePostForUi = (post) => {
     likes: Array.isArray(post.likes) ? post.likes : [],
     isLiked: post.isLiked ?? post.liked ?? (Array.isArray(post.likes) ? undefined : false),
     likeCount: post.likeCount ?? post.likesCount ?? post.likes_count,
+    visibility: normalizeVisibility(post.visibility),
     user: {
       _id: author._id || author.id || (typeof post.author === 'string' ? post.author : null),
       username: author.username || post.authorUsername || 'user',

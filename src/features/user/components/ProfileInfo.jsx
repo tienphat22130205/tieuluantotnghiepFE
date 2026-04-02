@@ -7,17 +7,20 @@ import {
 } from 'react-icons/ai'
 import { Avatar, Button } from '@/components/ui'
 import { useId } from 'react'
+import { PROFILE_ACTION_LABELS } from '@/constants/messages'
 
 /**
  * ProfileInfo – Avatar, tên, username, stats, nút hành động.
- * Props: profile, posts, isMyProfile, isFollowing, onFollowToggle, onEditProfile, onAvatarUpload, isUploadingAvatar
+ * Props: profile, posts, isMyProfile, relationshipStatus, friendActionLabel, isFriendActionLoading, onFriendAction, onEditProfile, onAvatarUpload, isUploadingAvatar
  */
 const ProfileInfo = ({
   profile,
   posts,
   isMyProfile,
-  isFollowing,
-  onFollowToggle,
+  relationshipStatus,
+  friendActionLabel,
+  isFriendActionLoading,
+  onFriendAction,
   onEditProfile,
   onAvatarUpload,
   isUploadingAvatar,
@@ -108,13 +111,14 @@ const ProfileInfo = ({
           ) : (
             <>
               <Button
-                variant={isFollowing ? 'outline' : 'primary'}
+                variant={relationshipStatus?.areFriends ? 'outline' : 'primary'}
                 size="sm"
-                onClick={onFollowToggle}
+                onClick={onFriendAction}
+                isLoading={isFriendActionLoading}
                 className="flex-1 sm:flex-initial cursor-pointer"
               >
                 <AiOutlineUser size={16} />
-                {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                {friendActionLabel || PROFILE_ACTION_LABELS.sendRequest}
               </Button>
               <Button variant="outline" size="sm" className="cursor-pointer">
                 <AiOutlineMessage size={16} />

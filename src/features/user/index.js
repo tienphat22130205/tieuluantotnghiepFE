@@ -7,6 +7,7 @@
  */
 // Pages
 export { default as ProfilePage } from './pages/ProfilePage'
+export { default as FriendsPage } from './pages/FriendsPage'
 
 // Components
 export { default as CoverPhoto } from './components/CoverPhoto'
@@ -22,3 +23,4 @@ export { default as FriendsTab } from './components/FriendsTab'
 
 // Services
 export { default as userService } from './services/userService'
+export { default as friendService } from './services/friendService'

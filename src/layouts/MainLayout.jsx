@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
+import { AnimatePresence, motion } from 'framer-motion'
 import Navbar from './components/Navbar'
 import UsernameSelectionModal from '@/features/auth/components/UsernameSelectionModal'
 import { suggestUsername, setUsername } from '@/features/auth/store/authSlice'
@@ -15,6 +16,7 @@ import { suggestUsername, setUsername } from '@/features/auth/store/authSlice'
 const MainLayout = () => {
   const dispatch = useDispatch()
   const { user, token, isLoading, error } = useSelector((state) => state.auth)
+  const location = useLocation()
   const [suggestedUsernames, setSuggestedUsernames] = useState([])
   const [showUsernameModal, setShowUsernameModal] = useState(false)
 
@@ -67,7 +69,18 @@ const MainLayout = () => {
       {/* Nội dung chính – margin-top tránh navbar đè, pb cho bottom nav mobile */}
       <main className="pt-16 pb-16 md:pb-0">
         <div className="max-w-5xl mx-auto px-4">
-          <Outlet />
+          <AnimatePresence mode="sync" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0.92 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0.96 }}
+              transition={{ duration: 0.14 }}
+              className="will-change-opacity"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 

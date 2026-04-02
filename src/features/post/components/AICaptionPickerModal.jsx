@@ -1,4 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
+import { AnimatePresence, motion as Motion } from 'framer-motion'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 
@@ -36,9 +37,35 @@ const AICaptionPickerModal = ({
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !isLoading && !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 w-[92%] max-w-xl -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl z-50 overflow-hidden max-h-[85vh]">
+      <AnimatePresence>
+        {isOpen && (
+      <Dialog.Portal forceMount>
+        <Dialog.Overlay asChild forceMount>
+          <Motion.div
+            className="fixed inset-0 bg-black/50 z-50 will-change-opacity"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+          />
+        </Dialog.Overlay>
+        <Dialog.Content
+          asChild
+          forceMount
+          onEscapeKeyDown={(event) => {
+            if (isLoading) event.preventDefault()
+          }}
+          onPointerDownOutside={(event) => {
+            if (isLoading) event.preventDefault()
+          }}
+        >
+          <Motion.div
+            className="fixed top-1/2 left-1/2 w-[92%] max-w-xl -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl z-50 overflow-hidden max-h-[85vh] will-change-transform transform-gpu"
+            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.985 }}
+            transition={{ duration: 0.18 }}
+          >
           <div className="px-5 py-4 border-b border-gray-100">
             <Dialog.Title className="text-lg font-semibold text-gray-900">Chọn caption AI</Dialog.Title>
             <p className="text-sm text-gray-500 mt-1">Chọn nội dung phù hợp trước khi đưa vào bài viết.</p>
@@ -129,8 +156,11 @@ const AICaptionPickerModal = ({
               Đóng
             </button>
           </div>
+          </Motion.div>
         </Dialog.Content>
       </Dialog.Portal>
+        )}
+      </AnimatePresence>
     </Dialog.Root>
   )
 }

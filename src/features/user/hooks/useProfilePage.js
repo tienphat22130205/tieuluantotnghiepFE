@@ -1,9 +1,32 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import userService from '../services/userService'
+import friendService from '../services/friendService'
 import postService from '@/features/post/services/postService'
 import { getMe } from '@/features/auth/store/authSlice'
+import { canViewPost, getUserId, normalizeRelationshipStatus } from '@/utils/friendship'
+import {
+  COMMON_TEXT,
+  FRIEND_MESSAGES,
+  PROFILE_ACTION_LABELS,
+  PROFILE_MESSAGES,
+} from '@/constants/messages'
+import {
+  appendUniqueUserById,
+  initialRelationshipState,
+  normalizeUserCollection,
+  removeUserById,
+} from '../utils/relationshipState'
+import {
+  createProfileFormState,
+  extractPostsPayload,
+  extractProfilePayload,
+  getPostAuthorId,
+  normalizePosts,
+  normalizeProfile,
+  withProfileIdentity,
+} from '../utils/profileData'
 
 const useProfilePage = (userId) => {
   const dispatch = useDispatch()
@@ -12,13 +35,14 @@ const useProfilePage = (userId) => {
 
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
-  const [isFollowing, setIsFollowing] = useState(false)
+  const [relationshipStatus, setRelationshipStatus] = useState(initialRelationshipState)
   const [activeTab, setActiveTab] = useState('posts')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [isFriendActionLoading, setIsFriendActionLoading] = useState(false)
   const [profileForm, setProfileForm] = useState({
     bio: '',
     address: '',
@@ -28,131 +52,69 @@ const useProfilePage = (userId) => {
     lng: '',
   })
 
-  const currentUserId = currentUser?.id || currentUser?._id
-  const isMyProfile = currentUserId === userId
+  const currentUserId = getUserId(currentUser)
+  const isMyProfile = Boolean(
+    currentUserId
+    && userId
+    && String(currentUserId) === String(userId)
+  )
   const hasValidRouteUserId = Boolean(userId && userId !== 'undefined' && userId !== 'null')
 
-  const normalizeProfile = (rawProfile) => {
-    if (!rawProfile) return null
+  const refreshRelationshipStatus = useCallback(async (targetUserId) => {
+    if (!targetUserId || isMyProfile) {
+      setRelationshipStatus(initialRelationshipState)
+      return initialRelationshipState
+    }
 
-    const rawLocation = rawProfile.location
-    const locationInfo = typeof rawLocation === 'object' && rawLocation !== null
-      ? {
-          address: rawLocation.address || '',
-          city: rawLocation.city || '',
-          country: rawLocation.country || '',
-          lat: rawLocation.lat,
-          lng: rawLocation.lng,
-        }
-      : {
-          address: '',
-          city: '',
-          country: '',
-          lat: null,
-          lng: null,
-        }
+    try {
+      const statusResponse = await friendService.getRelationshipStatus(targetUserId)
+      const normalizedStatus = normalizeRelationshipStatus(statusResponse, currentUserId, targetUserId)
+      setRelationshipStatus(normalizedStatus)
+      return normalizedStatus
+    } catch {
+      const fallbackStatus = {
+        currentUserId: currentUserId ? String(currentUserId) : null,
+        targetUserId: String(targetUserId),
+        areFriends: false,
+        hasIncomingRequest: false,
+        hasSentRequest: false,
+        requestId: null,
+      }
+      setRelationshipStatus(fallbackStatus)
+      return fallbackStatus
+    }
+  }, [currentUserId, isMyProfile])
 
-    const locationText =
-      typeof rawLocation === 'string'
-        ? rawLocation
-        : [locationInfo.address, locationInfo.city, locationInfo.country]
-            .filter(Boolean)
-            .join(', ')
+  const refreshProfileSocialCollections = useCallback(async (targetUserId) => {
+    if (!targetUserId) {
+      return { friends: [], followers: [], following: [] }
+    }
+
+    const [friendsResult, followersResult, followingResult] = await Promise.allSettled([
+      isMyProfile
+        ? friendService.getMyFriends()
+        : friendService.getFriendsByUserId(targetUserId),
+      isMyProfile
+        ? friendService.getMyFollowers()
+        : friendService.getFollowersByUserId(targetUserId),
+      isMyProfile
+        ? friendService.getMyFollowing()
+        : friendService.getFollowingByUserId(targetUserId),
+    ])
 
     return {
-      ...rawProfile,
-      _id: rawProfile._id || rawProfile.id,
-      full_name: rawProfile.full_name || rawProfile.fullName || `${rawProfile.firstName || ''} ${rawProfile.lastName || ''}`.trim(),
-      created_at: rawProfile.created_at || rawProfile.createdAt || rawProfile.updatedAt || null,
-      location: locationText,
-      locationData: locationInfo,
-      website: rawProfile.website || '',
-      coverPhoto: rawProfile.coverPhoto || '',
-      followers: rawProfile.followers || [],
-      following: rawProfile.following || [],
-      friends: rawProfile.friends || [],
+      friends: friendsResult.status === 'fulfilled' ? normalizeUserCollection(friendsResult.value) : [],
+      followers: followersResult.status === 'fulfilled' ? normalizeUserCollection(followersResult.value) : [],
+      following: followingResult.status === 'fulfilled' ? normalizeUserCollection(followingResult.value) : [],
     }
-  }
-
-  const normalizePosts = (rawPosts, ownerProfile) => {
-    if (!Array.isArray(rawPosts)) return []
-
-    return rawPosts.map((post) => ({
-      ...post,
-      _id: post._id || post.id,
-      caption: post.caption || post.content || '',
-      image_url: post.image_url || post.imageUrl || post.image || null,
-      images: Array.isArray(post.images) ? post.images : [post.image_url || post.imageUrl || post.image].filter(Boolean),
-      hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
-      created_at: post.created_at || post.createdAt,
-      comments_count: post.comments_count || post.commentsCount || 0,
-      likes: Array.isArray(post.likes) ? post.likes : [],
-      user: post.user || {
-        _id: ownerProfile?._id,
-        username: ownerProfile?.username,
-        full_name: ownerProfile?.full_name,
-        avatar: ownerProfile?.avatar,
-      },
-    }))
-  }
-
-  const getPostAuthorId = (post) => (
-    post?.user?._id
-    || post?.user?.id
-    || post?.author?._id
-    || post?.author?.id
-    || post?.author_id
-    || post?.user_id
-    || (typeof post?.author === 'string' ? post.author : null)
-  )
-
-  const withProfileIdentity = (post, targetProfile) => {
-    if (!post || !targetProfile?._id) return post
-
-    const authorId = getPostAuthorId(post)
-    if (!authorId || String(authorId) !== String(targetProfile._id)) {
-      return post
-    }
-
-    return {
-      ...post,
-      user: {
-        ...post.user,
-        _id: targetProfile._id,
-        id: targetProfile._id,
-        username: targetProfile.username || post?.user?.username,
-        full_name: targetProfile.full_name || post?.user?.full_name,
-        avatar: targetProfile.avatar || post?.user?.avatar || null,
-      },
-    }
-  }
-
-  const extractProfilePayload = (response) => {
-    if (!response) return null
-
-    if (response?.data?.profile) return response.data.profile
-    if (response?.data?.user) return response.data.user
-    if (response?.profile) return response.profile
-    if (response?.user) return response.user
-
-    return response?.data || response
-  }
-
-  const extractPostsPayload = (response) => {
-    if (!response) return []
-    if (Array.isArray(response)) return response
-    if (Array.isArray(response?.posts)) return response.posts
-    if (Array.isArray(response?.data)) return response.data
-    if (Array.isArray(response?.data?.posts)) return response.data.posts
-    return []
-  }
+  }, [isMyProfile])
 
   useEffect(() => {
     let isMounted = true
 
     const loadProfilePageData = async () => {
       if (!hasValidRouteUserId && !isMyProfile) {
-        setError('Đường dẫn trang cá nhân không hợp lệ')
+        setError(PROFILE_MESSAGES.invalidProfileRoute)
         setIsLoading(false)
         return
       }
@@ -161,40 +123,96 @@ const useProfilePage = (userId) => {
       setError('')
 
       try {
-        const profileResponse = isMyProfile
-          ? await userService.getMyProfile()
-          : await userService.getProfile(userId)
+        let normalizedProfile = null
 
-        const rawProfile = extractProfilePayload(profileResponse)
-        const normalizedProfile = normalizeProfile(rawProfile)
+        try {
+          const profileResponse = isMyProfile
+            ? await userService.getMyProfile()
+            : await userService.getProfile(userId)
+
+          const rawProfile = extractProfilePayload(profileResponse)
+          normalizedProfile = normalizeProfile(rawProfile)
+        } catch (profileError) {
+          // Fallback profile keeps profile route usable when backend has no user-detail endpoint.
+          if (isMyProfile || !hasValidRouteUserId) {
+            throw profileError
+          }
+
+          normalizedProfile = normalizeProfile({
+            _id: String(userId),
+            id: String(userId),
+            username: '',
+            full_name: COMMON_TEXT.unknownUser,
+            friends: [],
+          })
+        }
 
         if (!normalizedProfile?._id) {
-          throw new Error('Dữ liệu profile không hợp lệ')
+          throw new Error(PROFILE_MESSAGES.invalidProfileData)
         }
 
         if (!isMounted) return
 
-        setProfile(normalizedProfile)
+        const socialCollections = await refreshProfileSocialCollections(normalizedProfile._id)
+        const normalizedFriends = socialCollections.friends.length > 0
+          ? socialCollections.friends
+          : (Array.isArray(normalizedProfile.friends) ? normalizedProfile.friends : [])
+        const normalizedFollowers = socialCollections.followers.length > 0
+          ? socialCollections.followers
+          : (Array.isArray(normalizedProfile.followers) ? normalizedProfile.followers : [])
+        const normalizedFollowing = socialCollections.following.length > 0
+          ? socialCollections.following
+          : (Array.isArray(normalizedProfile.following) ? normalizedProfile.following : [])
+
+        const profileWithFriends = {
+          ...normalizedProfile,
+          friends: normalizedFriends,
+          followers: normalizedFollowers,
+          following: normalizedFollowing,
+        }
+
+        setProfile(profileWithFriends)
 
         try {
-          const postsResponse = await postService.getByUser(normalizedProfile._id)
+          const postsResponse = await postService.getByUser(profileWithFriends._id)
           const rawPosts = extractPostsPayload(postsResponse)
 
           if (!isMounted) return
-          setPosts(normalizePosts(rawPosts, normalizedProfile))
+          setPosts(normalizePosts(rawPosts, profileWithFriends))
         } catch {
           if (!isMounted) return
           setPosts([])
         }
 
-        if (Array.isArray(normalizedProfile.followers)) {
-          setIsFollowing(normalizedProfile.followers.includes(currentUserId))
+        if (isMyProfile) {
+          setRelationshipStatus(initialRelationshipState)
         } else {
-          setIsFollowing(false)
+          try {
+            const statusResponse = await friendService.getRelationshipStatus(profileWithFriends._id)
+            if (!isMounted) return
+
+            setRelationshipStatus(
+              normalizeRelationshipStatus(statusResponse, currentUserId, profileWithFriends._id)
+            )
+          } catch {
+            if (!isMounted) return
+            const hasFriendInProfile = profileWithFriends.friends
+              .some((friend) => String(getUserId(friend)) === String(currentUserId))
+
+            setRelationshipStatus((prev) => ({
+              ...prev,
+              currentUserId: currentUserId ? String(currentUserId) : null,
+              targetUserId: profileWithFriends._id ? String(profileWithFriends._id) : null,
+              areFriends: hasFriendInProfile,
+              hasIncomingRequest: false,
+              hasSentRequest: false,
+              requestId: null,
+            }))
+          }
         }
       } catch (err) {
         if (!isMounted) return
-        setError(err?.message || 'Không tải được trang cá nhân')
+        setError(err?.message || PROFILE_MESSAGES.loadProfileFailed)
       } finally {
         if (isMounted) setIsLoading(false)
       }
@@ -207,43 +225,150 @@ const useProfilePage = (userId) => {
     return () => {
       isMounted = false
     }
-  }, [hasValidRouteUserId, isMyProfile, userId, currentUserId])
+  }, [hasValidRouteUserId, isMyProfile, userId, currentUserId, refreshProfileSocialCollections])
 
   useEffect(() => {
     if (!profile || !isMyProfile) return
 
-    setProfileForm({
-      bio: profile.bio || '',
-      address: profile.locationData?.address || '',
-      city: profile.locationData?.city || '',
-      country: profile.locationData?.country || '',
-      lat: profile.locationData?.lat ?? '',
-      lng: profile.locationData?.lng ?? '',
-    })
+    setProfileForm(createProfileFormState(profile))
   }, [profile, isMyProfile])
 
-  const handleFollowToggle = async () => {
-    if (!currentUserId || !profile) return
+  const handleFriendAction = async () => {
+    if (!currentUserId || !profile || isMyProfile) return
 
-    const previousIsFollowing = isFollowing
-    setIsFollowing(!previousIsFollowing)
-    setProfile((prev) => ({
-      ...prev,
-      followers: previousIsFollowing
-        ? prev.followers.filter((id) => id !== currentUserId)
-        : [...prev.followers, currentUserId],
-    }))
+    const targetUserId = getUserId(profile)
+    if (!targetUserId) {
+      toast.error(FRIEND_MESSAGES.cannotResolveTargetUserId)
+      return
+    }
 
+    if (String(targetUserId) === String(currentUserId)) {
+      toast.error(FRIEND_MESSAGES.cannotSendRequestToSelf)
+      return
+    }
+
+    setIsFriendActionLoading(true)
     try {
-      await userService.toggleFollow(profile._id)
-    } catch {
-      setIsFollowing(previousIsFollowing)
-      setProfile((prev) => ({
-        ...prev,
-        followers: previousIsFollowing
-          ? [...prev.followers, currentUserId]
-          : prev.followers.filter((id) => id !== currentUserId),
-      }))
+      const latestRelationshipStatus = await refreshRelationshipStatus(targetUserId)
+
+      if (latestRelationshipStatus.areFriends) {
+        await friendService.unfriend(targetUserId)
+
+        setRelationshipStatus((prev) => ({
+          ...prev,
+          areFriends: false,
+          hasIncomingRequest: false,
+          hasSentRequest: false,
+          requestId: null,
+        }))
+
+        const socialCollections = await refreshProfileSocialCollections(targetUserId)
+        setProfile((prev) => (prev
+          ? {
+              ...prev,
+              friends: socialCollections.friends.length > 0
+                ? socialCollections.friends
+                : removeUserById(prev.friends || [], currentUserId),
+              followers: socialCollections.followers.length > 0
+                ? socialCollections.followers
+                : removeUserById(prev.followers || [], currentUserId),
+              following: socialCollections.following.length > 0
+                ? socialCollections.following
+                : removeUserById(prev.following || [], currentUserId),
+            }
+          : prev
+        ))
+
+        await dispatch(getMe())
+        await refreshRelationshipStatus(targetUserId)
+        toast.success(FRIEND_MESSAGES.unfriendSuccess)
+        return
+      }
+
+      if (latestRelationshipStatus.hasIncomingRequest && latestRelationshipStatus.requestId) {
+        await friendService.respondToRequest(latestRelationshipStatus.requestId, 'accepted')
+
+        const currentUserInfo = {
+          _id: String(currentUserId),
+          id: String(currentUserId),
+          username: currentUser?.username || '',
+          full_name: currentUser?.full_name || currentUser?.fullName || currentUser?.name || '',
+          avatar: currentUser?.avatar || null,
+        }
+
+        setRelationshipStatus((prev) => ({
+          ...prev,
+          areFriends: true,
+          hasIncomingRequest: false,
+          hasSentRequest: false,
+          requestId: null,
+        }))
+        setProfile((prev) => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            friends: appendUniqueUserById(prev.friends || [], currentUserInfo),
+            followers: appendUniqueUserById(prev.followers || [], currentUserInfo),
+            following: appendUniqueUserById(prev.following || [], currentUserInfo),
+          }
+        })
+
+        const socialCollections = await refreshProfileSocialCollections(targetUserId)
+        setProfile((prev) => (prev
+          ? {
+              ...prev,
+              friends: socialCollections.friends.length > 0 ? socialCollections.friends : prev.friends,
+              followers: socialCollections.followers.length > 0 ? socialCollections.followers : prev.followers,
+              following: socialCollections.following.length > 0 ? socialCollections.following : prev.following,
+            }
+          : prev
+        ))
+
+        // Backend updates both followers/following on accept; refresh auth user snapshot.
+        await dispatch(getMe())
+        await refreshRelationshipStatus(targetUserId)
+        toast.success(FRIEND_MESSAGES.acceptRequestOnProfileSuccess)
+        return
+      }
+
+      if (latestRelationshipStatus.hasSentRequest && latestRelationshipStatus.requestId) {
+        await friendService.cancelSentRequest(latestRelationshipStatus.requestId)
+        setRelationshipStatus((prev) => ({
+          ...prev,
+          hasSentRequest: false,
+          hasIncomingRequest: false,
+          requestId: null,
+        }))
+        await refreshRelationshipStatus(targetUserId)
+        toast.success(FRIEND_MESSAGES.cancelRequestOnProfileSuccess)
+        return
+      }
+
+      if (!latestRelationshipStatus.areFriends) {
+        const sendResponse = await friendService.sendRequest(targetUserId)
+        const requestId =
+          sendResponse?.request?.id
+          || sendResponse?.request?.requestId
+          || sendResponse?.request?._id
+          || sendResponse?.data?.requestId
+          || sendResponse?.requestId
+          || sendResponse?.data?._id
+          || sendResponse?._id
+          || null
+
+        setRelationshipStatus((prev) => ({
+          ...prev,
+          hasSentRequest: true,
+          hasIncomingRequest: false,
+          requestId: requestId ? String(requestId) : prev.requestId,
+        }))
+        await refreshRelationshipStatus(targetUserId)
+        toast.success(FRIEND_MESSAGES.sendRequestSuccess)
+      }
+    } catch (err) {
+      toast.error(err?.message || FRIEND_MESSAGES.processFriendActionFailed)
+    } finally {
+      setIsFriendActionLoading(false)
     }
   }
 
@@ -256,14 +381,7 @@ const useProfilePage = (userId) => {
     setIsEditingProfile(false)
     if (!profile) return
 
-    setProfileForm({
-      bio: profile.bio || '',
-      address: profile.locationData?.address || '',
-      city: profile.locationData?.city || '',
-      country: profile.locationData?.country || '',
-      lat: profile.locationData?.lat ?? '',
-      lng: profile.locationData?.lng ?? '',
-    })
+    setProfileForm(createProfileFormState(profile))
   }
 
   const handleProfileFormChange = (event) => {
@@ -358,7 +476,19 @@ const useProfilePage = (userId) => {
     return 0
   }, [profile])
 
+  const friendActionLabel = useMemo(() => {
+    if (relationshipStatus.areFriends) return PROFILE_ACTION_LABELS.unfriend
+    if (relationshipStatus.hasIncomingRequest) return PROFILE_ACTION_LABELS.acceptRequest
+    if (relationshipStatus.hasSentRequest) return PROFILE_ACTION_LABELS.cancelRequest
+    return PROFILE_ACTION_LABELS.sendRequest
+  }, [relationshipStatus])
+
   const normalizedProfilePosts = normalizePosts(posts, profile).map((post) => withProfileIdentity(post, profile))
+
+  const canViewerSeeProfilePost = (post) => canViewPost(post, {
+    currentUserId,
+    isFriend: relationshipStatus.areFriends,
+  })
 
   const ownFeedPosts = isMyProfile && currentUserId
     ? normalizePosts(feedPosts, profile)
@@ -370,19 +500,22 @@ const useProfilePage = (userId) => {
     : []
 
   const seen = new Set()
-  const displayedPosts = [...ownFeedPosts, ...normalizedProfilePosts].filter((post) => {
-    const postId = post?._id || post?.id
-    if (!postId || seen.has(postId)) return false
-    seen.add(postId)
-    return true
-  })
+  const displayedPosts = [...ownFeedPosts, ...normalizedProfilePosts]
+    .filter((post) => (isMyProfile ? true : canViewerSeeProfilePost(post)))
+    .filter((post) => {
+      const postId = post?._id || post?.id
+      if (!postId || seen.has(postId)) return false
+      seen.add(postId)
+      return true
+    })
 
   return {
     profile,
     posts,
     displayedPosts,
     friendCount,
-    isFollowing,
+    relationshipStatus,
+    friendActionLabel,
     activeTab,
     isLoading,
     error,
@@ -390,9 +523,10 @@ const useProfilePage = (userId) => {
     isEditingProfile,
     isSavingProfile,
     isUploadingAvatar,
+    isFriendActionLoading,
     profileForm,
     setActiveTab,
-    handleFollowToggle,
+    handleFriendAction,
     handleEditProfileOpen,
     handleEditProfileCancel,
     handleProfileFormChange,

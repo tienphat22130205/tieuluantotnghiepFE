@@ -1,4 +1,16 @@
 import api from '@/services/api'
+import { PROFILE_MESSAGES } from '@/constants/messages'
+
+const PROFILE_ENDPOINT_TEMPLATES = [
+  '/profile/:userId',
+  '/profile/user/:userId',
+]
+
+let resolvedProfileEndpointTemplate = null
+const unavailableProfileTemplates = new Set()
+
+const toProfileEndpoint = (template, userId) =>
+  template.replace(':userId', encodeURIComponent(String(userId)))
 
 /**
  * User Service – API layer xử lý người dùng.
@@ -25,7 +37,43 @@ const userService = {
   },
 
   // Lấy profile user theo ID
-  getProfile: (userId) => api.get(`/users/${userId}`),
+  // Ho tro fallback endpoint de tuong thich nhieu backend route khac nhau.
+  getProfile: async (userId) => {
+    const normalizedUserId = userId ? String(userId) : ''
+    if (!normalizedUserId) {
+      throw new Error(PROFILE_MESSAGES.missingUserIdForProfile)
+    }
+
+    const orderedTemplates = [
+      ...(resolvedProfileEndpointTemplate ? [resolvedProfileEndpointTemplate] : []),
+      ...PROFILE_ENDPOINT_TEMPLATES.filter((template) => template !== resolvedProfileEndpointTemplate),
+    ]
+
+    let lastError = null
+
+    for (const template of orderedTemplates) {
+      if (unavailableProfileTemplates.has(template)) continue
+
+      const endpoint = toProfileEndpoint(template, normalizedUserId)
+
+      try {
+        const response = await api.get(endpoint)
+        resolvedProfileEndpointTemplate = template
+        return response
+      } catch (error) {
+        lastError = error
+
+        const shouldTryNext = [400, 404, 405].includes(error?.status)
+        if (!shouldTryNext) {
+          throw error
+        }
+
+        unavailableProfileTemplates.add(template)
+      }
+    }
+
+    throw lastError || new Error(PROFILE_MESSAGES.fallbackLoadUserProfileFailed)
+  },
 
   // Follow / Unfollow (Toggle)
   toggleFollow: (userId) => api.put(`/users/${userId}/follow`),

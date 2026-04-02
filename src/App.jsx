@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { ToastContainer } from 'react-toastify'
+import { MotionConfig } from 'framer-motion'
 import 'react-toastify/dist/ReactToastify.css'
 
 // Layouts
@@ -10,7 +11,7 @@ import AuthLayout from '@/layouts/AuthLayout'
 // Feature Pages
 import { LoginPage, RegisterPage, VerifyEmailPage } from '@/features/auth'
 import { HomePage, CreatePostPage, PostDetailPage } from '@/features/post'
-import { ProfilePage } from '@/features/user'
+import { FriendsPage, ProfilePage } from '@/features/user'
 import { AdminDashboardPage } from '@/features/admin'
 import { isAdminUser } from '@/utils/auth'
 
@@ -55,18 +56,25 @@ const RoleHomeRedirect = () => {
  */
 const App = () => {
   return (
-    <BrowserRouter>
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick={true}
-        rtl={false}
-        pauseOnFocusLoss={true}
-        draggable={true}
-      />
-      <Routes>
+    <MotionConfig
+      reducedMotion="user"
+      transition={{
+        duration: 0.18,
+        ease: 'easeOut',
+      }}
+    >
+      <BrowserRouter>
+        <ToastContainer
+          position="top-right"
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop={true}
+          closeOnClick={true}
+          rtl={false}
+          pauseOnFocusLoss={true}
+          draggable={true}
+        />
+        <Routes>
         {/* ── Auth Routes (Guest only) ── */}
         <Route
           element={
@@ -93,6 +101,7 @@ const App = () => {
           }
         >
           <Route path="/" element={<RoleHomeRedirect />} />
+          <Route path="/friends" element={<FriendsPage />} />
           <Route path="/create" element={<CreatePostPage />} />
           <Route path="/post/:postId/edit" element={<CreatePostPage />} />
           <Route path="/profile/:userId" element={<ProfilePage />} />
@@ -125,8 +134,9 @@ const App = () => {
             </div>
           }
         />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </MotionConfig>
   )
 }
 

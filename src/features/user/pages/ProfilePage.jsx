@@ -10,6 +10,7 @@ import AboutTab from '../components/AboutTab'
 import PhotosTab from '../components/PhotosTab'
 import FriendsTab from '../components/FriendsTab'
 import useProfilePage from '../hooks/useProfilePage'
+import { PROFILE_PAGE_TEXT } from '@/constants/messages'
 
 /**
  * Profile Page - UI only. Business logic lives in useProfilePage hook.
@@ -21,7 +22,8 @@ const ProfilePage = () => {
     profile,
     displayedPosts,
     friendCount,
-    isFollowing,
+    relationshipStatus,
+    friendActionLabel,
     activeTab,
     isLoading,
     error,
@@ -29,9 +31,10 @@ const ProfilePage = () => {
     isEditingProfile,
     isSavingProfile,
     isUploadingAvatar,
+    isFriendActionLoading,
     profileForm,
     setActiveTab,
-    handleFollowToggle,
+    handleFriendAction,
     handleEditProfileOpen,
     handleEditProfileCancel,
     handleProfileFormChange,
@@ -59,7 +62,7 @@ const ProfilePage = () => {
   if (isLoading) {
     return (
       <div className="min-h-[40vh] flex items-center justify-center">
-        <p className="text-sm text-gray-500">Dang tai trang ca nhan...</p>
+        <p className="text-sm text-gray-500">{PROFILE_PAGE_TEXT.loading}</p>
       </div>
     )
   }
@@ -67,7 +70,7 @@ const ProfilePage = () => {
   if (error || !profile) {
     return (
       <div className="min-h-[40vh] flex items-center justify-center">
-        <p className="text-sm text-red-600">{error || 'Khong tim thay du lieu trang ca nhan.'}</p>
+        <p className="text-sm text-red-600">{error || PROFILE_PAGE_TEXT.notFound}</p>
       </div>
     )
   }
@@ -82,8 +85,10 @@ const ProfilePage = () => {
             profile={profile}
             posts={displayedPosts}
             isMyProfile={isMyProfile}
-            isFollowing={isFollowing}
-            onFollowToggle={handleFollowToggle}
+            relationshipStatus={relationshipStatus}
+            friendActionLabel={friendActionLabel}
+            isFriendActionLoading={isFriendActionLoading}
+            onFriendAction={handleFriendAction}
             onEditProfile={handleEditProfileOpen}
             onAvatarUpload={handleAvatarUpload}
             isUploadingAvatar={isUploadingAvatar}

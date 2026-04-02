@@ -15,6 +15,7 @@ const PostCardHeader = ({ user, createdAt, visibility, canManage = false, onEdit
   const visibilityLabel = {
     public: 'Công khai',
     friends: 'Bạn bè',
+    private: 'Chỉ mình tôi',
     me: 'Chỉ mình tôi',
   }[visibility] || 'Công khai'
   const [showMenu, setShowMenu] = useState(false)

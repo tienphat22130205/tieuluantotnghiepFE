@@ -25,3 +25,5 @@ export const QUERY_KEYS = {
   USER_POSTS: 'userPosts',
   SUGGESTIONS: 'suggestions',
 }
+
+export * from './messages'
