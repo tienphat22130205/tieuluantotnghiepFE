@@ -6,9 +6,6 @@ import { login } from '../store/authSlice'
 import LoginForm from '../components/LoginForm'
 import { isAdminUser } from '@/utils/auth'
 
-/**
- * Login Page – Trang đăng nhập (orchestrator).
- */
 const LoginPage = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -35,8 +32,11 @@ const LoginPage = () => {
 
   return (
     <>
-      <h2 className="text-3xl font-bold text-gray-900 mb-5">Login to Zivo</h2>
-      
+      <h1 className="text-3xl font-extrabold mb-2 text-[#2B3E52]">Đăng nhập</h1>
+      <p className="text-[#9EA6BC] mb-8 font-medium">
+        Nhập email và mật khẩu của bạn để đăng nhập
+      </p>
+
       <LoginForm
         form={form}
         onChange={handleChange}
@@ -44,11 +44,12 @@ const LoginPage = () => {
         isLoading={isLoading}
       />
 
-      <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-        <Link to="/register" className="inline-block w-full border border-primary-600 text-primary-600 font-semibold py-3 rounded-full hover:bg-primary-50 transition cursor-pointer">
-          Tạo tài khoản mới
+      <p className="mt-8 text-center text-sm text-[#9EA6BC]">
+        Bạn chưa có tài khoản?{' '}
+        <Link to="/register" className="text-primary-600 font-bold hover:underline">
+          Đăng ký
         </Link>
-      </div>
+      </p>
     </>
   )
 }

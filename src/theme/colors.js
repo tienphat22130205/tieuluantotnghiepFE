@@ -34,11 +34,20 @@ export const COLORS = {
 
   success: '#10B981',       // Emerald – Thành công
   error: '#EF4444',         // Red – Lỗi
+  errorLight: '#FEE2E2',    // Nền nhẹ cho trạng thái lỗi
   warning: '#F59E0B',       // Amber – Cảnh báo
   info: '#3B82F6',          // Blue – Thông tin
 
   like: '#EF4444',          // Màu trái tim (Like)
   online: '#10B981',        // Trạng thái online
+
+  // Admin palette
+  adminSidebarBg: '#F3F6FB',
+  adminSidebarText: '#334155',
+  adminSidebarActive: '#1F3A60',
+  adminSidebarActiveHover: '#17304F',
+  adminPanelBg: '#FFFFFF',
+  adminOverlay: 'rgba(15, 23, 42, 0.35)',
 }
 
 export default COLORS

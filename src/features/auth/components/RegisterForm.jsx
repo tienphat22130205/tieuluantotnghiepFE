@@ -1,8 +1,5 @@
-import { Input, Button } from '@/components/ui'
+import { useState } from 'react'
 
-/**
- * RegisterForm – Form đăng ký gồm firstName, lastName, email, phone, dateOfBirth, mật khẩu, xác nhận mật khẩu.
- */
 const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
   // Generate day options (1-31)
   const dayOptions = Array.from({ length: 31 }, (_, i) => i + 1)
@@ -29,124 +26,136 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
   const yearOptions = Array.from({ length: 88 }, (_, i) => currentYear - 13 - i)
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <Input
-          name="firstName"
-          placeholder="Họ"
-          value={form.firstName}
-          onChange={onChange}
-          required
-          className="!py-4 !text-[15px] !rounded-full !border-gray-300 !px-5"
-        />
+    <form className="space-y-4" onSubmit={onSubmit}>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Họ</label>
+          <input
+            name="firstName"
+            placeholder="Họ"
+            value={form.firstName}
+            onChange={onChange}
+            required
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+          />
+        </div>
+        <div>
+          <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Tên</label>
+          <input
+            name="lastName"
+            placeholder="Tên"
+            value={form.lastName}
+            onChange={onChange}
+            required
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+          />
+        </div>
+      </div>
 
-        <Input
-          name="lastName"
-          placeholder="Tên"
-          value={form.lastName}
+      <div>
+        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Email</label>
+        <input
+          name="email"
+          type="email"
+          placeholder="Nhập email"
+          value={form.email}
           onChange={onChange}
           required
-          className="!py-4 !text-[15px] !rounded-full !border-gray-300 !px-5"
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
         />
       </div>
 
-      <Input
-        name="email"
-        type="email"
-        placeholder="Email"
-        value={form.email}
-        onChange={onChange}
-        required
-        className="!py-4 !text-[15px] !rounded-full !border-gray-300 !px-5"
-      />
+      <div>
+        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Số điện thoại</label>
+        <input
+          name="phone"
+          type="tel"
+          placeholder="Số điện thoại"
+          value={form.phone}
+          onChange={onChange}
+          required
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+        />
+      </div>
 
-      <Input
-        name="phone"
-        type="tel"
-        placeholder="Số điện thoại"
-        value={form.phone}
-        onChange={onChange}
-        required
-        className="!py-4 !text-[15px] !rounded-full !border-gray-300 !px-5"
-      />
+      {/* Date of Birth selectors */}
+      <div>
+        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Ngày sinh</label>
+        <div className="grid grid-cols-3 gap-3">
+          <select
+            name="day"
+            value={form.day || ''}
+            onChange={onChange}
+            required
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all text-sm bg-white cursor-pointer"
+          >
+            <option value="">Ngày</option>
+            {dayOptions.map((day) => (
+              <option key={day} value={day}>{day}</option>
+            ))}
+          </select>
 
-        {/* Date of Birth selectors */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Ngày sinh</label>
-          <div className="grid grid-cols-3 gap-2.5">
-            {/* Day */}
-            <select
-              name="day"
-              value={form.day || ''}
-              onChange={onChange}
-              required
-              className="block w-full rounded-full border border-gray-300 bg-white px-5 py-4 text-sm text-gray-900 focus:border-primary-600 focus:outline-none"
-            >
-              <option value="">Ngày</option>
-              {dayOptions.map((day) => (
-                <option key={day} value={day}>
-                  {day}
-                </option>
-              ))}
-            </select>
+          <select
+            name="month"
+            value={form.month || ''}
+            onChange={onChange}
+            required
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all text-sm bg-white cursor-pointer"
+          >
+            <option value="">Tháng</option>
+            {monthOptions.map((month) => (
+              <option key={month.value} value={month.value}>{month.label}</option>
+            ))}
+          </select>
 
-            {/* Month */}
-            <select
-              name="month"
-              value={form.month || ''}
-              onChange={onChange}
-              required
-              className="block w-full rounded-full border border-gray-300 bg-white px-5 py-4 text-sm text-gray-900 focus:border-primary-600 focus:outline-none"
-            >
-              <option value="">Tháng</option>
-              {monthOptions.map((month) => (
-                <option key={month.value} value={month.value}>
-                  {month.label}
-                </option>
-              ))}
-            </select>
-
-            {/* Year */}
-            <select
-              name="year"
-              value={form.year || ''}
-              onChange={onChange}
-              required
-              className="block w-full rounded-full border border-gray-300 bg-white px-5 py-4 text-sm text-gray-900 focus:border-primary-600 focus:outline-none"
-            >
-              <option value="">Năm</option>
-              {yearOptions.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            name="year"
+            value={form.year || ''}
+            onChange={onChange}
+            required
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all text-sm bg-white cursor-pointer"
+          >
+            <option value="">Năm</option>
+            {yearOptions.map((year) => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
         </div>
+      </div>
 
-      <Input
-        name="password"
-        type="password"
-        placeholder="Mật khẩu mới"
-        value={form.password}
-        onChange={onChange}
-        required
-        className="!py-4 !text-[15px] !rounded-full !border-gray-300 !px-5"
-      />
+      <div>
+        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Mật khẩu</label>
+        <input
+          name="password"
+          type="password"
+          placeholder="Mật khẩu"
+          value={form.password}
+          onChange={onChange}
+          required
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+        />
+      </div>
 
-      <Input
-        name="confirmPassword"
-        type="password"
-        placeholder="Nhập lại mật khẩu"
-        value={form.confirmPassword}
-        onChange={onChange}
-        required
-        className="!py-4 !text-[15px] !rounded-full !border-gray-300 !px-5"
-      />
+      <div>
+        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Xác nhận mật khẩu</label>
+        <input
+          name="confirmPassword"
+          type="password"
+          placeholder="Nhập lại mật khẩu"
+          value={form.confirmPassword}
+          onChange={onChange}
+          required
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+        />
+      </div>
 
-      <Button type="submit" fullWidth isLoading={isLoading} className="!py-3.5 !text-base !rounded-full !font-bold">
-        Đăng ký
-      </Button>
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full bg-primary-600 text-white font-bold py-3 rounded-lg shadow hover:bg-primary-700 hover:shadow-md transition-colors mt-2 flex justify-center disabled:opacity-70 cursor-pointer"
+      >
+        {isLoading ? 'Đang tạo tài khoản...' : 'ĐĂNG KÝ'}
+      </button>
     </form>
   )
 }

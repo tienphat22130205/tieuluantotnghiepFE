@@ -106,15 +106,18 @@ const App = () => {
           <Route path="/post/:postId/edit" element={<CreatePostPage />} />
           <Route path="/profile/:userId" element={<ProfilePage />} />
           <Route path="/post/:postId" element={<PostDetailPage />} />
-          <Route
-            path="/admin"
-            element={
+        </Route>
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
               <AdminRoute>
                 <AdminDashboardPage />
               </AdminRoute>
-            }
-          />
-        </Route>
+            </ProtectedRoute>
+          }
+        />
 
         {/* ── 404 – Fallback ── */}
         <Route

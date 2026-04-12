@@ -1,80 +1,156 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchFeed, loadMockPosts } from '@/features/post/store/postSlice'
-import { mockFriends, mockPosts, mockToken } from '@/utils/mockData'
-import AdminHeader from '../components/AdminHeader'
-import OverviewTab from '../components/OverviewTab'
-import TweetAnalytics from '../components/TweetAnalytics'
-import LikeAnalytics from '../components/LikeAnalytics'
-import UserAnalytics from '../components/UserAnalytics'
-import UserManagement from '../components/UserManagement'
-
-const tabs = [
-  { id: 'overview', label: 'Tổng quan' },
-  { id: 'tweet-analytics', label: 'Tweet Analytics' },
-  { id: 'like-analytics', label: 'Like Analytics' },
-  { id: 'user-analytics', label: 'User Analytics' },
-  { id: 'user-management', label: 'User Management' },
-]
+import { useNavigate } from 'react-router-dom'
+import {
+  AdminSidebar,
+  AdminSummaryCards,
+  AdminTopbar,
+  CommentsManagementPanel,
+  DocumentStatsPanel,
+  PostsModerationPanel,
+  UsersManagementPanel,
+} from '../components'
+import {
+  adminMenuItems,
+  initialComments,
+  initialDocuments,
+  initialPosts,
+  initialUsers,
+} from '../data/adminMockData'
+import { logout } from '@/features/auth/store/authSlice'
+import { COLORS } from '@/theme/colors'
 
 const AdminDashboardPage = () => {
   const dispatch = useDispatch()
-  const [activeTab, setActiveTab] = useState('overview')
-  const { posts, isLoading } = useSelector((state) => state.posts)
-  const { token } = useSelector((state) => state.auth)
+  const navigate = useNavigate()
+  const { user } = useSelector((state) => state.auth)
 
-  const isDemoMode = token?.startsWith(mockToken)
+  const [activeSection, setActiveSection] = useState('users')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
+  const [users, setUsers] = useState(initialUsers)
+  const [posts, setPosts] = useState(initialPosts)
+  const [comments, setComments] = useState(initialComments)
+  const [documents] = useState(initialDocuments)
 
-  useEffect(() => {
-    if (posts.length > 0) return
+  const handleSelectSection = (section) => {
+    setActiveSection(section)
+    setIsSidebarOpen(false)
+  }
 
-    if (isDemoMode) {
-      dispatch(loadMockPosts(mockPosts))
+  const handleLogout = () => {
+    dispatch(logout())
+    navigate('/login')
+  }
+
+  const handleToggleMenu = () => {
+    const isDesktopViewport = window.matchMedia('(min-width: 1024px)').matches
+
+    if (isDesktopViewport) {
+      setIsDesktopCollapsed((prev) => !prev)
       return
     }
 
-    dispatch(fetchFeed({ page: 1, limit: 20 }))
-  }, [dispatch, isDemoMode, posts.length])
+    setIsSidebarOpen((prev) => !prev)
+  }
 
-  const analytics = useMemo(() => {
-    const totalPosts = posts.length
-    const totalLikes = posts.reduce((sum, post) => sum + (post.likes?.length || 0), 0)
-    const totalComments = posts.reduce((sum, post) => sum + (post.comments_count || 0), 0)
-    const totalUsers = new Set(posts.map((post) => post.user?._id).filter(Boolean)).size + mockFriends.length
+  const handleRoleChange = (userId, role) => {
+    setUsers((prevUsers) => prevUsers.map((user) => (user.id === userId ? { ...user, role } : user)))
+  }
 
-    return {
-      totalPosts,
-      totalLikes,
-      totalComments,
-      totalUsers,
-      avgEngagement: totalPosts ? Math.round((totalLikes + totalComments) / totalPosts) : 0,
+  const handleToggleUserStatus = (userId) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((user) => {
+        if (user.id !== userId) return user
+        const nextStatus = user.status === 'active' ? 'locked' : 'active'
+        return { ...user, status: nextStatus }
+      })
+    )
+  }
+
+  const handleAddPost = (postForm) => {
+    const newPost = {
+      id: `p${Date.now()}`,
+      author: postForm.author.trim(),
+      content: postForm.content.trim(),
+      documentTitle: postForm.documentTitle.trim(),
+      status: 'pending',
+      documentValid: true,
+      createdAt: new Date().toLocaleDateString('vi-VN'),
     }
-  }, [posts])
+
+    setPosts((prevPosts) => [newPost, ...prevPosts])
+  }
+
+  const handleUpdatePost = (postId, changes) => {
+    setPosts((prevPosts) => prevPosts.map((post) => (post.id === postId ? { ...post, ...changes } : post)))
+  }
+
+  const handleDeletePost = (postId) => {
+    setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId))
+    setComments((prevComments) => prevComments.filter((comment) => comment.postId !== postId))
+  }
+
+  const handleDeleteComment = (commentId) => {
+    setComments((prevComments) => prevComments.filter((comment) => comment.id !== commentId))
+  }
+
+  const activePanel = useMemo(() => {
+    if (activeSection === 'users') {
+      return (
+        <UsersManagementPanel users={users} onRoleChange={handleRoleChange} onToggleStatus={handleToggleUserStatus} />
+      )
+    }
+
+    if (activeSection === 'posts') {
+      return (
+        <PostsModerationPanel
+          posts={posts}
+          onAddPost={handleAddPost}
+          onDeletePost={handleDeletePost}
+          onUpdatePost={handleUpdatePost}
+        />
+      )
+    }
+
+    if (activeSection === 'comments') {
+      return <CommentsManagementPanel comments={comments} posts={posts} onDeleteComment={handleDeleteComment} />
+    }
+
+    return <DocumentStatsPanel documents={documents} />
+  }, [activeSection, comments, documents, posts, users])
 
   return (
-    <section className="space-y-5">
-      <AdminHeader tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+    <div
+      className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#ffffff_0%,_#f5f6fa_55%)] font-sans lg:grid"
+      style={{
+        gridTemplateColumns: isDesktopCollapsed ? '88px 1fr' : '300px 1fr',
+        transition: 'grid-template-columns 320ms ease',
+        color: COLORS.text,
+        backgroundColor: COLORS.background,
+      }}
+    >
+      <AdminSidebar
+        activeSection={activeSection}
+        menuItems={adminMenuItems}
+        onSelect={handleSelectSection}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        isDesktopCollapsed={isDesktopCollapsed}
+      />
 
-      {activeTab === 'overview' && (
-        <OverviewTab analytics={analytics} posts={posts} isLoading={isLoading} />
-      )}
-
-      {activeTab === 'tweet-analytics' && (
-        <TweetAnalytics posts={posts} />
-      )}
-
-      {activeTab === 'like-analytics' && (
-        <LikeAnalytics posts={posts} />
-      )}
-
-      {activeTab === 'user-analytics' && (
-        <UserAnalytics users={mockFriends} />
-      )}
-
-      {activeTab === 'user-management' && (
-        <UserManagement users={mockFriends} />
-      )}
-    </section>
+      <main className="flex flex-col gap-4 p-3 sm:p-4 lg:p-5">
+        <AdminTopbar
+          activeSection={activeSection}
+          user={user}
+          onLogout={handleLogout}
+          onToggleMenu={handleToggleMenu}
+          isDesktopCollapsed={isDesktopCollapsed}
+        />
+        <AdminSummaryCards users={users} posts={posts} comments={comments} documents={documents} />
+        {activePanel}
+      </main>
+    </div>
   )
 }
 
