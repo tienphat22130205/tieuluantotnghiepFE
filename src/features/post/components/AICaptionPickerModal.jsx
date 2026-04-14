@@ -68,7 +68,9 @@ const AICaptionPickerModal = ({
           >
           <div className="px-5 py-4 border-b border-gray-100">
             <Dialog.Title className="text-lg font-semibold text-gray-900">Chọn caption AI</Dialog.Title>
-            <p className="text-sm text-gray-500 mt-1">Chọn nội dung phù hợp trước khi đưa vào bài viết.</p>
+            <Dialog.Description className="text-sm text-gray-500 mt-1">
+              Chọn nội dung phù hợp trước khi đưa vào bài viết.
+            </Dialog.Description>
           </div>
 
           <div className="p-5 space-y-3 overflow-y-auto max-h-[58vh]">

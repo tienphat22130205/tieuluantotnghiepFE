@@ -1,8 +1,19 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import authService from '../services/authService'
+import {
+  getAuthToken,
+  getStoredAuthUser,
+  migrateLegacyAuthStorage,
+  removeAuthToken,
+  removeStoredAuthUser,
+  setAuthToken,
+  setStoredAuthUser,
+} from '@/utils/authStorage'
 
-const storedToken = localStorage.getItem('token')
-const storedUser = localStorage.getItem('user')
+migrateLegacyAuthStorage()
+
+const storedToken = getAuthToken()
+const storedUser = getStoredAuthUser()
 
 const parseStoredUser = () => {
   if (!storedUser) return null
@@ -89,11 +100,11 @@ export const setUsername = createAsyncThunk(
       const nextToken = response?.token || currentToken
 
       if (nextToken) {
-        localStorage.setItem('token', nextToken)
+        setAuthToken(nextToken)
       }
 
       if (nextUser) {
-        localStorage.setItem('user', JSON.stringify(nextUser))
+        setStoredAuthUser(nextUser)
       }
 
       return {
@@ -118,8 +129,8 @@ export const login = createAsyncThunk(
         return rejectWithValue('Đăng nhập thất bại: dữ liệu trả về không hợp lệ')
       }
 
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      setAuthToken(data.token)
+      setStoredAuthUser(data.user)
       return data
     } catch (err) {
       return rejectWithValue(getErrorMessage(err, 'Đăng nhập thất bại'))
@@ -156,8 +167,8 @@ const authSlice = createSlice({
       state.user = null
       state.token = null
       state.error = null
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      removeAuthToken()
+      removeStoredAuthUser()
     },
     // Xóa lỗi
     clearError: (state) => {
@@ -231,7 +242,7 @@ const authSlice = createSlice({
       // ── GetMe ──
       .addCase(getMe.fulfilled, (state, action) => {
         state.user = action.payload
-        localStorage.setItem('user', JSON.stringify(action.payload))
+        setStoredAuthUser(action.payload)
       })
   },
 })

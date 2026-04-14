@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════
@@ -40,12 +41,20 @@
 /* ── Custom base styles ── */
 body {
   margin: 0;
-  font-family: "Segoe UI Historic", "Segoe UI", Helvetica, Arial, sans-serif;
+  font-family: "Manrope", "Segoe UI", sans-serif;
   font-weight: 500;
   color: #1a1a1a;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #F9FAFB;
+  background-color: #F1F5F9;
+  background-image: radial-gradient(circle at 0% 0%, rgba(96, 165, 250, 0.08), transparent 40%);
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: "Space Grotesk", "Manrope", sans-serif;
 }
 
 /* Dark mode áp dụng toàn app khi html có class "dark" */

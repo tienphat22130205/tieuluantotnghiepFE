@@ -35,7 +35,7 @@ const PostCardHeader = ({ user, createdAt, visibility, canManage = false, onEdit
   }, [showMenu])
 
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <div className="flex items-center justify-between px-5 py-3.5">
       <div className="flex items-center gap-3">
         <Avatar
           src={user?.avatar}
@@ -50,7 +50,7 @@ const PostCardHeader = ({ user, createdAt, visibility, canManage = false, onEdit
           >
             {displayName}
           </Link>
-          <p className="text-xs text-gray-400">{timeAgo(createdAt)} | {visibilityLabel}</p>
+          <p className="text-xs text-slate-400">{timeAgo(createdAt)} | {visibilityLabel}</p>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ const PostCardHeader = ({ user, createdAt, visibility, canManage = false, onEdit
           <button
             type="button"
             onClick={() => setShowMenu((prev) => !prev)}
-            className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
+            className="rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
           >
             <HiOutlineDotsHorizontal size={20} />
           </button>

@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
   // Generate day options (1-31)
   const dayOptions = Array.from({ length: 31 }, (_, i) => i + 1)
@@ -29,31 +27,31 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
     <form className="space-y-4" onSubmit={onSubmit}>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Họ</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Họ</label>
           <input
             name="firstName"
             placeholder="Họ"
             value={form.firstName}
             onChange={onChange}
             required
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
           />
         </div>
         <div>
-          <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Tên</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Tên</label>
           <input
             name="lastName"
             placeholder="Tên"
             value={form.lastName}
             onChange={onChange}
             required
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
           />
         </div>
       </div>
 
       <div>
-        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Email</label>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
         <input
           name="email"
           type="email"
@@ -61,12 +59,12 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
           value={form.email}
           onChange={onChange}
           required
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
         />
       </div>
 
       <div>
-        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Số điện thoại</label>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Số điện thoại</label>
         <input
           name="phone"
           type="tel"
@@ -74,20 +72,20 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
           value={form.phone}
           onChange={onChange}
           required
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
         />
       </div>
 
       {/* Date of Birth selectors */}
       <div>
-        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Ngày sinh</label>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Ngày sinh</label>
         <div className="grid grid-cols-3 gap-3">
           <select
             name="day"
             value={form.day || ''}
             onChange={onChange}
             required
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all text-sm bg-white cursor-pointer"
+            className="w-full cursor-pointer rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
           >
             <option value="">Ngày</option>
             {dayOptions.map((day) => (
@@ -100,7 +98,7 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
             value={form.month || ''}
             onChange={onChange}
             required
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all text-sm bg-white cursor-pointer"
+            className="w-full cursor-pointer rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
           >
             <option value="">Tháng</option>
             {monthOptions.map((month) => (
@@ -113,7 +111,7 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
             value={form.year || ''}
             onChange={onChange}
             required
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all text-sm bg-white cursor-pointer"
+            className="w-full cursor-pointer rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
           >
             <option value="">Năm</option>
             {yearOptions.map((year) => (
@@ -124,7 +122,7 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
       </div>
 
       <div>
-        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Mật khẩu</label>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Mật khẩu</label>
         <input
           name="password"
           type="password"
@@ -132,12 +130,12 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
           value={form.password}
           onChange={onChange}
           required
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
         />
       </div>
 
       <div>
-        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Xác nhận mật khẩu</label>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Xác nhận mật khẩu</label>
         <input
           name="confirmPassword"
           type="password"
@@ -145,14 +143,14 @@ const RegisterForm = ({ form, onChange, onSubmit, isLoading }) => {
           value={form.confirmPassword}
           onChange={onChange}
           required
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
         />
       </div>
 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-primary-600 text-white font-bold py-3 rounded-lg shadow hover:bg-primary-700 hover:shadow-md transition-colors mt-2 flex justify-center disabled:opacity-70 cursor-pointer"
+        className="mt-2 flex w-full justify-center rounded-full bg-primary-600 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isLoading ? 'Đang tạo tài khoản...' : 'ĐĂNG KÝ'}
       </button>

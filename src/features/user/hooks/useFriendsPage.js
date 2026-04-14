@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import friendService from '../services/friendService'
 import { extractItems, getUserId } from '@/utils/friendship'
@@ -31,12 +32,17 @@ const normalizeRequest = (request, type) => {
 }
 
 const useFriendsPage = () => {
+  const { user: currentUser } = useSelector((state) => state.auth)
   const [incomingRequests, setIncomingRequests] = useState([])
   const [sentRequests, setSentRequests] = useState([])
   const [friends, setFriends] = useState([])
+  const [suggestions, setSuggestions] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [actingRequestId, setActingRequestId] = useState(null)
   const [actingFriendId, setActingFriendId] = useState(null)
+  const [actingSuggestionId, setActingSuggestionId] = useState(null)
+
+  const currentUserId = getUserId(currentUser)
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -47,29 +53,61 @@ const useFriendsPage = () => {
         friendService.getMyFriends(),
       ])
 
-      setIncomingRequests(
-        extractItems(incomingRes)
-          .map((item) => normalizeRequest(item, 'incoming'))
-          .filter(Boolean)
-      )
+      const [followersRes, followingRes] = await Promise.allSettled([
+        friendService.getMyFollowers(),
+        friendService.getMyFollowing(),
+      ])
 
-      setSentRequests(
-        extractItems(sentRes)
-          .map((item) => normalizeRequest(item, 'sent'))
-          .filter(Boolean)
-      )
+      const normalizedIncoming = extractItems(incomingRes)
+        .map((item) => normalizeRequest(item, 'incoming'))
+        .filter(Boolean)
 
-      setFriends(
-        extractItems(friendsRes)
-          .map((item) => normalizeUser(item.user || item.friend || item))
-          .filter(Boolean)
-      )
+      const normalizedSent = extractItems(sentRes)
+        .map((item) => normalizeRequest(item, 'sent'))
+        .filter(Boolean)
+
+      const normalizedFriends = extractItems(friendsRes)
+        .map((item) => normalizeUser(item.user || item.friend || item))
+        .filter(Boolean)
+
+      const followersItems = followersRes.status === 'fulfilled'
+        ? extractItems(followersRes.value)
+        : []
+      const followingItems = followingRes.status === 'fulfilled'
+        ? extractItems(followingRes.value)
+        : []
+
+      const friendIds = new Set(normalizedFriends.map((item) => String(getUserId(item))))
+      const requestUserIds = new Set([
+        ...normalizedIncoming.map((item) => String(getUserId(item.user))),
+        ...normalizedSent.map((item) => String(getUserId(item.user))),
+      ])
+
+      const suggestionMap = new Map()
+      ;[...followersItems, ...followingItems]
+        .map((item) => normalizeUser(item.user || item.follower || item.following || item.friend || item))
+        .filter(Boolean)
+        .forEach((item) => {
+          const id = String(getUserId(item))
+          if (!id) return
+          if (currentUserId && id === String(currentUserId)) return
+          if (friendIds.has(id)) return
+          if (requestUserIds.has(id)) return
+          if (!suggestionMap.has(id)) {
+            suggestionMap.set(id, item)
+          }
+        })
+
+      setIncomingRequests(normalizedIncoming)
+      setSentRequests(normalizedSent)
+      setFriends(normalizedFriends)
+      setSuggestions(Array.from(suggestionMap.values()))
     } catch (err) {
       toast.error(err?.message || FRIEND_MESSAGES.loadFriendsDataFailed)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [currentUserId])
 
   useEffect(() => {
     loadData()
@@ -98,6 +136,7 @@ const useFriendsPage = () => {
       if (action === 'declined') {
         toast.success(FRIEND_MESSAGES.declineRequestSuccess)
       }
+        window.dispatchEvent(new Event('friends:incoming-updated'))
     } catch (err) {
       toast.error(err?.message || FRIEND_MESSAGES.actionFailed)
     } finally {
@@ -135,17 +174,57 @@ const useFriendsPage = () => {
     }
   }
 
+  const handleSendRequestFromSuggestion = async (targetUserId) => {
+    if (!targetUserId) return
+
+    const normalizedTargetId = String(targetUserId)
+    setActingSuggestionId(normalizedTargetId)
+    try {
+      const response = await friendService.sendRequest(normalizedTargetId)
+      const selectedUser = suggestions.find((item) => String(getUserId(item)) === normalizedTargetId)
+      const requestId =
+        response?.request?._id
+        || response?.request?.id
+        || response?.data?.requestId
+        || response?.requestId
+        || `temp-${normalizedTargetId}`
+
+      setSuggestions((prev) => prev.filter((item) => String(getUserId(item)) !== normalizedTargetId))
+
+      if (selectedUser) {
+        setSentRequests((prev) => [
+          {
+            _id: String(requestId),
+            status: 'pending',
+            user: selectedUser,
+          },
+          ...prev,
+        ])
+      }
+
+      toast.success(FRIEND_MESSAGES.sendRequestSuccess)
+        window.dispatchEvent(new Event('friends:incoming-updated'))
+    } catch (err) {
+      toast.error(err?.message || FRIEND_MESSAGES.actionFailed)
+    } finally {
+      setActingSuggestionId(null)
+    }
+  }
+
   return {
     incomingRequests,
     sentRequests,
     friends,
+    suggestions,
     isLoading,
     actingRequestId,
     actingFriendId,
+    actingSuggestionId,
     reloadFriendsData: loadData,
     handleRespondRequest,
     handleCancelSentRequest,
     handleUnfriend,
+    handleSendRequestFromSuggestion,
   }
 }
 

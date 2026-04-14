@@ -1,12 +1,12 @@
 import { useState } from 'react'
 
 const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false)
 
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
       <div>
-        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Email</label>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
         <input
           name="email"
           type="email"
@@ -14,11 +14,11 @@ const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
           value={form.email}
           onChange={onChange}
           required
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
         />
       </div>
       <div>
-        <label className="block mb-1 text-xs font-semibold text-[#3A416F] uppercase">Mật khẩu</label>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Mật khẩu</label>
         <input
           name="password"
           type="password"
@@ -26,7 +26,7 @@ const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
           value={form.password}
           onChange={onChange}
           required
-          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 outline-none transition-all placeholder:text-gray-400 text-sm bg-white"
+          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
         />
       </div>
 
@@ -45,13 +45,13 @@ const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
             }`}
           />
         </button>
-        <span className="text-sm font-medium text-[#3A416F]">Ghi nhớ đăng nhập</span>
+        <span className="text-sm font-medium text-slate-600">Ghi nhớ đăng nhập</span>
       </div>
 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-primary-600 text-white font-bold py-3 rounded-lg shadow hover:bg-primary-700 hover:shadow-md transition-colors mt-2 flex justify-center disabled:opacity-70 cursor-pointer"
+        className="mt-2 flex w-full justify-center rounded-full bg-primary-600 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isLoading ? 'Đang đăng nhập...' : 'ĐĂNG NHẬP'}
       </button>

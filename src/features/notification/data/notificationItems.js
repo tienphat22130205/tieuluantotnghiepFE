@@ -1,0 +1,38 @@
+export const NOTIFICATION_ITEMS = [
+  {
+    id: 'noti-001',
+    type: 'friend',
+    title: 'Lê Minh Đức đã gửi lời mời kết bạn',
+    description: 'Bạn có thể chấp nhận lời mời trong trang Bạn bè.',
+    createdAt: '2026-04-14T08:25:00.000Z',
+    actionLabel: 'Xem lời mời',
+    actionPath: '/friends',
+  },
+  {
+    id: 'noti-002',
+    type: 'comment',
+    title: 'Trần Thuỳ Linh đã bình luận bài viết của bạn',
+    description: '"Bài này hay quá, cho mình xin thêm chi tiết nha!"',
+    createdAt: '2026-04-14T07:52:00.000Z',
+    actionLabel: 'Mở bài viết',
+    actionPath: '/',
+  },
+  {
+    id: 'noti-003',
+    type: 'follow',
+    title: 'Hoàng Anh Tuyết vừa theo dõi bạn',
+    description: 'Cập nhật hồ sơ để mọi người biết thêm về bạn.',
+    createdAt: '2026-04-13T18:11:00.000Z',
+    actionLabel: 'Xem hồ sơ',
+    actionPath: '/friends',
+  },
+  {
+    id: 'noti-004',
+    type: 'system',
+    title: 'Zivo cập nhật tính năng tìm kiếm mới',
+    description: 'Bạn có thể tìm người dùng nhanh hơn từ thanh tìm kiếm chính.',
+    createdAt: '2026-04-13T11:20:00.000Z',
+    actionLabel: 'Khám phá',
+    actionPath: '/search',
+  },
+]

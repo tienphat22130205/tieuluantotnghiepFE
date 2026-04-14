@@ -13,6 +13,7 @@ import {
   AiOutlineMessage,
   AiOutlineDashboard,
   AiOutlineMenu,
+  AiOutlineSearch,
   AiOutlineClose,
   AiOutlineSetting,
   AiOutlineGlobal,
@@ -22,19 +23,22 @@ import {
 import { FaUserFriends } from 'react-icons/fa'
 import { Avatar } from '@/components/ui'
 import { useAuth } from '@/features/auth'
+import useNotifications from '@/features/notification/hooks/useNotifications'
+import friendService from '@/features/user/services/friendService'
+import { extractItems } from '@/utils/friendship'
 import ChatConversationsPanel from '@/features/chat/components/ChatConversationsPanel'
 import { isAdminUser } from '@/utils/auth'
 
 const TRANSLATIONS = {
   vi: {
     home: 'Trang chủ',
+    notifications: 'Thông báo',
     friends: 'Bạn bè',
     create: 'Đăng bài',
-    notifications: 'Thông báo',
     admin: 'Quản trị',
-    searchPlaceholder: 'Tìm kiếm trên Zivo',
     messages: 'Tin nhắn',
     logout: 'Đăng xuất',
+    quickPost: 'Đăng',
     menu: 'Menu',
     close: 'Đóng',
     viewProfile: 'Xem trang cá nhân của bạn',
@@ -46,13 +50,13 @@ const TRANSLATIONS = {
   },
   en: {
     home: 'Home',
+    notifications: 'Notifications',
     friends: 'Friends',
     create: 'Create',
-    notifications: 'Notifications',
     admin: 'Admin',
-    searchPlaceholder: 'Search on Zivo',
     messages: 'Messages',
     logout: 'Log out',
+    quickPost: 'Post',
     menu: 'Menu',
     close: 'Close',
     viewProfile: 'View your profile',
@@ -88,10 +92,12 @@ const getStoredPreferences = (storageKey) => {
 
 const Navbar = () => {
   const { user, handleLogout } = useAuth()
+  const { unreadCount, refreshUnreadCount } = useNotifications({ fetchList: false, fetchUnreadCount: true })
   const location = useLocation()
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(true)
+  const [incomingRequestCount, setIncomingRequestCount] = useState(0)
 
   const profileUserId = user?.id || user?._id
   const preferenceStorageKey = profileUserId ? `ui-preferences:${profileUserId}` : null
@@ -122,16 +128,6 @@ const Navbar = () => {
   }, [isMobileMenuOpen])
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      const nextPrefs = getStoredPreferences(preferenceStorageKey)
-      setLanguage(nextPrefs.language)
-      setIsDarkMode(nextPrefs.isDarkMode)
-    }, 0)
-
-    return () => clearTimeout(timeoutId)
-  }, [preferenceStorageKey])
-
-  useEffect(() => {
     document.documentElement.lang = language
     document.documentElement.classList.toggle('dark', isDarkMode)
   }, [language, isDarkMode])
@@ -148,11 +144,46 @@ const Navbar = () => {
     )
   }, [preferenceStorageKey, language, isDarkMode])
 
+  useEffect(() => {
+    const loadIncomingRequestCount = async () => {
+      try {
+        const response = await friendService.getIncomingRequests()
+        const items = extractItems(response)
+        setIncomingRequestCount(items.length)
+      } catch {
+        setIncomingRequestCount(0)
+      }
+    }
+
+    const refreshAllBadges = () => {
+      refreshUnreadCount()
+      loadIncomingRequestCount()
+    }
+
+    refreshAllBadges()
+
+    const intervalId = window.setInterval(refreshAllBadges, 20000)
+    const onFocus = () => refreshAllBadges()
+    const onFriendEvent = () => loadIncomingRequestCount()
+    const onNotificationEvent = () => refreshUnreadCount()
+
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('friends:incoming-updated', onFriendEvent)
+    window.addEventListener('notifications:unread-updated', onNotificationEvent)
+
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('friends:incoming-updated', onFriendEvent)
+      window.removeEventListener('notifications:unread-updated', onNotificationEvent)
+    }
+  }, [refreshUnreadCount])
+
   const navLinks = [
     { path: '/', icon: AiOutlineHome, activeIcon: AiFillHome, labelKey: 'home' },
+    { path: '/notifications', icon: AiOutlineBell, activeIcon: AiFillBell, labelKey: 'notifications' },
     { path: '/friends', icon: AiOutlineTeam, activeIcon: FaUserFriends, labelKey: 'friends' },
     { path: '/create', icon: AiOutlinePlusCircle, activeIcon: AiFillPlusCircle, labelKey: 'create' },
-    { path: '/notifications', icon: AiOutlineBell, activeIcon: AiFillBell, labelKey: 'notifications' },
     ...(isAdminUser(user)
       ? [{ path: '/admin', icon: AiOutlineDashboard, activeIcon: AiOutlineDashboard, labelKey: 'admin' }]
       : []),
@@ -160,77 +191,126 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between h-14 px-4">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-15 h-15 rounded-lg overflow-hidden flex items-center justify-center">
-                <img src="/Zlogo.png" alt="Zivo" className="w-full h-full object-contain" />
-              </div>
-              <span className="text-lg font-bold text-gray-900 hidden sm:block">Zivo</span>
-            </Link>
-
-            <div className="hidden md:flex">
-              <input
-                type="text"
-                placeholder={text.searchPlaceholder}
-                className="px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:bg-white transition w-64"
-              />
+      <nav className="hidden md:flex fixed left-0 top-0 bottom-0 z-50 w-72 border-r border-slate-200 bg-white/95 backdrop-blur-sm">
+        <div className="flex h-full w-full flex-col px-4 py-5">
+          <Link to="/" className="mb-6 flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-100">
+            <div className="h-11 w-11 overflow-hidden rounded-full bg-slate-100">
+              <img src="/Zlogo.png" alt="Zivo" className="h-full w-full object-cover" />
             </div>
-          </div>
+            <span className="text-xl font-black tracking-tight text-slate-900">Zivo</span>
+          </Link>
 
-          <div className="hidden md:flex items-center gap-10">
+          <div className="space-y-1">
             {navLinks.map(({ path, icon: Icon, activeIcon: ActiveIcon, labelKey }) => {
               const active = isActive(path)
               const label = text[labelKey] || labelKey
+              const isNotificationLink = path === '/notifications'
+              const isFriendLink = path === '/friends'
 
               return (
                 <Link
                   key={path}
                   to={path}
                   title={label}
-                  className={`relative flex items-center justify-center w-30 h-12 rounded-lg transition-all cursor-pointer ${
-                    active ? 'text-primary-600' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                  className={`group flex items-center gap-4 rounded-xl px-4 py-3 text-[15px] font-semibold transition ${
+                    active
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
-                  {active ? <ActiveIcon size={28} /> : <Icon size={29} />}
-                  {active && <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-600 rounded-full" />}
+                  <span className="relative inline-flex">
+                    {active ? <ActiveIcon size={22} /> : <Icon size={22} />}
+                    {isNotificationLink && unreadCount > 0 && (
+                      <span className="absolute -right-2 -top-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                    {isFriendLink && incomingRequestCount > 0 && (
+                      <span className="absolute -right-2 -top-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white">
+                        {incomingRequestCount > 99 ? '99+' : incomingRequestCount}
+                      </span>
+                    )}
+                  </span>
+                  <span>{label}</span>
                 </Link>
               )
             })}
-          </div>
 
-          <div className="hidden md:flex items-center gap-2">
-            <Link to={profilePath} className="flex items-center gap-2 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition cursor-pointer">
-              <Avatar src={user?.avatar} name={displayName} size="sm" />
-              <span className="text-sm font-medium text-gray-700">{displayName}</span>
-            </Link>
             <button
               type="button"
               onClick={() => setIsChatOpen((prev) => !prev)}
-              title={text.messages}
-              className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition cursor-pointer"
+              className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-[15px] font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
             >
-              <AiOutlineMessage size={21} />
+              <AiOutlineMessage size={22} />
+              <span>{text.messages}</span>
             </button>
+          </div>
+
+          <Link
+            to="/create"
+            className="mt-5 inline-flex items-center justify-center rounded-full bg-primary-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-700"
+          >
+            {text.quickPost}
+          </Link>
+
+          <div className="mt-auto space-y-2 border-t border-slate-200 pt-4">
+            <Link to={profilePath} className="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-100">
+              <Avatar src={user?.avatar} name={displayName} size="sm" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900">{displayName || text.unknownUser}</p>
+                <p className="truncate text-xs text-slate-500">@{user?.username || 'zivo'}</p>
+              </div>
+            </Link>
+
             <button
               type="button"
               onClick={handleLogout}
               title={text.logout}
-              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
             >
-              <AiOutlineLogout size={20} />
+              <AiOutlineLogout size={18} />
+              {text.logout}
             </button>
           </div>
+        </div>
+      </nav>
 
-          <button
-            type="button"
-            className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer"
-            aria-label={text.openMenu}
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <AiOutlineMenu size={24} />
-          </button>
+      <nav className="md:hidden fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
+        <div className="flex items-center justify-between h-14 px-4">
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-100">
+              <img src="/Zlogo.png" alt="Zivo" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-base font-bold text-gray-900">Zivo</span>
+          </Link>
+
+          <div className="flex items-center gap-1">
+            <Link
+              to="/search"
+              aria-label="Mở trang tìm kiếm"
+              className="rounded-lg p-2 text-gray-700 transition hover:bg-gray-100"
+            >
+              <AiOutlineSearch size={22} />
+            </Link>
+
+            <button
+              type="button"
+              className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer"
+              aria-label={text.messages}
+              onClick={() => setIsChatOpen(true)}
+            >
+              <AiOutlineMessage size={22} />
+            </button>
+
+            <button
+              type="button"
+              className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer"
+              aria-label={text.openMenu}
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <AiOutlineMenu size={24} />
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -241,6 +321,8 @@ const Navbar = () => {
           {navLinks.map(({ path, icon: Icon, activeIcon: ActiveIcon, labelKey }) => {
             const active = isActive(path)
             const label = text[labelKey] || labelKey
+            const isNotificationLink = path === '/notifications'
+            const isFriendLink = path === '/friends'
 
             return (
               <Link
@@ -249,7 +331,19 @@ const Navbar = () => {
                 title={label}
                 className="flex flex-col items-center justify-center flex-1 h-full gap-0.5 cursor-pointer"
               >
-                {active ? <ActiveIcon size={24} className="text-primary-600" /> : <Icon size={24} className="text-gray-500" />}
+                <span className="relative inline-flex">
+                  {active ? <ActiveIcon size={24} className="text-primary-600" /> : <Icon size={24} className="text-gray-500" />}
+                  {isNotificationLink && unreadCount > 0 && (
+                    <span className="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                  {isFriendLink && incomingRequestCount > 0 && (
+                    <span className="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white">
+                      {incomingRequestCount > 9 ? '9+' : incomingRequestCount}
+                    </span>
+                  )}
+                </span>
               </Link>
             )
           })}

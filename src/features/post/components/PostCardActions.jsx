@@ -11,7 +11,7 @@ import { useMemo, useState } from 'react'
 
 /**
  * PostCardActions – Nút tương tác: Like, Comment, Share, Save.
- * Props: likesCount, commentsCount, isLiked, saved, onLike, onSave, onCommentClick
+ * Props: likesCount, commentsCount, isLiked, saved, onLike, onSave, onCommentClick, onShareClick
  */
 const PostCardActions = ({
   likesCount,
@@ -21,6 +21,7 @@ const PostCardActions = ({
   onLike,
   onSave,
   onCommentClick,
+  onShareClick,
 }) => {
   const [heartBursts, setHeartBursts] = useState([])
 
@@ -46,12 +47,12 @@ const PostCardActions = ({
   }
 
   return (
-    <div className="px-4 py-2.5 flex items-center justify-between">
+    <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
       <div className="flex items-center gap-4">
         {/* Like */}
         <motion.button
           onClick={handleLikeClick}
-          className={`flex items-center gap-1.5 transition-colors ${
+          className={`flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors ${
             isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
           } relative`}
           whileTap={{ scale: 0.88 }}
@@ -99,14 +100,17 @@ const PostCardActions = ({
         {/* Comment */}
         <button
           onClick={onCommentClick}
-          className="flex items-center gap-1.5 text-gray-500 hover:text-primary-600 transition-colors"
+          className="flex items-center gap-1.5 rounded-full px-2 py-1 text-gray-500 transition-colors hover:text-primary-600"
         >
           <AiOutlineComment size={22} />
           <span className="text-sm font-medium">{commentsCount}</span>
         </button>
 
         {/* Share */}
-        <button className="text-gray-500 hover:text-primary-600 transition-colors">
+        <button
+          onClick={onShareClick}
+          className="rounded-full px-2 py-1 text-gray-500 transition-colors hover:text-primary-600"
+        >
           <AiOutlineShareAlt size={22} />
         </button>
       </div>
@@ -114,7 +118,7 @@ const PostCardActions = ({
       {/* Bookmark / Save */}
       <button
         onClick={onSave}
-        className={`transition-colors ${
+        className={`rounded-full p-1 transition-colors ${
           saved ? 'text-primary-600' : 'text-gray-500 hover:text-primary-600'
         }`}
       >

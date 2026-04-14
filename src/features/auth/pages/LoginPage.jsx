@@ -32,8 +32,8 @@ const LoginPage = () => {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold mb-2 text-[#2B3E52]">Đăng nhập</h1>
-      <p className="text-[#9EA6BC] mb-8 font-medium">
+      <h1 className="mb-2 text-3xl font-black tracking-tight text-slate-900">Đăng nhập</h1>
+      <p className="mb-8 text-sm font-medium text-slate-500">
         Nhập email và mật khẩu của bạn để đăng nhập
       </p>
 
@@ -44,9 +44,9 @@ const LoginPage = () => {
         isLoading={isLoading}
       />
 
-      <p className="mt-8 text-center text-sm text-[#9EA6BC]">
+      <p className="mt-8 text-center text-sm text-slate-500">
         Bạn chưa có tài khoản?{' '}
-        <Link to="/register" className="text-primary-600 font-bold hover:underline">
+        <Link to="/register" className="font-bold text-primary-600 hover:underline">
           Đăng ký
         </Link>
       </p>

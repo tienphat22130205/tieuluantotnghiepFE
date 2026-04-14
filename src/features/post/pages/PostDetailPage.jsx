@@ -39,18 +39,18 @@ const PostDetailPage = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="mx-auto max-w-3xl">
       {/* Nút quay lại */}
       <Link
         to="/"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4 transition"
+        className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-800"
       >
         <AiOutlineArrowLeft size={16} />
         Quay lại
       </Link>
 
       {/* Bài viết */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <PostContent post={post} isLiked={isLiked} onLike={handleLike} />
         <CommentSection
           comments={comments}

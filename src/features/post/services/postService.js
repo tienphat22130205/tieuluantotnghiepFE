@@ -95,8 +95,16 @@ const postService = {
   // Cập nhật bài viết
   update: (postId, data) => api.patch(`/posts/${postId}`, data),
 
-  // Xóa bài viết
-  delete: (postId) => api.delete(`/posts/${postId}`),
+  // Soft delete bài viết (backend sẽ xóa cứng theo lịch)
+  softDelete: (postId) => api.delete(`/posts/${postId}`),
+
+  // Chia sẻ lại bài viết
+  sharePost: (postId, payload = {}) =>
+    api.post(`/posts/${postId}/share`, {
+      content: payload?.content || '',
+      visibility: payload?.visibility || 'public',
+      hashtags: Array.isArray(payload?.hashtags) ? payload.hashtags : [],
+    }),
 
   // Like bài viết
   likePost: async (postId) => {
@@ -142,8 +150,8 @@ const postService = {
           const fromPost = postData?.comments || postData?.post?.comments
           if (Array.isArray(fromPost)) return fromPost
           return []
-        } catch (innerErr) {
-          console.warn('Fallback getComments also failed', innerErr)
+        } catch (_innerErr) {
+          // Backend may not expose both endpoints; keep silent and return empty comments.
         }
       }
       throw error

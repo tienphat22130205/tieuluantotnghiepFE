@@ -44,7 +44,9 @@ const AIOptionsModal = ({
               >
                 <div className="px-5 py-4 border-b border-gray-100">
                   <Dialog.Title className="text-lg font-semibold text-gray-900">Tùy chọn AI</Dialog.Title>
-                  <p className="text-sm text-gray-500 mt-1">Chọn phong cách caption trước khi AI sinh nội dung.</p>
+                  <Dialog.Description className="text-sm text-gray-500 mt-1">
+                    Chọn phong cách caption trước khi AI sinh nội dung.
+                  </Dialog.Description>
                 </div>
 
                 <div className="p-5 space-y-4">

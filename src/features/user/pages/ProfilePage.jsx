@@ -9,6 +9,7 @@ import PostsTab from '../components/PostsTab'
 import AboutTab from '../components/AboutTab'
 import PhotosTab from '../components/PhotosTab'
 import FriendsTab from '../components/FriendsTab'
+import EditProfileModal from '../components/EditProfileModal'
 import useProfilePage from '../hooks/useProfilePage'
 import { PROFILE_PAGE_TEXT } from '@/constants/messages'
 
@@ -76,9 +77,9 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-5xl mx-auto">
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="mx-auto max-w-5xl">
           <CoverPhoto coverPhoto={profile.coverPhoto} isMyProfile={isMyProfile} />
 
           <ProfileInfo
@@ -94,118 +95,25 @@ const ProfilePage = () => {
             isUploadingAvatar={isUploadingAvatar}
           />
 
-          <div className="px-4 sm:px-6">
+          <div className="px-4 pb-2 sm:px-6">
             <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-        {isMyProfile && isEditingProfile && (
-          <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
-            <h3 className="text-base font-bold text-gray-900 mb-4">Chinh sua trang ca nhan</h3>
-
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1.5">Bio</label>
-                <textarea
-                  id="bio"
-                  name="bio"
-                  rows={3}
-                  value={profileForm.bio}
-                  onChange={handleProfileFormChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-600 focus:outline-none"
-                  placeholder="Viet vai dong gioi thieu ve ban..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1.5">Dia chi</label>
-                  <input
-                    id="address"
-                    name="address"
-                    value={profileForm.address}
-                    onChange={handleProfileFormChange}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-600 focus:outline-none"
-                    placeholder="123 Nguyen Hue"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1.5">Thanh pho</label>
-                  <input
-                    id="city"
-                    name="city"
-                    value={profileForm.city}
-                    onChange={handleProfileFormChange}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-600 focus:outline-none"
-                    placeholder="Ho Chi Minh"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1.5">Quoc gia</label>
-                  <input
-                    id="country"
-                    name="country"
-                    value={profileForm.country}
-                    onChange={handleProfileFormChange}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-600 focus:outline-none"
-                    placeholder="Viet Nam"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label htmlFor="lat" className="block text-sm font-medium text-gray-700 mb-1.5">Lat</label>
-                    <input
-                      id="lat"
-                      name="lat"
-                      type="number"
-                      step="any"
-                      value={profileForm.lat}
-                      onChange={handleProfileFormChange}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-600 focus:outline-none"
-                      placeholder="10.7769"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="lng" className="block text-sm font-medium text-gray-700 mb-1.5">Lng</label>
-                    <input
-                      id="lng"
-                      name="lng"
-                      type="number"
-                      step="any"
-                      value={profileForm.lng}
-                      onChange={handleProfileFormChange}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-600 focus:outline-none"
-                      placeholder="106.7009"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={handleEditProfileCancel}
-                  disabled={isSavingProfile}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-                >
-                  Huy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveProfile}
-                  disabled={isSavingProfile}
-                  className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
-                >
-                  {isSavingProfile ? 'Dang luu...' : 'Luu thay doi'}
-                </button>
-              </div>
-            </div>
-          </div>
+      <div className="mx-auto max-w-5xl px-1 py-1 sm:px-2">
+        {isMyProfile && (
+          <EditProfileModal
+            isOpen={isEditingProfile}
+            isSaving={isSavingProfile}
+            profileForm={profileForm}
+            onClose={handleEditProfileCancel}
+            onChange={handleProfileFormChange}
+            onSave={handleSaveProfile}
+          />
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="md:col-span-1 space-y-4">
             <IntroCard profile={profile} isMyProfile={isMyProfile} onEditProfile={handleEditProfileOpen} />
             <PhotosCard posts={displayedPosts} />

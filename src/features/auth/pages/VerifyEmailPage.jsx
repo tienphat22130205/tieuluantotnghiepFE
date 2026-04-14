@@ -33,9 +33,9 @@ const VerifyEmailPage = () => {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-      <h2 className="text-2xl font-bold text-gray-900">Xác minh email</h2>
-      <p className="mt-2 text-sm text-gray-600">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <h2 className="text-2xl font-black tracking-tight text-slate-900">Xác minh email</h2>
+      <p className="mt-2 text-sm text-slate-600">
         Hoàn tất bước xác thực để kích hoạt tài khoản và đăng nhập vào hệ thống.
       </p>
 
@@ -55,12 +55,12 @@ const VerifyEmailPage = () => {
         type="button"
         onClick={handleVerify}
         disabled={!token || status === 'loading' || status === 'success'}
-        className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-primary-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+        className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-primary-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-gray-300"
       >
         {status === 'loading' ? 'Đang xác minh...' : 'Xác minh email'}
       </button>
 
-      <div className="mt-4 text-center text-sm text-gray-600">
+      <div className="mt-4 text-center text-sm text-slate-600">
         <Link to="/login" className="font-medium text-primary-600 hover:underline">
           Quay lại đăng nhập
         </Link>

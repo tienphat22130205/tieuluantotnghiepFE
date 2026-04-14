@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getAuthToken, removeAuthToken, removeStoredAuthUser } from '@/utils/authStorage'
 
 const normalizeBaseUrl = (url) => {
   if (!url) return '/api'
@@ -19,7 +20,7 @@ const api = axios.create({
 // Tự động gắn token vào header mỗi request
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    const token = getAuthToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -36,8 +37,8 @@ api.interceptors.response.use(
     const status = error.response?.status
 
     if (status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      removeAuthToken()
+      removeStoredAuthUser()
       window.location.href = '/login'
     }
 

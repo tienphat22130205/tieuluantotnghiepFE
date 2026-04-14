@@ -95,16 +95,18 @@ const CreatePostPage = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        {isEditMode ? 'Chỉnh sửa bài viết' : 'Tạo bài viết mới'}
-      </h1>
+    <div className="min-h-[70vh] rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+      <div className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <h1 className="mb-1 text-2xl font-black tracking-tight text-slate-900">
+          {isEditMode ? 'Chỉnh sửa bài viết' : 'Tạo bài viết mới'}
+        </h1>
+        <p className="mb-6 text-sm text-slate-500">Chia sẻ ảnh và cảm xúc theo phong cách của bạn.</p>
 
-      {isLoadingPost && (
-        <p className="text-sm text-gray-500 mb-4">Đang tải bài viết...</p>
-      )}
+        {isLoadingPost && (
+          <p className="mb-4 text-sm text-slate-500">Đang tải bài viết...</p>
+        )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
         {!isEditMode && (
           <ImageUploader
             previews={previews}
@@ -172,7 +174,8 @@ const CreatePostPage = () => {
           onHashtagsChange={setHashtags}
           onVisibilityChange={setVisibility}
         />
-      </form>
+        </form>
+      </div>
     </div>
   )
 }

@@ -85,8 +85,8 @@ const RegisterPage = () => {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold mb-2 text-[#2B3E52]">Đăng ký</h1>
-      <p className="text-[#9EA6BC] mb-8 font-medium">
+      <h1 className="mb-2 text-3xl font-black tracking-tight text-slate-900">Đăng ký</h1>
+      <p className="mb-8 text-sm font-medium text-slate-500">
         Điền thông tin để tạo tài khoản mới.
       </p>
 
@@ -103,7 +103,7 @@ const RegisterPage = () => {
         isLoading={isLoading}
       />
 
-      <p className="mt-8 text-center text-sm text-[#9EA6BC]">
+      <p className="mt-8 text-center text-sm text-slate-500">
         Đã có tài khoản?{' '}
         <Link to="/login" className="text-primary-600 font-bold hover:underline">
           Đăng nhập
@@ -112,11 +112,11 @@ const RegisterPage = () => {
 
       {/* Verification modal logic is kept simple so it overrides the screen */}
       {registeredEmail && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-gray-100/95 px-4 py-6">
-          <div className="w-full max-w-[560px] rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl sm:p-7">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/50 px-4 py-6 backdrop-blur-sm">
+          <div className="w-full max-w-[560px] rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-7">
             <div className="mb-4 rounded-xl border border-primary-200 bg-primary-50 p-4">
-              <p className="text-sm font-semibold text-gray-900">Kiểm tra Email</p>
-              <p className="mt-1 text-sm leading-6 text-gray-700">Đã gửi xác thực tới: <b>{registeredEmail}</b></p>
+              <p className="text-sm font-semibold text-slate-900">Kiểm tra Email</p>
+              <p className="mt-1 text-sm leading-6 text-slate-700">Đã gửi xác thực tới: <b>{registeredEmail}</b></p>
             </div>
             <div className="mt-4 flex gap-2">
               <button

@@ -17,7 +17,7 @@ import {
   initialRelationshipState,
   normalizeUserCollection,
   removeUserById,
-} from '../utils/relationshipState'
+} from '@/utils/relationshipState'
 import {
   createProfileFormState,
   extractPostsPayload,
@@ -26,7 +26,7 @@ import {
   normalizePosts,
   normalizeProfile,
   withProfileIdentity,
-} from '../utils/profileData'
+} from '@/utils/profileData'
 
 const useProfilePage = (userId) => {
   const dispatch = useDispatch()
@@ -501,6 +501,7 @@ const useProfilePage = (userId) => {
 
   const seen = new Set()
   const displayedPosts = [...ownFeedPosts, ...normalizedProfilePosts]
+    .filter((post) => !post?.isDeleted)
     .filter((post) => (isMyProfile ? true : canViewerSeeProfilePost(post)))
     .filter((post) => {
       const postId = post?._id || post?.id

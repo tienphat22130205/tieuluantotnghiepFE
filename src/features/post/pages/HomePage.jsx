@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { AiOutlinePlusCircle } from 'react-icons/ai'
-import ProfileSidebar from '../components/ProfileSidebar'
 import PostList from '../components/PostList'
 import useHomePage from '../hooks/useHomePage'
 
@@ -9,27 +8,27 @@ import useHomePage from '../hooks/useHomePage'
  */
 const HomePage = () => {
   const { posts, isLoading, hasMore, user, isDemoMode, handleLoadMore } = useHomePage()
+  const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Bạn'
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Sidebar trái */}
-      <ProfileSidebar user={user} />
-
-      {/* Newsfeed chính */}
-      <main className="lg:col-span-2 space-y-5">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">Bảng tin</h1>
+    <div className="space-y-4">
+      <header className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-black tracking-tight text-slate-900">Trang chủ</h1>
+            <p className="text-sm text-slate-500">Xin chào {displayName}, hôm nay bạn muốn chia sẻ gì?</p>
+          </div>
           <Link
             to="/create"
-            className="lg:hidden flex items-center gap-1.5 text-sm text-primary-600 font-medium hover:underline"
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700"
           >
             <AiOutlinePlusCircle size={16} />
             Đăng bài
           </Link>
         </div>
+      </header>
 
-        {/* Danh sách bài viết */}
+      <main className="space-y-4">
         <PostList
           posts={posts}
           isLoading={isLoading}

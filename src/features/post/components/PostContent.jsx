@@ -1,18 +1,27 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AiOutlineHeart, AiFillHeart } from 'react-icons/ai'
 import { Avatar } from '@/components/ui'
 import { timeAgo } from '@/utils/formatDate'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
+import postService from '@/features/post/services/postService'
 import ImageLightbox from './ImageLightbox'
+
+const extractPostPayload = (payload) => {
+  if (!payload) return null
+  return payload?.post || payload?.data?.post || payload?.data || payload
+}
 
 /**
  * PostContent – Phần nội dung bài viết (header, ảnh, like, caption, hashtags).
  * Props: post, isLiked, onLike
  */
-const PostContent = ({ post, isLiked, onLike }) => {
+const PostContent = ({ post, isLiked, onLike, inDetailModal = false }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [resolvedSharedPost, setResolvedSharedPost] = useState(
+    post?.sharedPost && typeof post.sharedPost === 'object' ? post.sharedPost : null
+  )
 
   const postUserId = post?.user?.id || post?.user?._id
   const profilePath = postUserId ? `/profile/${postUserId}` : '#'
@@ -29,6 +38,78 @@ const PostContent = ({ post, isLiked, onLike }) => {
     .map((image) => resolveMediaUrl(image))
     .filter(Boolean)
   const uniquePostImages = [...new Set(postImages)]
+  const sharedPostRefId =
+    (post?.sharedPost && typeof post.sharedPost === 'object'
+      ? post.sharedPost?._id || post.sharedPost?.id
+      : post?.sharedPost) ||
+    post?.sharedPostId ||
+    null
+
+  useEffect(() => {
+    let isMounted = true
+
+    if (post?.sharedPost && typeof post.sharedPost === 'object') {
+      setResolvedSharedPost(post.sharedPost)
+      return () => {
+        isMounted = false
+      }
+    }
+
+    if (!sharedPostRefId) {
+      setResolvedSharedPost(null)
+      return () => {
+        isMounted = false
+      }
+    }
+
+    const loadSharedPost = async () => {
+      try {
+        const response = await postService.getById(sharedPostRefId)
+        const payload = extractPostPayload(response)
+        if (isMounted) {
+          setResolvedSharedPost(payload)
+        }
+      } catch (_error) {
+        if (isMounted) {
+          setResolvedSharedPost(null)
+        }
+      }
+    }
+
+    loadSharedPost()
+
+    return () => {
+      isMounted = false
+    }
+  }, [post?.sharedPost, post?.sharedPostId, sharedPostRefId])
+
+  const sharedPostPreview = useMemo(() => {
+    const source =
+      post?.sharedPost && typeof post.sharedPost === 'object'
+        ? post.sharedPost
+        : resolvedSharedPost
+
+    if (!source) {
+      return {
+        id: sharedPostRefId,
+        userName: 'Người dùng',
+        caption: '',
+        image: null,
+      }
+    }
+
+    return {
+      id: source?._id || source?.id || sharedPostRefId,
+      userName: source?.user?.username || source?.user?.full_name || source?.user?.fullName || 'Người dùng',
+      caption: source?.caption || source?.content || '',
+      image: resolveMediaUrl(
+        source?.image_url || (Array.isArray(source?.images) ? source.images[0] : null)
+      ),
+    }
+  }, [post?.sharedPost, resolvedSharedPost, sharedPostRefId])
+
+  const hasSharedPreview = Boolean(sharedPostRefId || sharedPostPreview.caption || sharedPostPreview.image)
+  const sharedPostPath = sharedPostPreview.id ? `/post/${sharedPostPreview.id}` : null
 
   // Lightbox handlers
   const handleImageClick = (index) => {
@@ -71,22 +152,26 @@ const PostContent = ({ post, isLiked, onLike }) => {
 
       {/* Ảnh */}
       {uniquePostImages.length > 0 && (
-        <div className={`grid gap-1 ${uniquePostImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {uniquePostImages.map((imageUrl, index) => (
-            <img
-              key={`${post._id || 'post'}-${index}`}
-              src={imageUrl}
-              alt={`Post ${index + 1}`}
-              onClick={() => handleImageClick(index)}
-              className={`w-full object-cover cursor-pointer transition-opacity hover:opacity-80 ${
-                uniquePostImages.length === 1
-                  ? 'max-h-[600px]'
-                  : uniquePostImages.length === 3 && index === 0
-                    ? 'col-span-2 max-h-[420px]'
-                    : 'max-h-[280px]'
-              }`}
-            />
-          ))}
+        <div className={inDetailModal ? 'mx-4 mb-2 overflow-hidden rounded-2xl border border-slate-100' : ''}>
+          <div className={`grid gap-1 ${uniquePostImages.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {uniquePostImages.map((imageUrl, index) => (
+              <img
+                key={`${post._id || 'post'}-${index}`}
+                src={imageUrl}
+                alt={`Post ${index + 1}`}
+                onClick={() => handleImageClick(index)}
+                className={`w-full object-cover cursor-pointer transition-opacity hover:opacity-80 ${
+                  uniquePostImages.length === 1
+                    ? inDetailModal
+                      ? 'max-h-[70vh]'
+                      : 'max-h-[600px]'
+                    : uniquePostImages.length === 3 && index === 0
+                      ? 'col-span-2 max-h-[420px]'
+                      : 'max-h-[280px]'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -95,6 +180,37 @@ const PostContent = ({ post, isLiked, onLike }) => {
         {/* Caption */}
         {post.caption && (
           <p className="text-sm text-gray-800 leading-relaxed my-2">{post.caption}</p>
+        )}
+
+        {hasSharedPreview && (
+          <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <div className="px-3 py-2 text-xs font-semibold text-slate-500">Bài viết được chia sẻ</div>
+
+            {sharedPostPath ? (
+              <Link to={sharedPostPath} className="block border-t border-slate-200 px-3 py-2.5 hover:bg-slate-100/70">
+                <p className="text-xs font-bold text-slate-700">@{sharedPostPreview.userName}</p>
+                {sharedPostPreview.caption ? (
+                  <p className="mt-1 line-clamp-2 text-sm text-slate-700">{sharedPostPreview.caption}</p>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-500">Bài viết gốc không có nội dung văn bản.</p>
+                )}
+
+                {sharedPostPreview.image && (
+                  <img
+                    src={sharedPostPreview.image}
+                    alt="Shared post"
+                    className="mt-2 max-h-72 w-full rounded-lg object-cover"
+                    loading="lazy"
+                  />
+                )}
+              </Link>
+            ) : (
+              <div className="border-t border-slate-200 px-3 py-2.5">
+                <p className="text-xs font-bold text-slate-700">@{sharedPostPreview.userName}</p>
+                <p className="mt-1 text-sm text-slate-500">Không tìm thấy dữ liệu chi tiết bài viết gốc.</p>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Hashtags */}

@@ -22,35 +22,58 @@ const CommentSection = ({
 }) => {
   const [commentToDelete, setCommentToDelete] = useState(null)
 
+  const resolveName = (raw) => {
+    if (!raw || typeof raw !== 'object') return ''
+
+    const fullName = raw.full_name || raw.fullName || raw.name
+    if (typeof fullName === 'string' && fullName.trim()) return fullName.trim()
+
+    const fromFirstLast = `${raw.first_name || raw.firstName || ''} ${raw.last_name || raw.lastName || ''}`.trim()
+    if (fromFirstLast) return fromFirstLast
+
+    if (typeof raw.username === 'string' && raw.username.trim()) return raw.username.trim()
+    return ''
+  }
+
   const getCommentUser = (c) => {
-    const raw = c.user || c.author || c.userId
+    const raw = c.user || c.author || c.sender || c.fromUser || c.userId
     
     if (raw && typeof raw === 'object') {
-      const id = raw._id || raw.id
+      const id = raw._id || raw.id || raw.user_id
       const matchesCurrent = currentUserId && String(id) === String(currentUserId)
-      
-      const name = raw.full_name || raw.fullName || raw.username || raw.name
+
+      const nestedRaw = raw.user && typeof raw.user === 'object' ? raw.user : null
+      const name = resolveName(raw) || resolveName(nestedRaw)
       if (!name || name === 'user' || name === 'Người dùng') {
          if (matchesCurrent && currentUser) return { 
             id, 
-            name: currentUser.full_name || currentUser.fullName || currentUser.username || currentUser.name || 'Người dùng',
-            avatar: currentUser.avatar || raw.avatar 
+            name: resolveName(currentUser) || 'Người dùng',
+            avatar: currentUser.avatar || raw.avatar || nestedRaw?.avatar 
          }
       }
       
       return {
         id,
         name: name || 'Người dùng',
-        avatar: raw.avatar || raw.profile_pic
+        avatar: raw.avatar || raw.profile_pic || nestedRaw?.avatar || nestedRaw?.profile_pic || null
       }
     }
     
-    const strId = typeof raw === 'string' ? raw : c.user_id
+    const strId = typeof raw === 'string' ? raw : c.user_id || c.userId
     if (strId && currentUserId && currentUser && String(strId) === String(currentUserId)) {
       return {
         id: strId,
-        name: currentUser.full_name || currentUser.fullName || currentUser.username || currentUser.name || 'Bạn',
+        name: resolveName(currentUser) || 'Bạn',
         avatar: currentUser.avatar
+      }
+    }
+
+    const commentLevelName = c.full_name || c.fullName || c.username || c.userName || c.authorName
+    if (typeof commentLevelName === 'string' && commentLevelName.trim()) {
+      return {
+        id: strId || c._id || 'unknown',
+        name: commentLevelName.trim(),
+        avatar: c.avatar || c.user_avatar || c.authorAvatar || null,
       }
     }
     

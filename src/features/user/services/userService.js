@@ -18,6 +18,16 @@ const toProfileEndpoint = (template, userId) =>
  */
 const userService = {
   // Tìm kiếm người dùng theo tên
+  searchUsers: ({ q, page = 1, limit = 10 }) =>
+    api.get('/users/search', {
+      params: {
+        q,
+        page,
+        limit,
+      },
+    }),
+
+  // Alias cũ để tương thích code đang dùng
   search: (query) => api.get('/users/search', { params: { q: query } }),
 
   // Lấy profile của user đang đăng nhập
@@ -86,6 +96,19 @@ const userService = {
 
   // Gợi ý bạn bè
   getSuggestions: () => api.get('/users/suggestions'),
+
+  // Lấy trạng thái hoạt động của 1 user
+  getPresenceByUserId: (userId) => api.get(`/users/presence/${encodeURIComponent(String(userId))}`),
+
+  // Lấy trạng thái hoạt động của nhiều user: ids=id1,id2,id3
+  getPresenceByUserIds: (userIds = []) => api.get('/users/presence', {
+    params: {
+      ids: userIds
+        .map((id) => String(id || '').trim())
+        .filter(Boolean)
+        .join(','),
+    },
+  }),
 }
 
 export default userService
