@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux'
 import useChatFriendsInitialData from './useChatFriendsInitialData'
 import useChatPanelUiState from './useChatPanelUiState'
 import useChatPresenceRealtimeSync from './useChatPresenceRealtimeSync'
+import useChatDirectConversationRuntime from './useChatDirectConversationRuntime'
 
 const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
   const token = useSelector((state) => state.auth.token)
@@ -19,6 +20,18 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
   } = useChatPanelUiState({ friends, onClose })
 
   useChatPresenceRealtimeSync({ isOpen, token, setFriends })
+  const {
+    isMessagesLoading,
+    isSending,
+    messages,
+    sendMessage,
+  } = useChatDirectConversationRuntime({
+    isOpen,
+    selectedConversation,
+    setFriends,
+    messageInput,
+    setMessageInput,
+  })
 
   const filteredFriends = useMemo(() => {
     const keyword = String(searchKeyword || '').trim().toLowerCase()
@@ -33,8 +46,17 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
 
   const sortedFriends = useMemo(() => {
     return [...filteredFriends].sort((a, b) => {
+      const aLastMessageAt = new Date(a.lastMessageAt || 0).getTime()
+      const bLastMessageAt = new Date(b.lastMessageAt || 0).getTime()
+      if (aLastMessageAt !== bLastMessageAt) return bLastMessageAt - aLastMessageAt
+
+      const aUnread = Number(a.newMessagesCount || 0)
+      const bUnread = Number(b.newMessagesCount || 0)
+      if (aUnread !== bUnread) return bUnread - aUnread
+
       if (a.isOnline && !b.isOnline) return -1
       if (!a.isOnline && b.isOnline) return 1
+
       const aLastSeen = new Date(a.lastSeen || 0).getTime()
       const bLastSeen = new Date(b.lastSeen || 0).getTime()
       return bLastSeen - aLastSeen
@@ -45,10 +67,14 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     isLoading,
     sortedFriends,
     selectedConversation,
+    messages,
+    isMessagesLoading,
+    isSending,
     messageInput,
     searchKeyword,
     setMessageInput,
     setSearchKeyword,
+    sendMessage,
     handleClosePanel,
     handleBackToList,
     handleSelectFriend,

@@ -7,8 +7,12 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
     isLoading,
     sortedFriends,
     selectedConversation,
+    messages,
+    isMessagesLoading,
+    isSending,
     messageInput,
     searchKeyword,
+    sendMessage,
     setMessageInput,
     setSearchKeyword,
     handleClosePanel,
@@ -39,9 +43,13 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
       <ChatConversationWindow
         isOpen={isOpen}
         selectedConversation={selectedConversation}
+        messages={messages}
+        isMessagesLoading={isMessagesLoading}
+        isSending={isSending}
         messageInput={messageInput}
         onBack={handleBackToList}
         onClose={handleClosePanel}
+        onSendMessage={sendMessage}
         onChangeMessage={setMessageInput}
       />
     </>

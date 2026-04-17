@@ -2,6 +2,21 @@ import { AiOutlineSearch, AiOutlineClose } from 'react-icons/ai'
 import { Avatar } from '@/components/ui'
 import formatLastSeenText from '@/utils/formatLastSeenText'
 
+const formatMessageAge = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return ''
+
+  const diffMinutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000))
+  if (diffMinutes < 60) return `${diffMinutes} phút`
+
+  const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours < 24) return `${diffHours} giờ`
+
+  const diffDays = Math.floor(diffHours / 24)
+  return `${diffDays} ngày`
+}
+
 const ChatFriendsListPanel = ({
   isOpen,
   selectedConversation,
@@ -51,32 +66,53 @@ const ChatFriendsListPanel = ({
           </div>
         )}
 
-        {!isLoading && sortedFriends.map((friend) => (
-          <button
-            key={friend._id}
-            type="button"
-            onClick={() => onSelectFriend(friend._id)}
-            className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition text-left"
-          >
-            <Avatar
-              src={friend.avatar}
-              name={friend.full_name}
-              size="md"
-              online={friend.isOnline}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-medium text-gray-900 truncate">{friend.full_name}</p>
-              <p className="text-sm text-gray-500 truncate">@{friend.username || friend._id}</p>
-            </div>
-            <span
-              className={`text-[11px] font-medium whitespace-nowrap ${
-                friend.isOnline ? 'text-emerald-600' : 'text-gray-400'
-              }`}
+        {!isLoading && sortedFriends.map((friend) => {
+          const unreadCount = Number(friend.newMessagesCount || 0)
+          const hasUnread = unreadCount > 0
+          const previewText = hasUnread
+            ? `${unreadCount} tin nhắn`
+            : friend.lastMessagePreview
+              ? friend.lastMessagePreview
+              : 'Chưa có tin nhắn'
+          const messageAge = formatMessageAge(friend.lastMessageAt)
+          const previewWithAge = messageAge ? `${previewText} · ${messageAge}` : previewText
+
+          return (
+            <button
+              key={friend._id}
+              type="button"
+              onClick={() => onSelectFriend(friend._id)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition text-left"
             >
-              {friend.isOnline ? 'Đang hoạt động' : formatLastSeenText(friend.lastSeen)}
-            </span>
-          </button>
-        ))}
+              <Avatar
+                src={friend.avatar}
+                name={friend.full_name}
+                size="md"
+                online={friend.isOnline}
+              />
+              <div className="min-w-0 flex-1">
+                <p className={`text-base truncate ${hasUnread ? 'font-bold text-slate-900' : 'font-medium text-gray-900'}`}>
+                  {friend.full_name}
+                </p>
+                <p className={`text-sm truncate ${hasUnread ? 'font-bold text-slate-800' : 'text-gray-500'}`}>
+                  {previewWithAge}
+                </p>
+              </div>
+              {hasUnread && (
+                <span className="h-2.5 w-2.5 rounded-full bg-primary-500" />
+              )}
+              {!hasUnread && (
+                <span
+                  className={`text-[11px] font-medium whitespace-nowrap ${
+                    friend.isOnline ? 'text-emerald-600' : 'text-gray-400'
+                  }`}
+                >
+                  {friend.isOnline ? 'Đang hoạt động' : formatLastSeenText(friend.lastSeen)}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
