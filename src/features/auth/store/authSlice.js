@@ -9,6 +9,7 @@ import {
   setAuthToken,
   setStoredAuthUser,
 } from '@/utils/authStorage'
+import { getRoleValue } from '@/utils/auth'
 
 migrateLegacyAuthStorage()
 
@@ -24,9 +25,46 @@ const parseStoredUser = () => {
   }
 }
 
+const parsedStoredUser = parseStoredUser()
+
+const formatBanUntil = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return ''
+
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 const getErrorMessage = (err, fallbackMessage) => {
   if (!err) return fallbackMessage
   if (typeof err === 'string') return err
+
+  const errorCode = String(err?.code || err?.details?.code || '').toUpperCase()
+  const reason = err?.reason || err?.details?.reason || ''
+  const banUntil = err?.banUntil || err?.details?.banUntil || null
+
+  if (errorCode === 'ACCOUNT_BANNED') {
+    const lines = [
+      `Tài khoản của bạn đã bị khóa${reason ? ` vì: ${reason}` : '.'}`,
+    ]
+
+    const formattedBanUntil = formatBanUntil(banUntil)
+    if (formattedBanUntil) {
+      lines.push(`Thời gian mở khóa dự kiến: ${formattedBanUntil}`)
+    }
+
+    return lines.join(' ')
+  }
+
+  if (errorCode === 'ACCOUNT_DISABLED') {
+    return 'Tài khoản của bạn đang bị vô hiệu hóa.'
+  }
 
   const detailError = err.details?.error
 
@@ -150,9 +188,22 @@ export const getMe = createAsyncThunk(
   }
 )
 
+// Kiểm tra role của user hiện tại
+export const checkRole = createAsyncThunk(
+  'auth/checkRole',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await authService.checkRole()
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, 'Không thể kiểm tra quyền'))
+    }
+  }
+)
+
 const initialState = {
-  user: parseStoredUser(),
+  user: parsedStoredUser,
   token: storedToken,
+  role: getRoleValue(parsedStoredUser),
   isLoading: false,
   error: null,
 }
@@ -166,6 +217,7 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null
       state.token = null
+      state.role = null
       state.error = null
       removeAuthToken()
       removeStoredAuthUser()
@@ -233,6 +285,7 @@ const authSlice = createSlice({
         state.isLoading = false
         state.user = action.payload.user
         state.token = action.payload.token
+        state.role = getRoleValue(action.payload.user)
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false
@@ -242,7 +295,30 @@ const authSlice = createSlice({
       // ── GetMe ──
       .addCase(getMe.fulfilled, (state, action) => {
         state.user = action.payload
+        state.role = getRoleValue(action.payload)
         setStoredAuthUser(action.payload)
+      })
+
+      // ── Check Role ──
+      .addCase(checkRole.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(checkRole.fulfilled, (state, action) => {
+        state.isLoading = false
+        const nextRole = getRoleValue(state.user, action.payload?.role)
+        state.role = nextRole || null
+        if (state.user) {
+          state.user = {
+            ...state.user,
+            role: nextRole || state.user.role,
+          }
+          setStoredAuthUser(state.user)
+        }
+      })
+      .addCase(checkRole.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload
       })
   },
 })

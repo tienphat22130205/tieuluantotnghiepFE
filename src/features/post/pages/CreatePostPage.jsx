@@ -32,6 +32,9 @@ const CreatePostPage = () => {
     aiCaptionHashtags,
     selectedCaptionIndex,
     isLoadingPost,
+    location,
+    isLocating,
+    locationError,
     setContent,
     setHashtags,
     setVisibility,
@@ -40,6 +43,7 @@ const CreatePostPage = () => {
     handleAiOptionChange,
     handleAIGenerate,
     handleUseAICaption,
+    handleDetectLocation,
     handleSubmit,
   } = useCreatePostPage({ postId, isEditMode })
 
@@ -170,9 +174,13 @@ const CreatePostPage = () => {
           hasImages={images.length > 0 || previews.length > 0}
           submitLabel={isEditMode ? 'Lưu chỉnh sửa' : undefined}
           isPosting={isPosting}
+          location={location}
+          isLocating={isLocating}
+          locationError={locationError}
           onContentChange={setContent}
           onHashtagsChange={setHashtags}
           onVisibilityChange={setVisibility}
+          onDetectLocation={() => handleDetectLocation({ silent: false })}
         />
         </form>
       </div>

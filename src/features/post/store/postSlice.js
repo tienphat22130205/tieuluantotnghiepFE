@@ -87,6 +87,16 @@ const normalizePostForUi = (post) => {
     isLiked: post.isLiked ?? post.liked ?? (Array.isArray(post.likes) ? undefined : false),
     likeCount: post.likeCount ?? post.likesCount ?? post.likes_count,
     postType: post.postType || post.post_type || null,
+    location:
+      post.location
+      || post.locationData
+      || post.location_data
+      || post.locationContext?.location
+      || post.location_context?.location
+      || post.locationContext
+      || post.location_context
+      || null,
+    locationContext: post.locationContext || post.location_context || null,
     sharedPost,
     visibility: normalizeVisibility(post.visibility),
     user: {

@@ -27,7 +27,7 @@ import useNotifications from '@/features/notification/hooks/useNotifications'
 import friendService from '@/features/user/services/friendService'
 import { extractItems } from '@/utils/friendship'
 import ChatConversationsPanel from '@/features/chat/components/ChatConversationsPanel'
-import { isAdminUser } from '@/utils/auth'
+import { canAccessAdminDashboard } from '@/utils/auth'
 
 const TRANSLATIONS = {
   vi: {
@@ -91,7 +91,7 @@ const getStoredPreferences = (storageKey) => {
 }
 
 const Navbar = () => {
-  const { user, handleLogout } = useAuth()
+  const { user, role, handleLogout } = useAuth()
   const { unreadCount, refreshUnreadCount } = useNotifications({ fetchList: false, fetchUnreadCount: true })
   const location = useLocation()
   const [isChatOpen, setIsChatOpen] = useState(false)
@@ -184,7 +184,7 @@ const Navbar = () => {
     { path: '/notifications', icon: AiOutlineBell, activeIcon: AiFillBell, labelKey: 'notifications' },
     { path: '/friends', icon: AiOutlineTeam, activeIcon: FaUserFriends, labelKey: 'friends' },
     { path: '/create', icon: AiOutlinePlusCircle, activeIcon: AiFillPlusCircle, labelKey: 'create' },
-    ...(isAdminUser(user)
+    ...(canAccessAdminDashboard(user, role)
       ? [{ path: '/admin', icon: AiOutlineDashboard, activeIcon: AiOutlineDashboard, labelKey: 'admin' }]
       : []),
   ]

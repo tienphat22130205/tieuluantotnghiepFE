@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { login, register, logout, clearError, suggestUsername, setUsername } from '../store/authSlice'
-import { isAdminUser } from '@/utils/auth'
+import { canAccessAdminDashboard } from '@/utils/auth'
 
 /**
  * Custom Hook quản lý xác thực.
@@ -13,7 +13,7 @@ import { isAdminUser } from '@/utils/auth'
 const useAuth = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const { user, token, isLoading, error } = useSelector((state) => state.auth)
+  const { user, role, token, isLoading, error } = useSelector((state) => state.auth)
 
   const isAuthenticated = !!token
 
@@ -22,7 +22,7 @@ const useAuth = () => {
     const result = await dispatch(login(credentials))
     if (result.meta.requestStatus === 'fulfilled') {
       const nextUser = result.payload?.user
-      navigate(isAdminUser(nextUser) ? '/admin' : '/')
+      navigate(canAccessAdminDashboard(nextUser, role) ? '/admin' : '/')
     }
     return result
   }
@@ -45,7 +45,7 @@ const useAuth = () => {
     const result = await dispatch(setUsername(data))
     if (result.meta.requestStatus === 'fulfilled') {
       const nextUser = result.payload?.user
-      navigate(isAdminUser(nextUser) ? '/admin' : '/')
+      navigate(canAccessAdminDashboard(nextUser, role) ? '/admin' : '/')
     }
     return result
   }
@@ -61,6 +61,7 @@ const useAuth = () => {
 
   return {
     user,
+    role,
     token,
     isLoading,
     error,

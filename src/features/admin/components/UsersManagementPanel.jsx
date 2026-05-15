@@ -1,3 +1,5 @@
+import { FiLock, FiUnlock, FiLoader } from 'react-icons/fi'
+
 const roleOptions = [
   { value: 'user', label: 'Thành viên' },
   { value: 'moderator', label: 'Kiểm duyệt viên' },
@@ -16,7 +18,6 @@ const UsersManagementPanel = ({
 }) => {
   const currentPage = Number(pagination?.page || 1)
   const totalPages = Number(pagination?.totalPages || 1)
-
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -92,11 +93,19 @@ const UsersManagementPanel = ({
                 <td className="border-b border-slate-100 px-2 py-2">
                   <button
                     type="button"
-                    className="cursor-pointer rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:-translate-y-0.5"
+                    className="flex items-center justify-center cursor-pointer rounded-lg p-2 text-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: user.status === 'active' ? '#fee2e2' : '#e0f2fe', color: user.status === 'active' ? '#dc2626' : '#0284c7' }}
+                    title={user.status === 'active' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
                     disabled={busyUserId === user.id}
                     onClick={() => onToggleStatus(user.id)}
                   >
-                    {busyUserId === user.id ? 'Đang xử lý...' : user.status === 'active' ? 'Khóa' : 'Mở khóa'}
+                    {busyUserId === user.id ? (
+                      <FiLoader className="h-4 w-4 animate-spin" />
+                    ) : user.status === 'active' ? (
+                      <FiLock className="h-4 w-4" />
+                    ) : (
+                      <FiUnlock className="h-4 w-4" />
+                    )}
                   </button>
                 </td>
               </tr>

@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HiOutlineDotsHorizontal } from 'react-icons/hi'
+import { FiMapPin } from 'react-icons/fi'
 import { Avatar } from '@/components/ui'
 import { timeAgo } from '@/utils/formatDate'
+import { normalizePostLocation } from '@/utils/postLocation'
 
 /**
  * PostCardHeader – Header bài viết (Avatar, tên, thời gian, menu).
  * Props: user (object), createdAt (string), visibility (string), canManage, onEdit, onDelete
  */
-const PostCardHeader = ({ user, createdAt, visibility, canManage = false, onEdit, onDelete }) => {
+const PostCardHeader = ({ user, createdAt, visibility, location, canManage = false, onEdit, onDelete }) => {
   const userId = user?.id || user?._id
   const profilePath = userId ? `/profile/${userId}` : '#'
   const displayName = user?.full_name || user?.fullName || user?.username || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
@@ -20,6 +22,7 @@ const PostCardHeader = ({ user, createdAt, visibility, canManage = false, onEdit
   }[visibility] || 'Công khai'
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef(null)
+  const normalizedLocation = normalizePostLocation(location)
 
   useEffect(() => {
     if (!showMenu) return undefined
@@ -50,7 +53,15 @@ const PostCardHeader = ({ user, createdAt, visibility, canManage = false, onEdit
           >
             {displayName}
           </Link>
-          <p className="text-xs text-slate-400">{timeAgo(createdAt)} | {visibilityLabel}</p>
+          <div className="text-xs text-slate-400">
+            <span>{timeAgo(createdAt)} | {visibilityLabel}</span>
+            {normalizedLocation?.label && (
+              <span className="ml-1 inline-flex items-center gap-1 text-slate-500">
+                | <FiMapPin size={11} />
+                <span className="max-w-[220px] truncate align-middle">{normalizedLocation.label}</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

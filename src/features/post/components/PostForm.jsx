@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui'
+import { FiMapPin } from 'react-icons/fi'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -26,9 +27,13 @@ const PostForm = ({
   hasImages,
   submitLabel,
   isPosting,
+  location,
+  isLocating,
+  locationError,
   onContentChange,
   onHashtagsChange,
   onVisibilityChange,
+  onDetectLocation,
   onSubmit,
 }) => {
   const {
@@ -81,6 +86,42 @@ const PostForm = ({
 
   return (
     <>
+      <div>
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <label className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700">
+            <FiMapPin size={14} className={location ? 'text-emerald-600' : 'text-slate-400'} />
+            Vị trí đăng bài
+          </label>
+          <button
+            type="button"
+            onClick={onDetectLocation}
+            disabled={isLocating || isPosting}
+            title={isLocating ? 'Đang lấy GPS...' : 'Lấy vị trí từ GPS'}
+            aria-label={isLocating ? 'Đang lấy GPS...' : 'Lấy vị trí từ GPS'}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <FiMapPin size={16} className={isLocating ? 'animate-pulse' : ''} />
+          </button>
+        </div>
+
+        {location ? (
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            <p className="font-medium">
+              {location.placeName || [location.city, location.region, location.country].filter(Boolean).join(', ') || 'Đã lấy vị trí GPS'}
+            </p>
+            <p className="mt-1 text-xs text-emerald-700">
+              Tọa độ: {Number(location.lat).toFixed(6)}, {Number(location.lng).toFixed(6)}
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-500">
+            Chưa có vị trí. Bấm icon location nếu bạn muốn đính kèm GPS.
+          </p>
+        )}
+
+        {locationError && <p className="mt-1 text-xs text-red-500">{locationError}</p>}
+      </div>
+
       {/* Content */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -134,7 +175,6 @@ const PostForm = ({
           <option value="private">Chỉ mình tôi</option>
         </select>
       </div>
-
       {/* Nút đăng bài */}
       <Button type="submit" fullWidth isLoading={isPosting} size="lg" onClick={handleSubmitClick}>
         {submitLabel || (hasImages ? 'Đăng ảnh' : 'Đăng trạng thái')}

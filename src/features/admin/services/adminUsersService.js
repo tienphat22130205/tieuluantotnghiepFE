@@ -126,6 +126,35 @@ const normalizePagination = (payload, fallbackPage, fallbackLimit) => {
   }
 }
 
+const extractUnbanRequestItems = (payload) => {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.requests)) return payload.requests
+  if (Array.isArray(payload?.items)) return payload.items
+  if (Array.isArray(payload?.data)) return payload.data
+  if (Array.isArray(payload?.data?.requests)) return payload.data.requests
+  if (Array.isArray(payload?.data?.items)) return payload.data.items
+  if (Array.isArray(payload?.result?.requests)) return payload.result.requests
+  if (Array.isArray(payload?.result?.items)) return payload.result.items
+  return []
+}
+
+const normalizeUnbanRequest = (item) => {
+  const requestId = item?._id || item?.id || item?.requestId || item?.request_id
+  if (!requestId) return null
+
+  const status = String(item?.status || 'pending').toLowerCase()
+
+  return {
+    id: String(requestId),
+    email: item?.email || item?.user?.email || '--',
+    reason: item?.reason || item?.requestReason || item?.content || '--',
+    status: ['pending', 'approved', 'rejected'].includes(status) ? status : 'pending',
+    adminNote: item?.adminNote || item?.admin_note || '',
+    createdAt: item?.createdAt || item?.created_at || null,
+    reviewedAt: item?.reviewedAt || item?.reviewed_at || item?.updatedAt || item?.updated_at || null,
+  }
+}
+
 const listAdminUsers = async ({ page = 1, limit = 20, status = 'all', q = '' } = {}) => {
   const response = await api.get('/auth/admin/users', {
     params: { page, limit, status, q },
@@ -153,11 +182,35 @@ const updateUserRole = async (userId, role) => {
   return api.patch(`/auth/users/${userId}/role`, { role })
 }
 
+const listAdminUnbanRequests = async ({ status = 'pending', page = 1, limit = 20 } = {}) => {
+  const response = await api.get('/auth/admin/unban-requests', {
+    params: { status, page, limit },
+  })
+
+  const requests = extractUnbanRequestItems(response)
+    .map((item) => normalizeUnbanRequest(item))
+    .filter(Boolean)
+
+  return {
+    requests,
+    pagination: normalizePagination(response, page, limit),
+  }
+}
+
+const reviewAdminUnbanRequest = async (requestId, { decision, adminNote }) => {
+  return api.patch(`/auth/admin/unban-requests/${requestId}/review`, {
+    decision,
+    adminNote,
+  })
+}
+
 const adminUsersService = {
   listAdminUsers,
   banUser,
   unbanUser,
   updateUserRole,
+  listAdminUnbanRequests,
+  reviewAdminUnbanRequest,
 }
 
 export default adminUsersService

@@ -48,6 +48,16 @@ export const COLORS = {
   adminSidebarActiveHover: '#17304F',
   adminPanelBg: '#FFFFFF',
   adminOverlay: 'rgba(15, 23, 42, 0.35)',
+
+  // Admin status palette
+  adminWarning: '#D97706',
+  adminWarningSoft: '#FEF3C7',
+  adminSuccess: '#059669',
+  adminSuccessSoft: '#D1FAE5',
+  adminDanger: '#DC2626',
+  adminDangerSoft: '#FEE2E2',
+  adminText: '#111827',
+  adminMutedText: '#475569',
 }
 
 export default COLORS

@@ -69,6 +69,36 @@ const authService = {
     api.patch('/profile/me/avatar', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+
+  // User gửi yêu cầu mở khóa tài khoản khi bị khóa vĩnh viễn
+  createUnbanRequest: async (payload) => {
+    const body = {
+      email: payload?.email?.trim(),
+      reason: payload?.reason?.trim(),
+    }
+
+    const response = await api.post('/auth/unban-requests', body)
+    return unwrapResponse(response)
+  },
+
+  // User xem lịch sử yêu cầu mở khóa theo email
+  getUnbanRequestHistory: async ({ email, page = 1, limit = 10 } = {}) => {
+    const response = await api.get('/auth/unban-requests/history', {
+      params: {
+        email: email?.trim(),
+        page,
+        limit,
+      },
+    })
+
+    return unwrapResponse(response)
+  },
+
+  // Kiểm tra role của user hiện tại
+  checkRole: async () => {
+    const response = await api.get('/auth/role-check')
+    return unwrapResponse(response)
+  },
 }
 
 export default authService

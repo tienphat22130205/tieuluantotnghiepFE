@@ -57,6 +57,7 @@ const PostCard = ({ post }) => {
           user={post.user}
           createdAt={post.created_at}
           visibility={post.visibility}
+          location={post.location || post.locationData || post.locationContext || null}
           canManage={canManage}
           onEdit={handleEditPost}
           onDelete={handleDeletePost}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
@@ -31,6 +31,9 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
   const [aiCaptionHashtags, setAiCaptionHashtags] = useState([])
   const [selectedCaptionIndex, setSelectedCaptionIndex] = useState(null)
   const [isLoadingPost, setIsLoadingPost] = useState(false)
+  const [location, setLocation] = useState(null)
+  const [isLocating, setIsLocating] = useState(false)
+  const [locationError, setLocationError] = useState('')
   const isMountedRef = useRef(true)
 
   const parseHashtags = (value) =>
@@ -41,6 +44,67 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
       .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`))
 
   const extractPostPayload = (payload) => payload?.data || payload?.post || payload
+
+  const resolveGpsLocation = async () => {
+    if (typeof navigator === 'undefined' || !navigator?.geolocation) {
+      throw new Error('Thiết bị không hỗ trợ định vị GPS.')
+    }
+
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 120000,
+      })
+    })
+
+    const lat = Number(position?.coords?.latitude)
+    const lng = Number(position?.coords?.longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new Error('Không lấy được tọa độ GPS hợp lệ.')
+    }
+
+    const locationPayload = {
+      lat,
+      lng,
+      city: '',
+      region: '',
+      country: '',
+      placeName: '',
+    }
+
+    const reverseGeocodeUrl = String(import.meta.env.VITE_REVERSE_GEOCODE_URL || 'https://nominatim.openstreetmap.org/reverse')
+    const reverseGeocodeTimeoutMs = Number(import.meta.env.VITE_REVERSE_GEOCODE_TIMEOUT_MS || 6000)
+
+    try {
+      const controller = new AbortController()
+      const timeoutId = window.setTimeout(() => controller.abort(), reverseGeocodeTimeoutMs)
+      const url = `${reverseGeocodeUrl}?format=jsonv2&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}`
+
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+      window.clearTimeout(timeoutId)
+
+      if (response.ok) {
+        const data = await response.json()
+        const address = data?.address || {}
+
+        locationPayload.city = address?.city || address?.town || address?.village || address?.state_district || ''
+        locationPayload.region = address?.state || address?.region || ''
+        locationPayload.country = address?.country || ''
+        locationPayload.placeName = data?.name || data?.display_name || ''
+      }
+    } catch {
+      // Keep lat/lng only when reverse geocode is unavailable.
+    }
+
+    return locationPayload
+  }
 
   useEffect(() => {
     return () => {
@@ -132,6 +196,71 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
   }
 
   const normalizeAIResult = (payload) => {
+    const normalizeTextForCompare = (value) => {
+      if (typeof value !== 'string') return ''
+      return value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
+
+    const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+    const buildLocationKeywords = (loc) => {
+      if (!loc || typeof loc !== 'object') return []
+
+      const raw = [loc.placeName, loc.city, loc.region, loc.country]
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean)
+
+      const expanded = raw.flatMap((item) => {
+        const parts = item
+          .split(/[,|-]/g)
+          .map((part) => part.trim())
+          .filter(Boolean)
+        return [item, ...parts]
+      })
+
+      return [...new Set(expanded)]
+        .map((item) => item.trim())
+        .filter((item) => item.length >= 2)
+    }
+
+    const stripLocationFromCaption = (caption, loc) => {
+      if (typeof caption !== 'string') return ''
+
+      let next = caption
+
+      const locationKeywords = buildLocationKeywords(loc)
+      locationKeywords.forEach((keyword) => {
+        const pattern = new RegExp(escapeRegex(keyword), 'gi')
+        next = next.replace(pattern, '')
+      })
+
+      // Remove obvious coordinate patterns that can leak location.
+      next = next.replace(/-?\d{1,3}\.\d{3,}\s*,\s*-?\d{1,3}\.\d{3,}/g, '')
+
+      // Clean repeated separators after removals.
+      next = next
+        .replace(/\s{2,}/g, ' ')
+        .replace(/\s+([,.;!?])/g, '$1')
+        .replace(/([,.;!?]){2,}/g, '$1')
+        .replace(/^\s*[-,:;|]+\s*/g, '')
+        .trim()
+
+      if (!next) return ''
+
+      const normalizedOriginal = normalizeTextForCompare(caption)
+      const normalizedNext = normalizeTextForCompare(next)
+      if (!normalizedNext || normalizedOriginal === normalizedNext) {
+        return caption.trim()
+      }
+
+      return next
+    }
+
     const parseMaybeJsonString = (value) => {
       if (typeof value !== 'string') return value
       const trimmed = value.trim()
@@ -158,6 +287,40 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
       if (typeof value !== 'string') return []
       const matches = value.match(/#[\p{L}\p{N}_]+/gu)
       return matches ? [...new Set(matches.map((tag) => tag.trim()))] : []
+    }
+
+    const splitCombinedCaptions = (value) => {
+      if (typeof value !== 'string') return []
+
+      const normalized = value
+        .replace(/\r/g, '\n')
+        .trim()
+
+      if (!normalized) return []
+
+      const cleanPrefix = (text) => text
+        .replace(/^\s*(?:\d+[.)]|[-*•])\s+/, '')
+        .trim()
+
+      const byLines = normalized
+        .split('\n')
+        .map((line) => cleanPrefix(line))
+        .filter(Boolean)
+
+      if (byLines.length > 1) {
+        return byLines
+      }
+
+      const byNumberMarkers = normalized
+        .split(/(?=\s*\d+[.)]\s+)/g)
+        .map((part) => cleanPrefix(part))
+        .filter(Boolean)
+
+      if (byNumberMarkers.length > 1) {
+        return byNumberMarkers
+      }
+
+      return [normalized]
     }
 
     const isSystemText = (value) => {
@@ -313,6 +476,18 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
 
     const finalCaptionItems = captionItems.length > 0 ? captionItems : fallbackCaptionItems
 
+    const expandedCaptionItems = finalCaptionItems
+      .flatMap((item) => {
+        const parts = splitCombinedCaptions(item?.text || '')
+        if (parts.length <= 1) return [item]
+
+        return parts.map((textPart) => ({
+          text: textPart,
+          hashtags: extractHashtagsFromText(textPart),
+        }))
+      })
+      .filter((item) => item?.text)
+
     const rawHashtags =
       payload?.hashtags ||
       payload?.hash_tags ||
@@ -332,9 +507,11 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
       .filter(Boolean)
       .map((tag) => (tag.startsWith('#') ? tag : `#${tag}`))
 
-    const captions = finalCaptionItems.map((item) => item.text)
-    const captionHashtags = finalCaptionItems.map((item) => item.hashtags)
-    const tagsFromCaptions = finalCaptionItems.flatMap((item) => item.hashtags)
+    const captions = expandedCaptionItems
+      .map((item) => stripLocationFromCaption(item.text, location))
+      .filter(Boolean)
+    const captionHashtags = expandedCaptionItems.map((item) => item.hashtags)
+    const tagsFromCaptions = expandedCaptionItems.flatMap((item) => item.hashtags)
 
     return {
       captions,
@@ -354,6 +531,29 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
     }
   }
 
+  const handleDetectLocation = useCallback(async ({ silent = false } = {}) => {
+    setIsLocating(true)
+    setLocationError('')
+
+    try {
+      const resolvedLocation = await resolveGpsLocation()
+      setLocation(resolvedLocation)
+      if (!silent) {
+        toast.success('Đã cập nhật vị trí GPS cho bài viết.')
+      }
+      return resolvedLocation
+    } catch (error) {
+      const message = error?.message || 'Không thể lấy vị trí GPS.'
+      setLocationError(message)
+      if (!silent) {
+        toast.error(message)
+      }
+      return null
+    } finally {
+      setIsLocating(false)
+    }
+  }, [])
+
   const handleAIGenerate = async () => {
     if (images.length === 0) {
       toast.warn('Vui long chon anh truoc khi dung AI!')
@@ -369,6 +569,11 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
       formData.append('length', aiOptions.length)
       formData.append('includeHashtags', String(aiOptions.includeHashtags))
       formData.append('numCaptions', String(aiOptions.numCaptions))
+      formData.append('num_captions', String(aiOptions.numCaptions))
+      formData.append('captionCount', String(aiOptions.numCaptions))
+      if (location) {
+        formData.append('location', JSON.stringify(location))
+      }
 
       const result = await postService.generateContentUpload(formData)
       const { captions, hashtags, captionHashtags } = normalizeAIResult(result)
@@ -420,6 +625,7 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
     try {
       const normalizedHashtags = parseHashtags(hashtags)
       const normalizedVisibility = normalizeVisibility(visibility)
+      const locationPayload = location
 
       if (isEditMode) {
         await dispatch(updatePost({
@@ -443,12 +649,16 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
         formData.append('hashtags', normalizedHashtags.join(','))
         formData.append('visibility', normalizedVisibility)
         formData.append('is_ai_generated', String(aiUsed))
+        if (locationPayload) {
+          formData.append('location', JSON.stringify(locationPayload))
+        }
         await dispatch(createPost(formData)).unwrap()
       } else {
         await dispatch(createPost({
           content,
           hashtags: normalizedHashtags,
           visibility: normalizedVisibility,
+          ...(locationPayload ? { location: locationPayload } : {}),
         })).unwrap()
       }
 
@@ -476,14 +686,19 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
     aiCaptionHashtags,
     selectedCaptionIndex,
     isLoadingPost,
+    location,
+    isLocating,
+    locationError,
     setContent,
     setHashtags,
     setVisibility,
+    setLocation,
     handleImageChange,
     handleRemoveImage,
     handleAiOptionChange,
     handleAIGenerate,
     handleUseAICaption,
+    handleDetectLocation,
     handleSubmit,
   }
 }

@@ -9,12 +9,12 @@ import MainLayout from '@/layouts/MainLayout'
 import AuthLayout from '@/layouts/AuthLayout'
 
 // Feature Pages
-import { LoginPage, RegisterPage, VerifyEmailPage } from '@/features/auth'
+import { LoginPage, RegisterPage, SupportRequestPage, VerifyEmailPage } from '@/features/auth'
 import { HomePage, CreatePostPage, PostDetailPage, SearchPage } from '@/features/post'
 import { FriendsPage, ProfilePage } from '@/features/user'
 import { NotificationPage } from '@/features/notification'
-import { AdminDashboardPage } from '@/features/admin'
-import { isAdminUser } from '@/utils/auth'
+import { AdminDashboardPage, AdminDashboardOverviewPage } from '@/features/admin'
+import { canAccessAdminDashboard } from '@/utils/auth'
 
 /**
  * ProtectedRoute – Chặn truy cập nếu chưa đăng nhập.
@@ -29,8 +29,8 @@ const ProtectedRoute = ({ children }) => {
  * GuestRoute – Chặn truy cập nếu đã đăng nhập (trang login/register).
  */
 const GuestRoute = ({ children }) => {
-  const { token, user } = useSelector((state) => state.auth)
-  if (token) return <Navigate to={isAdminUser(user) ? '/admin' : '/'} replace />
+  const { token, user, role } = useSelector((state) => state.auth)
+  if (token) return <Navigate to={canAccessAdminDashboard(user, role) ? '/admin' : '/'} replace />
   return children
 }
 
@@ -38,8 +38,8 @@ const GuestRoute = ({ children }) => {
  * AdminRoute – Chỉ cho phép admin truy cập.
  */
 const AdminRoute = ({ children }) => {
-  const { user } = useSelector((state) => state.auth)
-  if (!isAdminUser(user)) return <Navigate to="/" replace />
+  const { user, role } = useSelector((state) => state.auth)
+  if (!canAccessAdminDashboard(user, role)) return <Navigate to="/" replace />
   return children
 }
 
@@ -47,8 +47,8 @@ const AdminRoute = ({ children }) => {
  * RoleHomeRedirect – Điều hướng theo role khi vào root.
  */
 const RoleHomeRedirect = () => {
-  const { user } = useSelector((state) => state.auth)
-  if (isAdminUser(user)) return <Navigate to="/admin" replace />
+  const { user, role } = useSelector((state) => state.auth)
+  if (canAccessAdminDashboard(user, role)) return <Navigate to="/admin" replace />
   return <HomePage />
 }
 
@@ -86,6 +86,7 @@ const App = () => {
         >
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/support-request" element={<SupportRequestPage />} />
         </Route>
 
         {/* ── Public Auth Utility Routes ── */}
@@ -118,6 +119,16 @@ const App = () => {
             <ProtectedRoute>
               <AdminRoute>
                 <AdminDashboardPage />
+              </AdminRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminRoute>
+                <AdminDashboardOverviewPage />
               </AdminRoute>
             </ProtectedRoute>
           }

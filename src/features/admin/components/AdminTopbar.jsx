@@ -3,6 +3,7 @@ import { COLORS } from '@/theme/colors'
 
 const titles = {
   users: 'Quản lý người dùng',
+  unbanRequests: 'Yêu cầu mở khóa tài khoản',
   posts: 'Kiểm duyệt bài viết và tài liệu',
   comments: 'Quản lý bình luận',
   stats: 'Thống kê tài liệu được xem nhiều',
@@ -10,6 +11,7 @@ const titles = {
 
 const subtitles = {
   users: 'Phân quyền và khóa/mở khóa tài khoản người dùng.',
+  unbanRequests: 'Duyệt hoặc từ chối các yêu cầu mở khóa từ người dùng bị khóa vĩnh viễn.',
   posts: 'Thêm, sửa, xóa bài viết và quản lý tính hợp lệ của tài liệu.',
   comments: 'Xem danh sách bình luận và xóa bình luận vi phạm.',
   stats: 'Theo dõi các tài liệu có lượt xem cao nhất trên hệ thống.',
