@@ -12,15 +12,15 @@ const HomePage = () => {
 
   return (
     <div className="space-y-4">
-      <header className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <header className="rounded-2xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-black tracking-tight text-slate-900">Trang chủ</h1>
-            <p className="text-sm text-slate-500">Xin chào {displayName}, hôm nay bạn muốn chia sẻ gì?</p>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">Trang chủ</h1>
+            <p className="text-sm text-slate-500 font-normal">Xin chào {displayName}, hôm nay bạn muốn chia sẻ gì?</p>
           </div>
           <Link
             to="/create"
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700"
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 shrink-0 flex-shrink-0 whitespace-nowrap"
           >
             <AiOutlinePlusCircle size={16} />
             Đăng bài

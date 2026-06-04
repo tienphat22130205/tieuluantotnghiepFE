@@ -18,9 +18,9 @@ const CoverPhoto = ({ coverPhoto, isMyProfile }) => {
         />
       )}
       {isMyProfile && (
-        <button className="absolute bottom-4 right-4 bg-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-50 transition opacity-0 group-hover:opacity-100 flex items-center gap-2 cursor-pointer">
-          <AiOutlineCamera size={18} />
-          <span className="text-sm font-medium">Chỉnh sửa ảnh bìa</span>
+        <button className="absolute bottom-3 right-3 bg-white px-2.5 py-2 sm:px-4 sm:py-2 rounded-xl shadow-md hover:bg-slate-50 transition flex items-center gap-1.5 cursor-pointer border border-slate-100 lg:opacity-0 lg:group-hover:opacity-100">
+          <AiOutlineCamera size={18} className="text-slate-700" />
+          <span className="text-sm font-semibold text-slate-700 hidden sm:inline">Chỉnh sửa ảnh bìa</span>
         </button>
       )}
     </div>

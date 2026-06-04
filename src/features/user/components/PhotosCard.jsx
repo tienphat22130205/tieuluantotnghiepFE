@@ -4,7 +4,7 @@ import { resolveMediaUrl } from '@/utils/mediaUrl'
  * PhotosCard – Sidebar card hiển thị preview ảnh.
  * Props: posts (array of post objects)
  */
-const PhotosCard = ({ posts }) => {
+const PhotosCard = ({ posts, onSeeAll }) => {
   const photoUrls = (posts || [])
     .flatMap((post) => {
       const images = Array.isArray(post?.images) ? post.images : []
@@ -19,9 +19,14 @@ const PhotosCard = ({ posts }) => {
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-bold text-gray-900">Ảnh</h3>
-        <button className="text-sm text-primary-600 hover:underline">
-          Xem tất cả
-        </button>
+        {onSeeAll && (
+          <button
+            onClick={onSeeAll}
+            className="text-sm text-primary-600 hover:underline"
+          >
+            Xem tất cả
+          </button>
+        )}
       </div>
       <div className="grid grid-cols-3 gap-2">
         {uniquePhotoUrls.slice(0, 9).map((url, idx) => (

@@ -18,22 +18,22 @@ const PhotosTab = ({ posts }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <h3 className="font-bold text-gray-900 mb-4">Ảnh</h3>
-      <div className="grid grid-cols-3 gap-2">
-        {uniquePhotoUrls.slice(0, 9).map((url, idx) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        {uniquePhotoUrls.map((url, idx) => (
           <div
             key={idx}
-            className="aspect-square bg-gray-100 rounded-lg overflow-hidden"
+            className="aspect-square bg-gray-50 rounded-xl overflow-hidden border border-slate-100 group cursor-pointer relative"
           >
             <img
               src={url}
               alt=""
-              className="w-full h-full object-cover hover:opacity-90 transition cursor-pointer"
+              className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
             />
           </div>
         ))}
       </div>
       {uniquePhotoUrls.length === 0 && (
-        <p className="text-center text-gray-500 py-8">Chưa có ảnh nào</p>
+        <p className="text-center text-gray-500 py-12">Chưa có ảnh nào</p>
       )}
     </div>
   )

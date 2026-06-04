@@ -77,8 +77,8 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="space-y-6">
+      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm animate-fade-in">
         <div className="mx-auto max-w-5xl">
           <CoverPhoto coverPhoto={profile.coverPhoto} isMyProfile={isMyProfile} />
 
@@ -113,15 +113,19 @@ const ProfilePage = () => {
           />
         )}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="md:col-span-1 space-y-4">
-            <IntroCard profile={profile} isMyProfile={isMyProfile} onEditProfile={handleEditProfileOpen} />
-            <PhotosCard posts={displayedPosts} />
-            <FriendsCard friends={profile.friends || []} friendCount={friendCount} />
-          </div>
+        {activeTab === 'posts' ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="md:col-span-1 space-y-4">
+              <IntroCard profile={profile} isMyProfile={isMyProfile} onEditProfile={handleEditProfileOpen} />
+              <PhotosCard posts={displayedPosts} onSeeAll={() => setActiveTab('photos')} />
+              <FriendsCard friends={profile.friends || []} friendCount={friendCount} onSeeAll={() => setActiveTab('friends')} />
+            </div>
 
-          <div className="md:col-span-2">{renderTabContent()}</div>
-        </div>
+            <div className="md:col-span-2">{renderTabContent()}</div>
+          </div>
+        ) : (
+          <div className="w-full">{renderTabContent()}</div>
+        )}
       </div>
     </div>
   )

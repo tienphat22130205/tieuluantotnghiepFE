@@ -35,16 +35,17 @@ const ProfileInfo = ({
   }
 
   return (
-    <div className="relative px-4 sm:px-6 bg-white">
-      <div className="flex flex-col sm:flex-row sm:items-end gap-4 pb-4">
+    <div className="relative px-4 sm:px-6 bg-white pb-3 sm:pb-4">
+      {/* Upper section: Avatar on left, Name & Stats on right */}
+      <div className="flex items-start gap-4 pb-3 sm:pb-4">
         {/* Avatar - nhô lên trên ảnh bìa */}
-        <div className="relative group flex-shrink-0 -mt-[68px]">
-          <div className="relative">
+        <div className="relative group flex-shrink-0 -mt-10 sm:-mt-[68px] z-10 w-fit">
+          <div className="relative w-fit">
             <Avatar
               src={profile.avatar}
               name={profile.full_name}
               size="2xl"
-              className="ring-4 ring-white"
+              className="w-24 h-24 sm:w-36 sm:h-36 ring-4 ring-white"
             />
             {isMyProfile && (
               <>
@@ -57,10 +58,10 @@ const ProfileInfo = ({
                 />
                 <label
                   htmlFor={avatarInputId}
-                  className="absolute bottom-2 right-2 bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition opacity-0 group-hover:opacity-100 cursor-pointer"
+                  className="absolute bottom-0 right-0 bg-white p-1.5 sm:p-2 rounded-full hover:bg-slate-50 transition shadow-md border border-slate-100 lg:opacity-0 lg:group-hover:opacity-100 cursor-pointer z-20"
                   title={isUploadingAvatar ? 'Đang tải ảnh...' : 'Đổi ảnh đại diện'}
                 >
-                  <AiOutlineCamera size={18} className="text-gray-700" />
+                  <AiOutlineCamera size={16} className="text-gray-700 sm:w-[18px] sm:h-[18px]" />
                 </label>
               </>
             )}
@@ -68,68 +69,65 @@ const ProfileInfo = ({
         </div>
 
         {/* Name & Stats - ngang hàng với avatar */}
-        <div className="flex-1 sm:mb-2 pt-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+        <div className="flex-1 min-w-0 pt-2 sm:pt-4">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 truncate">
             {profile.full_name}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-gray-500 truncate mt-0.5">
             @{profile.username}
           </p>
-          <div className="flex gap-4 sm:gap-6 mt-2 text-sm">
-            <div>
-              <span className="font-bold text-gray-900">{posts.length}</span>
-              <span className="text-gray-500 ml-1">Bài viết</span>
-            </div>
-            <button className="hover:underline cursor-pointer">
-              <span className="font-bold text-gray-900">
-                {profile.followers?.length || 0}
-              </span>
-              <span className="text-gray-500 ml-1">Người theo dõi</span>
-            </button>
-            <button className="hover:underline cursor-pointer">
-              <span className="font-bold text-gray-900">
-                {profile.following?.length || 0}
-              </span>
-              <span className="text-gray-500 ml-1">Đang theo dõi</span>
-            </button>
+          
+          {/* Stats - inline list */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1.5 text-xs sm:text-sm text-gray-500 font-medium">
+            <span>
+              <strong className="font-bold text-gray-900">{profile.friends?.length || 0}</strong> bạn bè
+            </span>
+            <span>·</span>
+            <span>
+              <strong className="font-bold text-gray-900">{profile.following?.length || 0}</strong> đang theo dõi
+            </span>
+            <span>·</span>
+            <span>
+              <strong className="font-bold text-gray-900">{posts.length}</strong> bài viết
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 sm:self-end sm:mb-2">
-          {isMyProfile ? (
-            <Button
-              variant="primary"
-              size="sm"
-              className="flex-1 sm:flex-initial cursor-pointer"
-              onClick={onEditProfile}
-              disabled={isUploadingAvatar}
-            >
-              <AiOutlineEdit size={16} />
-              Chỉnh sửa trang cá nhân
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant={relationshipStatus?.areFriends ? 'outline' : 'primary'}
-                size="sm"
-                onClick={onFriendAction}
-                isLoading={isFriendActionLoading}
-                className="flex-1 sm:flex-initial cursor-pointer"
-              >
-                <AiOutlineUser size={16} />
-                {friendActionLabel || PROFILE_ACTION_LABELS.sendRequest}
-              </Button>
-              <Button variant="outline" size="sm" className="cursor-pointer">
-                <AiOutlineMessage size={16} />
-                Nhắn tin
-              </Button>
-            </>
-          )}
-          <Button variant="outline" size="sm" className="!px-3 cursor-pointer">
-            <AiOutlineMore size={18} />
+      {/* Lower section: Action Buttons */}
+      <div className="flex gap-2 sm:absolute sm:bottom-4 sm:right-6 sm:pb-0 z-10 w-full sm:w-auto">
+        {isMyProfile ? (
+          <Button
+            variant="primary"
+            size="sm"
+            className="flex-1 sm:flex-initial cursor-pointer rounded-xl font-semibold text-xs sm:text-sm py-2"
+            onClick={onEditProfile}
+            disabled={isUploadingAvatar}
+          >
+            <AiOutlineEdit size={16} />
+            Chỉnh sửa trang cá nhân
           </Button>
-        </div>
+        ) : (
+          <>
+            <Button
+              variant={relationshipStatus?.areFriends ? 'outline' : 'primary'}
+              size="sm"
+              onClick={onFriendAction}
+              isLoading={isFriendActionLoading}
+              className="flex-1 sm:flex-initial cursor-pointer rounded-xl font-semibold text-xs sm:text-sm py-2"
+            >
+              <AiOutlineUser size={16} />
+              {friendActionLabel || PROFILE_ACTION_LABELS.sendRequest}
+            </Button>
+            <Button variant="outline" size="sm" className="cursor-pointer rounded-xl font-semibold text-xs sm:text-sm py-2 flex-1 sm:flex-initial">
+              <AiOutlineMessage size={16} />
+              Nhắn tin
+            </Button>
+          </>
+        )}
+        <Button variant="outline" size="sm" className="!px-3 cursor-pointer rounded-xl py-2">
+          <AiOutlineMore size={18} />
+        </Button>
       </div>
     </div>
   )

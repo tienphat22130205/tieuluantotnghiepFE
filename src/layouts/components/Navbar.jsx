@@ -32,6 +32,7 @@ import { canAccessAdminDashboard } from '@/utils/auth'
 const TRANSLATIONS = {
   vi: {
     home: 'Trang chủ',
+    explore: 'Khám phá',
     notifications: 'Thông báo',
     friends: 'Bạn bè',
     create: 'Đăng bài',
@@ -50,6 +51,7 @@ const TRANSLATIONS = {
   },
   en: {
     home: 'Home',
+    explore: 'Explore',
     notifications: 'Notifications',
     friends: 'Friends',
     create: 'Create',
@@ -128,6 +130,14 @@ const Navbar = () => {
   }, [isMobileMenuOpen])
 
   useEffect(() => {
+    const handleOpenChat = () => {
+      setIsChatOpen(true)
+    }
+    window.addEventListener('chat:open', handleOpenChat)
+    return () => window.removeEventListener('chat:open', handleOpenChat)
+  }, [])
+
+  useEffect(() => {
     document.documentElement.lang = language
     document.documentElement.classList.toggle('dark', isDarkMode)
   }, [language, isDarkMode])
@@ -181,6 +191,7 @@ const Navbar = () => {
 
   const navLinks = [
     { path: '/', icon: AiOutlineHome, activeIcon: AiFillHome, labelKey: 'home' },
+    { path: '/explore', icon: AiOutlineGlobal, activeIcon: AiOutlineGlobal, labelKey: 'explore' },
     { path: '/notifications', icon: AiOutlineBell, activeIcon: AiFillBell, labelKey: 'notifications' },
     { path: '/friends', icon: AiOutlineTeam, activeIcon: FaUserFriends, labelKey: 'friends' },
     { path: '/create', icon: AiOutlinePlusCircle, activeIcon: AiFillPlusCircle, labelKey: 'create' },
