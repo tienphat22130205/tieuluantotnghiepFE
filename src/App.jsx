@@ -13,6 +13,7 @@ import { LoginPage, RegisterPage, SupportRequestPage, VerifyEmailPage } from '@/
 import { HomePage, CreatePostPage, PostDetailPage, SearchPage, ExplorePage } from '@/features/post'
 import { FriendsPage, ProfilePage } from '@/features/user'
 import { NotificationPage } from '@/features/notification'
+import { ChatPage } from '@/features/chat'
 import { AdminDashboardPage, AdminDashboardOverviewPage } from '@/features/admin'
 import { canAccessAdminDashboard } from '@/utils/auth'
 
@@ -113,6 +114,15 @@ const App = () => {
           <Route path="/profile/:userId" element={<ProfilePage />} />
           <Route path="/post/:postId" element={<PostDetailPage />} />
         </Route>
+
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/admin"

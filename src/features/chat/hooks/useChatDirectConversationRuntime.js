@@ -353,14 +353,29 @@ const useChatDirectConversationRuntime = ({
       }
     }
 
+    const handleMessageReactionUpdated = (payload) => {
+      const { messageId, reactions } = payload || {}
+      if (!messageId) return
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          String(msg._id || msg.id) === String(messageId)
+            ? { ...msg, reactions }
+            : msg
+        )
+      )
+    }
+
     socket.on('chat:message:new', handleMessageNew)
     socket.on('chat:conversation:updated', handleConversationUpdated)
     socket.on('chat:conversation:read', handleConversationRead)
+    socket.on('chat:message:reaction:updated', handleMessageReactionUpdated)
 
     return () => {
       socket.off('chat:message:new', handleMessageNew)
       socket.off('chat:conversation:updated', handleConversationUpdated)
       socket.off('chat:conversation:read', handleConversationRead)
+      socket.off('chat:message:reaction:updated', handleMessageReactionUpdated)
     }
   }, [activeConversationId, currentUserId, isOpen, setFriendPreview, setFriends, token])
 
@@ -434,6 +449,117 @@ const useChatDirectConversationRuntime = ({
     }
   }
 
+  const sendSticker = async (stickerUrl) => {
+    if (!stickerUrl || !activeConversationId) return
+
+    setIsSending(true)
+    const tempMessageId = createTempMessageId()
+    const optimisticMessage = normalizeChatMessage({
+      _id: tempMessageId,
+      content: '[Sticker]',
+      type: 'sticker',
+      sticker: stickerUrl,
+      createdAt: new Date().toISOString(),
+      senderId: currentUserId,
+      isMine: true,
+      status: 'sending',
+    }, {
+      fallbackSenderId: currentUserId || null,
+      forceMine: true,
+    })
+
+    if (optimisticMessage) {
+      setMessages((prev) => mergeIncomingMessage(prev, optimisticMessage))
+      if (selectedConversation?._id) {
+        setFriendPreview(selectedConversation._id, '[Sticker]', {
+          incrementUnread: false,
+          resetUnread: true,
+          createdAt: optimisticMessage.createdAt,
+        })
+      }
+    }
+
+    try {
+      const response = await chatService.sendMessage(activeConversationId, '', {
+        type: 'sticker',
+        stickerUrl,
+      })
+      const normalized = normalizeChatMessage(
+        response?.message || response?.data?.message || response,
+        {
+          fallbackSenderId: currentUserId || null,
+          forceMine: true,
+        }
+      )
+      if (normalized) {
+        const normalizedWithStatus = {
+          ...normalized,
+          _id: normalized._id || tempMessageId,
+          status: 'sent',
+        }
+
+        setMessages((prev) => {
+          const withoutTemp = prev.filter((message) => String(message._id) !== String(tempMessageId))
+          return mergeIncomingMessage(withoutTemp, normalizedWithStatus)
+        })
+
+        if (selectedConversation?._id) {
+          setFriendPreview(selectedConversation._id, '[Sticker]', {
+            incrementUnread: false,
+            resetUnread: true,
+            createdAt: normalizedWithStatus.createdAt,
+          })
+        }
+      }
+    } catch {
+      setMessages((prev) => prev.map((message) => (
+        String(message._id) === String(tempMessageId)
+          ? { ...message, status: 'failed' }
+          : message
+      )))
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const toggleReaction = useCallback(async (messageId, emojiType) => {
+    try {
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (String(msg._id || msg.id) !== String(messageId)) return msg
+
+          const existingReactions = Array.isArray(msg.reactions) ? msg.reactions : []
+          const existingIndex = existingReactions.findIndex(
+            (r) => String(r.user?._id || r.user || '') === String(currentUserId)
+          )
+
+          let nextReactions = [...existingReactions]
+          if (existingIndex > -1) {
+            if (nextReactions[existingIndex].type === emojiType) {
+              nextReactions.splice(existingIndex, 1)
+            } else {
+              nextReactions[existingIndex] = {
+                ...nextReactions[existingIndex],
+                type: emojiType,
+              }
+            }
+          } else {
+            nextReactions.push({
+              user: { _id: currentUserId, username: user?.username },
+              type: emojiType,
+            })
+          }
+
+          return { ...msg, reactions: nextReactions }
+        })
+      )
+
+      await chatService.toggleMessageReaction(messageId, emojiType)
+    } catch {
+      // Fallback
+    }
+  }, [currentUserId, user])
+
   const viewMessages = useMemo(() => {
     return messages
       .filter((message) => String(message?.content || '').trim().length > 0)
@@ -460,6 +586,8 @@ const useChatDirectConversationRuntime = ({
     isSending,
     messages: viewMessages,
     sendMessage,
+    sendSticker,
+    toggleReaction,
   }
 }
 

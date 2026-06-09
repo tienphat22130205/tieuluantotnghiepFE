@@ -13,6 +13,8 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
     messageInput,
     searchKeyword,
     sendMessage,
+    sendSticker,
+    toggleReaction,
     setMessageInput,
     setSearchKeyword,
     handleClosePanel,
@@ -51,6 +53,8 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
         onClose={handleClosePanel}
         onSendMessage={sendMessage}
         onChangeMessage={setMessageInput}
+        onSendSticker={sendSticker}
+        onToggleReaction={toggleReaction}
       />
     </>
   )

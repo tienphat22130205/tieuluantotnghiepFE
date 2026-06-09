@@ -11,9 +11,11 @@ const chatService = {
     params: { page, limit },
   }),
 
-  sendMessage: (conversationId, content) => api.post(`/chats/conversations/${conversationId}/messages`, { content }),
+  sendMessage: (conversationId, content, payload = {}) => api.post(`/chats/conversations/${conversationId}/messages`, { content, ...payload }),
 
   markConversationAsRead: (conversationId) => api.patch(`/chats/conversations/${conversationId}/read`),
+
+  toggleMessageReaction: (messageId, type) => api.patch(`/chats/messages/${messageId}/react`, { type }),
 }
 
 export default chatService

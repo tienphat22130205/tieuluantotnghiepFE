@@ -25,6 +25,8 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     isSending,
     messages,
     sendMessage,
+    sendSticker,
+    toggleReaction,
   } = useChatDirectConversationRuntime({
     isOpen,
     selectedConversation,
@@ -75,6 +77,8 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     setMessageInput,
     setSearchKeyword,
     sendMessage,
+    sendSticker,
+    toggleReaction,
     handleClosePanel,
     handleBackToList,
     handleSelectFriend,

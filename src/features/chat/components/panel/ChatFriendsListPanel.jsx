@@ -1,4 +1,5 @@
-import { AiOutlineSearch, AiOutlineClose } from 'react-icons/ai'
+import { AiOutlineSearch, AiOutlineClose, AiOutlineExpand } from 'react-icons/ai'
+import { useNavigate } from 'react-router-dom'
 import { Avatar } from '@/components/ui'
 import formatLastSeenText from '@/utils/formatLastSeenText'
 
@@ -27,6 +28,13 @@ const ChatFriendsListPanel = ({
   onClose,
   onSelectFriend,
 }) => {
+  const navigate = useNavigate()
+
+  const handleExpand = () => {
+    onClose?.()
+    navigate('/chat')
+  }
+
   return (
     <div
       className={`fixed inset-0 z-[60] flex flex-col bg-white transition-transform duration-300 ease-out md:inset-y-0 md:left-auto md:right-0 md:h-screen md:w-[360px] md:border-l md:border-gray-200 md:shadow-2xl ${
@@ -35,12 +43,23 @@ const ChatFriendsListPanel = ({
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <h3 className="text-base font-semibold text-gray-900">Đoạn chat</h3>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
-        >
-          <AiOutlineClose size={16} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleExpand}
+            title="Mở rộng trang chat"
+            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+          >
+            <AiOutlineExpand size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+          >
+            <AiOutlineClose size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="px-3 py-2 border-b border-gray-100">
