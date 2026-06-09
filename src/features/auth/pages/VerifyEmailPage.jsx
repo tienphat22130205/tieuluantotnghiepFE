@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import authService from '../services/authService'
@@ -20,7 +20,7 @@ const VerifyEmailPage = () => {
     setStatus('loading')
     try {
       const response = await authService.verifyEmail(token)
-      const successMessage = response?.message || 'Xác minh email thành công. Bạn có thể đăng nhập ngay.'
+      const successMessage = response?.message || 'Xác minh email thành công! Bạn có thể quay lại tab đăng ký để tiếp tục.'
       setStatus('success')
       setMessage(successMessage)
       toast.success(successMessage, { autoClose: 3000 })
@@ -31,6 +31,13 @@ const VerifyEmailPage = () => {
       toast.error(errorMessage, { autoClose: 3000 })
     }
   }
+
+  // Tự động xác minh khi load trang nếu có token
+  useEffect(() => {
+    if (token && status === 'idle') {
+      handleVerify()
+    }
+  }, [token, status])
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">

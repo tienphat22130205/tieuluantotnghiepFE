@@ -1,10 +1,12 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import useAuth from '../hooks/useAuth'
 import RegisterForm from '../components/RegisterForm'
+import authService from '../services/authService'
 
 const RegisterPage = () => {
+  const navigate = useNavigate()
   const { isLoading, error, handleRegister, handleClearError } = useAuth()
 
   const [form, setForm] = useState({
@@ -21,6 +23,45 @@ const RegisterPage = () => {
 
   const [formError, setFormError] = useState('')
   const [registeredEmail, setRegisteredEmail] = useState('')
+  const [registeredUserId, setRegisteredUserId] = useState('')
+
+  // Determine mail provider URL based on email domain
+  const getMailProviderUrl = (email) => {
+    if (!email) return 'https://mail.google.com'
+    const domain = email.split('@')[1]?.toLowerCase()
+    if (domain === 'gmail.com') return 'https://mail.google.com'
+    if (['outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'outlook.com.vn'].includes(domain)) {
+      return 'https://outlook.live.com'
+    }
+    if (domain === 'yahoo.com' || domain === 'yahoo.com.vn') {
+      return 'https://mail.yahoo.com'
+    }
+    return `https://${domain}`
+  }
+
+  // Polling to check if email is verified
+  useEffect(() => {
+    if (!registeredUserId) return
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await authService.checkStatus(registeredUserId)
+        if (res?.data?.verified) {
+          clearInterval(interval)
+          setRegisteredEmail('')
+          setRegisteredUserId('')
+          toast.success('Xác thực email thành công! Bạn có thể đăng nhập ngay.', {
+            autoClose: 5000,
+          })
+          navigate('/login')
+        }
+      } catch (err) {
+        console.error('Error checking verification status:', err)
+      }
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [registeredUserId, navigate])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -77,6 +118,10 @@ const RegisterPage = () => {
 
     if (result.meta?.requestStatus === 'fulfilled') {
       setRegisteredEmail(registerPayload.email)
+      const userId = result.payload?.data?.userId
+      if (userId) {
+        setRegisteredUserId(userId)
+      }
       toast.success('Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.', {
         autoClose: 3000,
       })
@@ -110,19 +155,33 @@ const RegisterPage = () => {
         </Link>
       </p>
 
-      {/* Verification modal logic is kept simple so it overrides the screen */}
+      {/* Verification modal with direct email button and instructions */}
       {registeredEmail && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/50 px-4 py-6 backdrop-blur-sm">
           <div className="w-full max-w-[560px] rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-7">
             <div className="mb-4 rounded-xl border border-primary-200 bg-primary-50 p-4">
               <p className="text-sm font-semibold text-slate-900">Kiểm tra Email</p>
               <p className="mt-1 text-sm leading-6 text-slate-700">Đã gửi xác thực tới: <b>{registeredEmail}</b></p>
+              <p className="mt-2 text-xs text-primary-600 animate-pulse font-medium">
+                💡 Hệ thống sẽ tự động chuyển hướng khi bạn nhấp vào liên kết xác thực trong email. Bạn có thể giữ nguyên tab này.
+              </p>
             </div>
             <div className="mt-4 flex gap-2">
+              <a
+                href={getMailProviderUrl(registeredEmail)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 text-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-primary-700 shadow-sm"
+              >
+                Mở hộp thư của bạn
+              </a>
               <button
                 type="button"
-                onClick={() => setRegisteredEmail('')}
-                className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
+                onClick={() => {
+                  setRegisteredEmail('')
+                  setRegisteredUserId('')
+                }}
+                className="rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100"
               >
                 Đóng
               </button>

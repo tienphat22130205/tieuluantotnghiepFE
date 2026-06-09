@@ -13,6 +13,12 @@ const authService = {
     return unwrapResponse(response)
   },
 
+  // Kiểm tra trạng thái xác thực của user
+  checkStatus: async (userId) => {
+    const response = await api.get(`/auth/check-status/${userId}`)
+    return unwrapResponse(response)
+  },
+
   // Đăng nhập, trả về { token, user }
   login: async (credentials) => {
     const payload = {
