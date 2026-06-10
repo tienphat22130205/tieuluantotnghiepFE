@@ -23,9 +23,15 @@ const PostContent = ({ post, isLiked, onLike, inDetailModal = false }) => {
     post?.sharedPost && typeof post.sharedPost === 'object' ? post.sharedPost : null
   )
 
-  const postUserId = post?.user?.id || post?.user?._id
+  const postUser = post?.user || post?.author || {}
+  const postUserId = postUser.id || postUser._id || postUser.user_id
   const profilePath = postUserId ? `/profile/${postUserId}` : '#'
-  const displayName = post?.user?.full_name || post?.user?.fullName || post?.user?.username || `${post?.user?.firstName || ''} ${post?.user?.lastName || ''}`.trim() || 'Người dùng'
+  const displayName =
+    postUser.full_name ||
+    postUser.fullName ||
+    postUser.username ||
+    `${postUser.first_name || postUser.firstName || ''} ${postUser.last_name || postUser.lastName || ''}`.trim() ||
+    'Người dùng'
   const visibilityLabel = {
     public: 'Công khai',
     friends: 'Bạn bè',
@@ -98,9 +104,10 @@ const PostContent = ({ post, isLiked, onLike, inDetailModal = false }) => {
       }
     }
 
+    const sharedUser = source?.user || source?.author || {}
     return {
       id: source?._id || source?.id || sharedPostRefId,
-      userName: source?.user?.username || source?.user?.full_name || source?.user?.fullName || 'Người dùng',
+      userName: sharedUser.username || sharedUser.full_name || sharedUser.fullName || 'Người dùng',
       caption: source?.caption || source?.content || '',
       image: resolveMediaUrl(
         source?.image_url || (Array.isArray(source?.images) ? source.images[0] : null)
@@ -134,7 +141,7 @@ const PostContent = ({ post, isLiked, onLike, inDetailModal = false }) => {
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4">
         <Avatar
-          src={post.user?.avatar}
+          src={postUser.avatar}
           name={displayName}
           size="md"
           to={profilePath}

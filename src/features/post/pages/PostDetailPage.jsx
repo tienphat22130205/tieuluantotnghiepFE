@@ -23,6 +23,8 @@ const PostDetailPage = () => {
     handleLike,
     handleSubmitComment,
     handleDeleteComment,
+    replyToComment,
+    setReplyToComment,
   } = usePostDetailPage(postId)
 
   if (isLoading) return <LoadingSpinner text="Đang tải bài viết..." />
@@ -63,6 +65,8 @@ const PostDetailPage = () => {
           onCommentChange={setNewComment}
           onSubmitComment={handleSubmitComment}
           onDeleteComment={handleDeleteComment}
+          replyToComment={replyToComment}
+          onSetReplyToComment={setReplyToComment}
         />
       </div>
     </div>

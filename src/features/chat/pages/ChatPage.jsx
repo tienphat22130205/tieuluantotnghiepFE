@@ -12,6 +12,7 @@ import {
 } from 'react-icons/ai'
 
 import { Avatar } from '@/components/ui'
+import { FaReply } from 'react-icons/fa'
 import formatLastSeenText from '@/utils/formatLastSeenText'
 import useChatFriendsInitialData from '@/features/chat/hooks/useChatFriendsInitialData'
 import useChatPresenceRealtimeSync from '@/features/chat/hooks/useChatPresenceRealtimeSync'
@@ -76,9 +77,31 @@ const ChatPage = () => {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [showStickers, setShowStickers] = useState(false)
   const [activeReactionMessageId, setActiveReactionMessageId] = useState(null)
+  const [longPressedMessage, setLongPressedMessage] = useState(null)
+  const longPressTimeout = useRef(null)
+
+  const handleTouchStart = (msg) => (e) => {
+    if (window.innerWidth >= 768) return
+    if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
+    longPressTimeout.current = setTimeout(() => {
+      setLongPressedMessage(msg)
+      if (navigator.vibrate) {
+        try {
+          navigator.vibrate(50)
+        } catch (_err) {}
+      }
+    }, 600)
+  }
+
+  const handleTouchEnd = () => {
+    if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
+  }
+
+  const handleTouchMove = () => {
+    if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
+  }
 
 
-  // Runtime context for active chat (fetching, sockets sync, updates, sends)
   const {
     isMessagesLoading,
     isSending,
@@ -86,6 +109,8 @@ const ChatPage = () => {
     sendMessage,
     sendSticker,
     toggleReaction,
+    replyToMessage,
+    setReplyToMessage,
   } = useChatDirectConversationRuntime({
     isOpen: true,
     selectedConversation,
@@ -312,6 +337,7 @@ const ChatPage = () => {
                 messages.map((msg) => (
                   <div
                     key={msg._id || `${msg.sender}-${msg.createdAt}`}
+                    id={`msg-${msg._id}`}
                     className={`group relative flex items-end gap-2.5 mb-6 ${
                       msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'
                     }`}
@@ -328,8 +354,44 @@ const ChatPage = () => {
 
                     {/* Message Bubble or Sticker Content */}
                     <div className="relative flex flex-col max-w-[65%]">
+                      {msg.replyTo && (
+                        <div
+                          className={`mb-1 px-3 py-1.5 rounded-2xl text-xs flex flex-col max-w-full opacity-85 border select-none cursor-pointer hover:opacity-100 transition-opacity ${
+                            msg.sender === 'me'
+                              ? 'bg-primary-700/40 text-slate-100 border-primary-500/20 rounded-br-none'
+                              : 'bg-slate-100 text-slate-600 border-slate-200 rounded-bl-none'
+                          }`}
+                          onClick={() => {
+                            const element = document.getElementById(`msg-${msg.replyTo._id}`)
+                            if (element) {
+                              element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                              element.classList.add('bg-primary-50', 'animate-pulse')
+                              setTimeout(() => {
+                                element.classList.remove('bg-primary-50', 'animate-pulse')
+                              }, 1500)
+                            }
+                          }}
+                        >
+                          <span className="font-bold text-[10px] text-primary-600">
+                            {msg.replyTo.sender?._id === currentUserId
+                              ? 'Bạn'
+                              : msg.replyTo.sender?.firstName
+                              ? `${msg.replyTo.sender.firstName} ${msg.replyTo.sender.lastName || ''}`.trim()
+                              : 'Người dùng'}
+                          </span>
+                          <span className="truncate max-w-[200px]">
+                            {msg.replyTo.type === 'sticker' ? '[Nhãn dán]' : msg.replyTo.content}
+                          </span>
+                        </div>
+                      )}
+
                       {msg.type === 'sticker' && msg.sticker ? (
-                        <div className="relative my-0.5">
+                        <div
+                          className="relative my-0.5"
+                          onTouchStart={handleTouchStart(msg)}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchMove={handleTouchMove}
+                        >
                           <img
                             src={msg.sticker}
                             alt="Sticker"
@@ -347,6 +409,9 @@ const ChatPage = () => {
                               ? 'bg-primary-600 text-white rounded-br-md font-medium'
                               : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
                           }`}
+                          onTouchStart={handleTouchStart(msg)}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchMove={handleTouchMove}
                         >
                           <p className="whitespace-pre-wrap break-all">{msg.text}</p>
                         </div>
@@ -372,8 +437,19 @@ const ChatPage = () => {
 
                     {/* Reaction Trigger Button (visible on hover) */}
                     <div
-                      className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center px-0.5 shrink-0 relative"
+                      className={`opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center px-0.5 shrink-0 gap-1 relative ${
+                        msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'
+                      }`}
                     >
+                      <button
+                        type="button"
+                        onClick={() => setReplyToMessage(msg)}
+                        className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-200 cursor-pointer"
+                        title="Phản hồi"
+                      >
+                        <FaReply size={12} />
+                      </button>
+
                       <button
                         type="button"
                         onClick={() =>
@@ -431,6 +507,25 @@ const ChatPage = () => {
 
             {/* Input Box */}
             <div className="border-t border-slate-200 p-4 bg-white">
+              {replyToMessage && (
+                <div className="flex items-center justify-between rounded-xl bg-slate-150 px-4 py-2 text-xs text-slate-700 mb-2.5 border border-slate-200/50 animate-fade-in">
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold text-slate-900 block">
+                      Đang trả lời {replyToMessage.sender === 'me' ? 'chính mình' : selectedConversation.full_name}
+                    </span>
+                    <span className="truncate text-slate-500 block">
+                      {replyToMessage.type === 'sticker' ? '[Nhãn dán]' : replyToMessage.text}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReplyToMessage(null)}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200/50 cursor-pointer transition shrink-0 ml-2"
+                  >
+                    <AiOutlineClose size={16} />
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 pl-4 pr-2 py-1.5 relative">
                 <button
                   type="button"
@@ -483,6 +578,59 @@ const ChatPage = () => {
           </div>
         )}
       </div>
+
+      {/* Mobile context menu bottom sheet */}
+      {longPressedMessage && (
+        <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/45 animate-fade-in md:hidden">
+          <div className="absolute inset-0" onClick={() => setLongPressedMessage(null)} />
+          <div className="relative w-full max-w-md bg-white rounded-t-3xl p-5 shadow-2xl z-10 animate-slide-up pb-8 border-t border-slate-100">
+            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3 px-1">Bày tỏ cảm xúc</p>
+            <div className="flex items-center justify-between bg-slate-50 rounded-2xl p-2.5 mb-5 border border-slate-100/50">
+              {Object.entries(REACTION_EMOJIS).map(([type, emoji]) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => {
+                    toggleReaction?.(longPressedMessage._id, type)
+                    setLongPressedMessage(null)
+                  }}
+                  className="text-3xl active:scale-130 transition duration-150 p-1 cursor-pointer"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setReplyToMessage(longPressedMessage)
+                  setLongPressedMessage(null)
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 transition active:bg-slate-100 cursor-pointer"
+              >
+                <span className="p-2 bg-primary-50 text-primary-600 rounded-lg shrink-0">
+                  <FaReply size={14} />
+                </span>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-slate-800">Phản hồi tin nhắn</span>
+                  <span className="text-xs text-slate-400 font-medium truncate max-w-[240px]">
+                    "{longPressedMessage.text || (longPressedMessage.type === 'sticker' ? '[Nhãn dán]' : '')}"
+                  </span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLongPressedMessage(null)}
+                className="w-full py-3.5 rounded-xl text-center text-sm font-bold text-slate-500 bg-slate-50 hover:bg-slate-100 transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

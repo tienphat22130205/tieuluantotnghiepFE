@@ -20,6 +20,8 @@ const PostDetailModal = ({
   onCommentChange,
   onSubmitComment,
   onDeleteComment,
+  replyToComment = null,
+  onSetReplyToComment = () => {},
 }) => {
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -77,6 +79,8 @@ const PostDetailModal = ({
                         onCommentChange={onCommentChange}
                         onSubmitComment={onSubmitComment}
                         onDeleteComment={onDeleteComment}
+                        replyToComment={replyToComment}
+                        onSetReplyToComment={onSetReplyToComment}
                       />
                     </div>
                   </div>

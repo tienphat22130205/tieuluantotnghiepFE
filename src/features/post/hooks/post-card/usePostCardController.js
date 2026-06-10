@@ -153,6 +153,7 @@ const usePostCardController = (post) => {
   const [newComment, setNewComment] = useState('')
   const [isCommenting, setIsCommenting] = useState(false)
   const [deletingCommentId, setDeletingCommentId] = useState(null)
+  const [replyToComment, setReplyToComment] = useState(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false)
@@ -363,6 +364,7 @@ const usePostCardController = (post) => {
 
   const closePostDetail = () => {
     setIsDetailModalOpen(false)
+    setReplyToComment(null)
   }
 
   const openShareModal = () => {
@@ -405,16 +407,18 @@ const usePostCardController = (post) => {
 
     setIsCommenting(true)
     try {
+      const parentCommentId = replyToComment?._id || replyToComment?.id || null
       if (isDemoMode) {
         const optimistic = {
           _id: `demo-cmt-${Date.now()}`,
           user,
           content,
           created_at: new Date().toISOString(),
+          replyTo: parentCommentId,
         }
         setComments((prev) => mergeIncomingComment(prev, optimistic))
       } else {
-        const result = await postService.addComment(post._id, content)
+        const result = await postService.addComment(post._id, content, parentCommentId)
         const incomingComment = normalizeComment(result?.comment, user)
         if (incomingComment) {
           setComments((prev) => mergeIncomingComment(prev, incomingComment))
@@ -426,6 +430,7 @@ const usePostCardController = (post) => {
         }
       }
       setNewComment('')
+      setReplyToComment(null)
     } catch (err) {
       console.error('Add comment failed:', err)
     } finally {
@@ -489,6 +494,8 @@ const usePostCardController = (post) => {
     setNewComment,
     handleSubmitComment,
     handleDeleteComment,
+    replyToComment,
+    setReplyToComment,
   }
 }
 

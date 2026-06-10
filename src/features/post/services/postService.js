@@ -159,8 +159,8 @@ const postService = {
   },
 
   // Thêm comment
-  addComment: async (postId, content) => {
-    const response = await api.post(`/posts/${postId}/comments`, { content })
+  addComment: async (postId, content, replyTo = null) => {
+    const response = await api.post(`/posts/${postId}/comments`, { content, replyTo })
     const data = unwrapDataPayload(response)
     return {
       postId: data?.postId || postId,
