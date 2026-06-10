@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { ToastContainer } from 'react-toastify'
@@ -57,6 +58,16 @@ const RoleHomeRedirect = () => {
  * App Component – Cấu hình Router chính.
  */
 const App = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
     <MotionConfig
       reducedMotion="user"
@@ -67,14 +78,15 @@ const App = () => {
     >
       <BrowserRouter>
         <ToastContainer
-          position="top-right"
-          autoClose={4000}
-          hideProgressBar={false}
+          position={isMobile ? "top-center" : "top-right"}
+          autoClose={isMobile ? 2500 : 4000}
+          hideProgressBar={isMobile}
           newestOnTop={true}
           closeOnClick={true}
           rtl={false}
-          pauseOnFocusLoss={true}
+          pauseOnFocusLoss={!isMobile}
           draggable={true}
+          toastClassName={isMobile ? "mobile-toast" : ""}
         />
         <Routes>
         {/* ── Auth Routes (Guest only) ── */}

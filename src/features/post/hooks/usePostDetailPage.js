@@ -144,6 +144,7 @@ const usePostDetailPage = (postId) => {
   const [isLoading, setIsLoading] = useState(true)
   const [isCommenting, setIsCommenting] = useState(false)
   const [deletingCommentId, setDeletingCommentId] = useState(null)
+  const [replyToComment, setReplyToComment] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -334,12 +335,14 @@ const usePostDetailPage = (postId) => {
 
     setIsCommenting(true)
     try {
-      const result = await postService.addComment(postId, content)
+      const parentCommentId = replyToComment?._id || replyToComment?.id || null
+      const result = await postService.addComment(postId, content, parentCommentId)
       const comment = normalizeComment(result?.comment, user)
       if (comment) {
         setComments((prev) => mergeIncomingComment(prev, comment))
       }
       setNewComment('')
+      setReplyToComment(null)
       setPost((prev) => (prev ? {
         ...prev,
         comments_count: typeof result?.commentCount === 'number'
@@ -391,6 +394,8 @@ const usePostDetailPage = (postId) => {
     handleLike,
     handleSubmitComment,
     handleDeleteComment,
+    replyToComment,
+    setReplyToComment,
   }
 }
 

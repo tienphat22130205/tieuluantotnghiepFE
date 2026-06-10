@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AiOutlineClose, AiOutlineArrowLeft, AiOutlineSend, AiOutlineExpand, AiOutlineSmile } from 'react-icons/ai'
+import { FaReply } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { Avatar } from '@/components/ui'
 import formatLastSeenText from '@/utils/formatLastSeenText'
@@ -28,11 +29,36 @@ const ChatConversationWindow = ({
   onChangeMessage,
   onSendSticker,
   onToggleReaction,
+  replyToMessage = null,
+  onSetReplyToMessage = () => {},
 }) => {
   const messagesContainerRef = useRef(null)
   const navigate = useNavigate()
   const [showStickers, setShowStickers] = useState(false)
   const [activeReactionMessageId, setActiveReactionMessageId] = useState(null)
+  const [longPressedMessage, setLongPressedMessage] = useState(null)
+  const longPressTimeout = useRef(null)
+
+  const handleTouchStart = (msg) => (e) => {
+    if (window.innerWidth >= 768) return
+    if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
+    longPressTimeout.current = setTimeout(() => {
+      setLongPressedMessage(msg)
+      if (navigator.vibrate) {
+        try {
+          navigator.vibrate(50)
+        } catch (_err) {}
+      }
+    }, 600)
+  }
+
+  const handleTouchEnd = () => {
+    if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
+  }
+
+  const handleTouchMove = () => {
+    if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
+  }
 
   useEffect(() => {
     if (!selectedConversation?._id || isMessagesLoading) return
@@ -138,7 +164,12 @@ const ChatConversationWindow = ({
                 {/* Message Bubble or Sticker Content */}
                 <div className="relative flex flex-col max-w-[70%]">
                   {msg.type === 'sticker' && msg.sticker ? (
-                    <div className="relative my-0.5">
+                    <div
+                      className="relative my-0.5"
+                      onTouchStart={handleTouchStart(msg)}
+                      onTouchEnd={handleTouchEnd}
+                      onTouchMove={handleTouchMove}
+                    >
                       <img
                         src={msg.sticker}
                         alt="Sticker"
@@ -156,6 +187,9 @@ const ChatConversationWindow = ({
                           ? 'bg-primary-600 text-white rounded-br-md font-medium shadow-sm'
                           : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
                       }`}
+                      onTouchStart={handleTouchStart(msg)}
+                      onTouchEnd={handleTouchEnd}
+                      onTouchMove={handleTouchMove}
                     >
                       <p className="whitespace-pre-wrap break-all">{msg.text}</p>
                     </div>
@@ -181,10 +215,19 @@ const ChatConversationWindow = ({
 
                 {/* Reaction Trigger Button (visible on hover) */}
                 <div
-                  className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center px-0.5 shrink-0 relative ${
-                    msg.sender === 'me' ? 'order-first' : 'order-last'
+                  className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center px-0.5 shrink-0 gap-0.5 relative ${
+                    msg.sender === 'me' ? 'order-first flex-row-reverse' : 'order-last flex-row'
                   }`}
                 >
+                  <button
+                    type="button"
+                    onClick={() => onSetReplyToMessage(msg)}
+                    className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-100 cursor-pointer"
+                    title="Phản hồi"
+                  >
+                    <FaReply size={10} />
+                  </button>
+
                   <button
                     type="button"
                     onClick={() =>
@@ -240,6 +283,25 @@ const ChatConversationWindow = ({
           </div>
 
           <div className="border-t border-gray-100 p-3">
+            {replyToMessage && (
+              <div className="flex items-center justify-between rounded-xl bg-slate-100 px-3 py-1.5 text-[11px] text-slate-700 mb-2 border border-slate-200/50 animate-fade-in">
+                <div className="min-w-0 flex-1">
+                  <span className="font-bold text-slate-900 block leading-tight">
+                    Đang trả lời {replyToMessage.sender === 'me' ? 'chính mình' : selectedConversation.full_name}
+                  </span>
+                  <span className="truncate text-slate-500 block">
+                    {replyToMessage.type === 'sticker' ? '[Nhãn dán]' : replyToMessage.text}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onSetReplyToMessage(null)}
+                  className="p-0.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200/50 cursor-pointer transition shrink-0 ml-1.5"
+                >
+                  <AiOutlineClose size={14} />
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 relative">
               <button
                 type="button"
@@ -279,6 +341,59 @@ const ChatConversationWindow = ({
               </button>
             </div>
           </div>
+
+          {/* Mobile context menu bottom sheet */}
+          {longPressedMessage && (
+            <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/45 animate-fade-in md:hidden">
+              <div className="absolute inset-0" onClick={() => setLongPressedMessage(null)} />
+              <div className="relative w-full max-w-md bg-white rounded-t-3xl p-5 shadow-2xl z-10 animate-slide-up pb-8 border-t border-slate-100">
+                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
+                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3 px-1">Bày tỏ cảm xúc</p>
+                <div className="flex items-center justify-between bg-slate-50 rounded-2xl p-2.5 mb-5 border border-slate-100/50">
+                  {Object.entries(REACTION_EMOJIS).map(([type, emoji]) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        onToggleReaction?.(longPressedMessage._id, type)
+                        setLongPressedMessage(null)
+                      }}
+                      className="text-3xl active:scale-130 transition duration-150 p-1 cursor-pointer"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSetReplyToMessage(longPressedMessage)
+                      setLongPressedMessage(null)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 transition active:bg-slate-100 cursor-pointer"
+                  >
+                    <span className="p-2 bg-primary-50 text-primary-600 rounded-lg shrink-0">
+                      <FaReply size={14} />
+                    </span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-slate-800">Phản hồi tin nhắn</span>
+                      <span className="text-xs text-slate-400 font-medium truncate max-w-[240px]">
+                        "{longPressedMessage.text || (longPressedMessage.type === 'sticker' ? '[Nhãn dán]' : '')}"
+                      </span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLongPressedMessage(null)}
+                    className="w-full py-3.5 rounded-xl text-center text-sm font-bold text-slate-500 bg-slate-50 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    Hủy bỏ
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -20,6 +20,8 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
     handleClosePanel,
     handleBackToList,
     handleSelectFriend,
+    replyToMessage,
+    setReplyToMessage,
   } = useChatFriendsPresencePanelState({ isOpen, onClose })
 
   return (
@@ -55,6 +57,8 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
         onChangeMessage={setMessageInput}
         onSendSticker={sendSticker}
         onToggleReaction={toggleReaction}
+        replyToMessage={replyToMessage}
+        onSetReplyToMessage={setReplyToMessage}
       />
     </>
   )

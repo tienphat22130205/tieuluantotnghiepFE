@@ -60,6 +60,7 @@ const useChatDirectConversationRuntime = ({
   const [isMessagesLoading, setIsMessagesLoading] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [activeConversationId, setActiveConversationId] = useState(null)
+  const [replyToMessage, setReplyToMessage] = useState(null)
   const conversationByFriendIdRef = useRef(new Map())
   const friendByConversationIdRef = useRef(new Map())
   const joinedConversationIdRef = useRef(null)
@@ -392,6 +393,17 @@ const useChatDirectConversationRuntime = ({
       senderId: currentUserId,
       isMine: true,
       status: 'sending',
+      replyTo: replyToMessage ? {
+        _id: replyToMessage._id,
+        content: replyToMessage.text,
+        type: replyToMessage.type || 'text',
+        sticker: replyToMessage.sticker || null,
+        sender: {
+          username: replyToMessage.sender === 'me' ? user?.username : selectedConversation?.username,
+          firstName: replyToMessage.sender === 'me' ? user?.firstName : selectedConversation?.firstName,
+          lastName: replyToMessage.sender === 'me' ? user?.lastName : selectedConversation?.lastName,
+        }
+      } : null,
     }, {
       fallbackSenderId: currentUserId || null,
       forceMine: true,
@@ -410,7 +422,9 @@ const useChatDirectConversationRuntime = ({
     }
 
     try {
-      const response = await chatService.sendMessage(activeConversationId, content)
+      const response = await chatService.sendMessage(activeConversationId, content, {
+        replyTo: replyToMessage?._id || null,
+      })
       const normalized = normalizeChatMessage(
         response?.message || response?.data?.message || response,
         {
@@ -437,6 +451,7 @@ const useChatDirectConversationRuntime = ({
             createdAt: normalizedWithStatus.createdAt,
           })
         }
+        setReplyToMessage(null)
       }
     } catch {
       setMessages((prev) => prev.map((message) => (
@@ -463,6 +478,17 @@ const useChatDirectConversationRuntime = ({
       senderId: currentUserId,
       isMine: true,
       status: 'sending',
+      replyTo: replyToMessage ? {
+        _id: replyToMessage._id,
+        content: replyToMessage.text,
+        type: replyToMessage.type || 'text',
+        sticker: replyToMessage.sticker || null,
+        sender: {
+          username: replyToMessage.sender === 'me' ? user?.username : selectedConversation?.username,
+          firstName: replyToMessage.sender === 'me' ? user?.firstName : selectedConversation?.firstName,
+          lastName: replyToMessage.sender === 'me' ? user?.lastName : selectedConversation?.lastName,
+        }
+      } : null,
     }, {
       fallbackSenderId: currentUserId || null,
       forceMine: true,
@@ -483,6 +509,7 @@ const useChatDirectConversationRuntime = ({
       const response = await chatService.sendMessage(activeConversationId, '', {
         type: 'sticker',
         stickerUrl,
+        replyTo: replyToMessage?._id || null,
       })
       const normalized = normalizeChatMessage(
         response?.message || response?.data?.message || response,
@@ -510,6 +537,7 @@ const useChatDirectConversationRuntime = ({
             createdAt: normalizedWithStatus.createdAt,
           })
         }
+        setReplyToMessage(null)
       }
     } catch {
       setMessages((prev) => prev.map((message) => (
@@ -588,6 +616,8 @@ const useChatDirectConversationRuntime = ({
     sendMessage,
     sendSticker,
     toggleReaction,
+    replyToMessage,
+    setReplyToMessage,
   }
 }
 

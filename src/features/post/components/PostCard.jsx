@@ -48,6 +48,8 @@ const PostCard = ({ post }) => {
     setNewComment,
     handleSubmitComment,
     handleDeleteComment,
+    replyToComment,
+    setReplyToComment,
   } = usePostCardController(post)
 
   return (
@@ -123,6 +125,8 @@ const PostCard = ({ post }) => {
         onCommentChange={setNewComment}
         onSubmitComment={handleSubmitComment}
         onDeleteComment={handleDeleteComment}
+        replyToComment={replyToComment}
+        onSetReplyToComment={setReplyToComment}
       />
 
       {/* Image Lightbox */}

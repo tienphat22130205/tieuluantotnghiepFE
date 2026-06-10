@@ -19,6 +19,8 @@ const CommentSection = ({
   onCommentChange,
   onSubmitComment,
   onDeleteComment,
+  replyToComment = null,
+  onSetReplyToComment = () => {},
 }) => {
   const [commentToDelete, setCommentToDelete] = useState(null)
 
@@ -36,6 +38,14 @@ const CommentSection = ({
   }
 
   const getCommentUser = (c) => {
+    if (!c || typeof c !== 'object') {
+      return {
+        id: 'unknown',
+        name: 'Người dùng',
+        avatar: null
+      }
+    }
+
     const raw = c.user || c.author || c.sender || c.fromUser || c.userId
     
     if (raw && typeof raw === 'object') {
@@ -59,7 +69,7 @@ const CommentSection = ({
       }
     }
     
-    const strId = typeof raw === 'string' ? raw : c.user_id || c.userId
+    const strId = typeof raw === 'string' || typeof raw === 'number' ? raw : c.user_id || c.userId
     if (strId && currentUserId && currentUser && String(strId) === String(currentUserId)) {
       return {
         id: strId,
@@ -78,10 +88,36 @@ const CommentSection = ({
     }
     
     return {
-      id: strId || 'unknown',
+      id: strId || c._id || 'unknown',
       name: 'Người dùng',
       avatar: null
     }
+  }
+
+  const validComments = Array.isArray(comments) ? comments.filter(Boolean) : []
+  const rootComments = validComments.filter((c) => c && !c.replyTo)
+  
+  const getRepliesForRoot = (rootId) => {
+    if (!rootId) return []
+    return validComments.filter((c) => {
+      if (!c || !c.replyTo) return false
+      if (String(c.replyTo) === String(rootId)) return true
+      
+      let temp = c
+      let depth = 0
+      while (temp && temp.replyTo && depth < 5) {
+        if (String(temp.replyTo) === String(rootId)) return true
+        temp = validComments.find((x) => x && String(x._id || x.id || '') === String(temp.replyTo))
+        depth++
+      }
+      return false
+    })
+  }
+
+  const getDirectParentUser = (comment) => {
+    if (!comment || !comment.replyTo) return null
+    const parent = validComments.find((x) => x && String(x._id || x.id || '') === String(comment.replyTo))
+    return parent ? getCommentUser(parent) : null
   }
 
   return (
@@ -91,52 +127,129 @@ const CommentSection = ({
       </h3>
 
       {/* Danh sách comment */}
-      <div className="space-y-4 mb-4 max-h-80 overflow-y-auto">
-        {comments.length > 0 ? (
-          comments.map((comment, i) => {
+      <div className="space-y-5 mb-4 max-h-[350px] overflow-y-auto pr-1">
+        {rootComments.length > 0 ? (
+          rootComments.map((comment, i) => {
             const commentUser = getCommentUser(comment)
+            const threadReplies = getRepliesForRoot(comment._id)
+
             return (
-              <div key={comment._id || i} className="flex gap-3">
-                <Avatar
-                  src={commentUser.avatar}
-                  name={commentUser.name}
-                  size="sm"
-                />
-                <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2">
-                  <div className="flex items-center gap-2 justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-900">
-                        {commentUser.name}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {timeAgo(comment.created_at || comment.createdAt)}
-                      </span>
+              <div key={comment._id || i} className="space-y-3">
+                {/* Bình luận gốc */}
+                <div className="flex gap-3">
+                  <Avatar
+                    src={commentUser.avatar}
+                    name={commentUser.name}
+                    size="sm"
+                  />
+                  <div className="flex-1 bg-gray-50 rounded-2xl px-3 py-2.5">
+                    <div className="flex items-center gap-2 justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {commentUser.name}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {timeAgo(comment.created_at || comment.createdAt)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => onSetReplyToComment(comment)}
+                          className="text-xs text-primary-600 hover:underline cursor-pointer font-semibold"
+                        >
+                          Phản hồi
+                        </button>
+
+                        {onDeleteComment && (() => {
+                          const commentUserId = commentUser.id
+                          const canDelete = Boolean(currentUserId && commentUserId && String(currentUserId) === String(commentUserId))
+                          if (!canDelete) return null
+
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => setCommentToDelete(comment._id)}
+                              disabled={deletingCommentId === comment._id}
+                              className="text-xs text-red-600 hover:text-red-700 disabled:opacity-60 cursor-pointer font-medium"
+                            >
+                              Xóa
+                            </button>
+                          )
+                        })()}
+                      </div>
                     </div>
 
-                    {onDeleteComment && (
-                      (() => {
-                        const commentUserId = commentUser.id
-                        const canDelete = Boolean(currentUserId && commentUserId && String(currentUserId) === String(commentUserId))
-                        if (!canDelete) return null
-
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => setCommentToDelete(comment._id)}
-                            disabled={deletingCommentId === comment._id}
-                            className="text-xs text-red-600 hover:text-red-700 disabled:opacity-60"
-                          >
-                            {deletingCommentId === comment._id ? 'Đang xóa...' : 'Xóa'}
-                          </button>
-                        )
-                      })()
-                    )}
+                    <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap break-all">
+                      {comment.content}
+                    </p>
                   </div>
-
-                  <p className="text-sm text-gray-700 mt-0.5">
-                    {comment.content}
-                  </p>
                 </div>
+
+                {/* Các phản hồi lồng nhau */}
+                {threadReplies.map((reply, rIdx) => {
+                  const replyUser = getCommentUser(reply)
+                  const directParentUser = getDirectParentUser(reply)
+
+                  return (
+                    <div key={reply._id || rIdx} className="pl-9 flex gap-3">
+                      <Avatar
+                        src={replyUser.avatar}
+                        name={replyUser.name}
+                        size="xs"
+                      />
+                      <div className="flex-1 bg-slate-50/70 border border-slate-100/50 rounded-2xl px-3 py-2">
+                        <div className="flex items-center gap-2 justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-gray-900">
+                              {replyUser.name}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {timeAgo(reply.created_at || reply.createdAt)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => onSetReplyToComment(reply)}
+                              className="text-xs text-primary-600 hover:underline cursor-pointer font-semibold"
+                            >
+                              Phản hồi
+                            </button>
+
+                            {onDeleteComment && (() => {
+                              const replyUserId = replyUser.id
+                              const canDelete = Boolean(currentUserId && replyUserId && String(currentUserId) === String(replyUserId))
+                              if (!canDelete) return null
+
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => setCommentToDelete(reply._id)}
+                                  disabled={deletingCommentId === reply._id}
+                                  className="text-xs text-red-600 hover:text-red-700 disabled:opacity-60 cursor-pointer font-medium"
+                                >
+                                  Xóa
+                                </button>
+                              )
+                            })()}
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap break-all">
+                          {directParentUser && (
+                            <span className="text-primary-600 font-semibold mr-1.5 select-none">
+                              @{directParentUser.name}
+                            </span>
+                          )}
+                          {reply.content}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )
           })
@@ -148,24 +261,38 @@ const CommentSection = ({
       </div>
 
       {/* Form nhập comment */}
-      <form onSubmit={onSubmitComment} className="flex gap-2">
-        <input
-          value={newComment}
-          onChange={(e) => onCommentChange(e.target.value)}
-          placeholder="Viết bình luận..."
-          className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none transition"
-        />
-        <Button
-          type="submit"
-          size="sm"
-          isLoading={isCommenting}
-          disabled={!newComment.trim()}
-          className="!px-3"
-          aria-label="Gửi bình luận"
-        >
-          <AiOutlineSend size={16} />
-        </Button>
-      </form>
+      <div className="mt-4">
+        {replyToComment && (
+          <div className="flex items-center justify-between rounded-lg bg-primary-50 px-3 py-1.5 text-xs text-primary-700 mb-2 border border-primary-100">
+            <span>Đang trả lời <strong>{getCommentUser(replyToComment).name}</strong></span>
+            <button
+              type="button"
+              onClick={() => onSetReplyToComment(null)}
+              className="text-primary-600 hover:text-primary-800 font-bold hover:underline cursor-pointer"
+            >
+              Hủy
+            </button>
+          </div>
+        )}
+        <form onSubmit={onSubmitComment} className="flex gap-2">
+          <input
+            value={newComment}
+            onChange={(e) => onCommentChange(e.target.value)}
+            placeholder={replyToComment ? `Phản hồi...` : "Viết bình luận..."}
+            className="flex-1 rounded-full border border-gray-200 px-4 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none transition bg-slate-50"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            isLoading={isCommenting}
+            disabled={!newComment.trim()}
+            className="!px-3 rounded-full"
+            aria-label="Gửi bình luận"
+          >
+            <AiOutlineSend size={16} />
+          </Button>
+        </form>
+      </div>
 
       {/* Modal xác nhận xóa */}
       <ConfirmModal

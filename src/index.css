@@ -114,3 +114,66 @@ html.dark .shadow-2xl {
 ::-webkit-scrollbar-thumb:hover {
   background: #9CA3AF;
 }
+
+/* 📱 Mobile Premium Toast Overrides */
+@media (max-width: 767px) {
+  /* Center the toast container properly at the top with a safe gap */
+  .Toastify__toast-container {
+    width: 92% !important;
+    max-width: 440px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: 16px !important;
+    padding: 0 !important;
+  }
+
+  .Toastify__toast.mobile-toast {
+    margin-bottom: 12px !important;
+    border-radius: 20px !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(20px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+    color: #0f172a !important;
+    min-height: auto !important;
+    padding: 14px 18px !important;
+    font-family: "Manrope", sans-serif !important;
+    font-weight: 600 !important;
+  }
+
+  /* Support Dark Mode */
+  html.dark .Toastify__toast.mobile-toast {
+    background: rgba(17, 24, 39, 0.82) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f3f4f6 !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  /* Success Mobile Toast Style */
+  .Toastify__toast--success.mobile-toast {
+    border-left: 5px solid #10b981 !important;
+  }
+
+  /* Error Mobile Toast Style */
+  .Toastify__toast--error.mobile-toast {
+    border-left: 5px solid #ef4444 !important;
+  }
+
+  /* Info Mobile Toast Style */
+  .Toastify__toast--info.mobile-toast {
+    border-left: 5px solid #3b82f6 !important;
+  }
+
+  /* Warning Mobile Toast Style */
+  .Toastify__toast--warning.mobile-toast {
+    border-left: 5px solid #f59e0b !important;
+  }
+
+  /* Custom close button styling */
+  .Toastify__close-button {
+    align-self: center !important;
+    color: #64748b !important;
+    opacity: 0.8 !important;
+  }
+}
