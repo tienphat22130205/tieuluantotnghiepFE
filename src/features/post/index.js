@@ -10,7 +10,7 @@ export { default as HomePage } from './pages/HomePage'
 export { default as CreatePostPage } from './pages/CreatePostPage'
 export { default as PostDetailPage } from './pages/PostDetailPage'
 export { default as SearchPage } from './pages/SearchPage'
-export { default as ExplorePage } from './pages/ExplorePage'
+export { default as WatchPage } from './pages/WatchPage'
 
 // Components
 export { default as PostCard } from './components/PostCard'

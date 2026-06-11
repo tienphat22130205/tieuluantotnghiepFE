@@ -33,13 +33,16 @@ const MainLayout = () => {
   let containerMaxWidthClass = 'max-w-6xl' // 1152px for standard layouts (Home, Friends)
   if (
     location.pathname.startsWith('/profile')
-    || location.pathname === '/create'
     || (location.pathname.startsWith('/post/') && location.pathname.endsWith('/edit'))
     || location.pathname === '/search'
     || location.pathname === '/notifications'
-    || location.pathname === '/explore'
+    || location.pathname === '/watch'
+    || location.pathname === '/groups'
   ) {
     containerMaxWidthClass = 'max-w-5xl' // 1024px for single-column/compact layouts
+  }
+  if (location.pathname === '/create') {
+    containerMaxWidthClass = 'max-w-2xl' // 672px – narrow card style for new post
   }
 
   const needsUsernameSelection = Boolean(token && user && !user?.username)
