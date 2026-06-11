@@ -176,6 +176,26 @@ export const login = createAsyncThunk(
   }
 )
 
+// Đăng nhập bằng Google (Firebase Auth)
+export const loginWithGoogle = createAsyncThunk(
+  'auth/loginWithGoogle',
+  async (idToken, { rejectWithValue }) => {
+    try {
+      const data = await authService.googleLogin(idToken)
+
+      if (!data?.token || !data?.user) {
+        return rejectWithValue('Đăng nhập Google thất bại: dữ liệu trả về không hợp lệ')
+      }
+
+      setAuthToken(data.token)
+      setStoredAuthUser(data.user)
+      return data
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, 'Đăng nhập Google thất bại'))
+    }
+  }
+)
+
 // Lấy thông tin user hiện tại
 export const getMe = createAsyncThunk(
   'auth/getMe',
@@ -288,6 +308,22 @@ const authSlice = createSlice({
         state.role = getRoleValue(action.payload.user)
       })
       .addCase(login.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload
+      })
+
+      // ── Login with Google ──
+      .addCase(loginWithGoogle.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(loginWithGoogle.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.user = action.payload.user
+        state.token = action.payload.token
+        state.role = getRoleValue(action.payload.user)
+      })
+      .addCase(loginWithGoogle.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload
       })

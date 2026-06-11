@@ -100,6 +100,12 @@ const authService = {
     return unwrapResponse(response)
   },
 
+  // Đăng nhập Google, nhận idToken
+  googleLogin: async (idToken) => {
+    const response = await api.post('/auth/google-login', { idToken })
+    return unwrapResponse(response)
+  },
+
   // Kiểm tra role của user hiện tại
   checkRole: async () => {
     const response = await api.get('/auth/role-check')

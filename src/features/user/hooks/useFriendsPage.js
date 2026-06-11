@@ -174,14 +174,14 @@ const useFriendsPage = () => {
     }
   }
 
-  const handleSendRequestFromSuggestion = async (targetUserId) => {
+  const handleSendRequest = async (targetUserId, userObj = null) => {
     if (!targetUserId) return
 
     const normalizedTargetId = String(targetUserId)
     setActingSuggestionId(normalizedTargetId)
     try {
       const response = await friendService.sendRequest(normalizedTargetId)
-      const selectedUser = suggestions.find((item) => String(getUserId(item)) === normalizedTargetId)
+      const selectedUser = userObj || suggestions.find((item) => String(getUserId(item)) === normalizedTargetId)
       const requestId =
         response?.request?._id
         || response?.request?.id
@@ -192,18 +192,22 @@ const useFriendsPage = () => {
       setSuggestions((prev) => prev.filter((item) => String(getUserId(item)) !== normalizedTargetId))
 
       if (selectedUser) {
-        setSentRequests((prev) => [
-          {
-            _id: String(requestId),
-            status: 'pending',
-            user: selectedUser,
-          },
-          ...prev,
-        ])
+        setSentRequests((prev) => {
+          const exists = prev.some((item) => String(getUserId(item.user)) === normalizedTargetId)
+          if (exists) return prev
+          return [
+            {
+              _id: String(requestId),
+              status: 'pending',
+              user: selectedUser,
+            },
+            ...prev,
+          ]
+        })
       }
 
       toast.success(FRIEND_MESSAGES.sendRequestSuccess)
-        window.dispatchEvent(new Event('friends:incoming-updated'))
+      window.dispatchEvent(new Event('friends:incoming-updated'))
     } catch (err) {
       toast.error(err?.message || FRIEND_MESSAGES.actionFailed)
     } finally {
@@ -224,7 +228,8 @@ const useFriendsPage = () => {
     handleRespondRequest,
     handleCancelSentRequest,
     handleUnfriend,
-    handleSendRequestFromSuggestion,
+    handleSendRequest,
+    handleSendRequestFromSuggestion: handleSendRequest,
   }
 }
 

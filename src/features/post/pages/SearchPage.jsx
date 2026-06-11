@@ -5,12 +5,15 @@ import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import { Avatar, Button } from '@/components/ui'
 import useUserSearchPage from '../hooks/search/useUserSearchPage'
+import PostCard from '../components/PostCard'
 
 const SearchPage = () => {
   const {
     query,
     page,
+    tab,
     users,
+    posts,
     isLoading,
     error,
     totalPages,
@@ -36,7 +39,7 @@ const SearchPage = () => {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4">
       <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
-        <h1 className="text-xl font-bold tracking-tight text-slate-900">Tìm kiếm tài khoản</h1>
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">Tìm kiếm</h1>
         
         {/* Search input field */}
         <div className="mt-4 flex items-center gap-2">
@@ -55,7 +58,7 @@ const SearchPage = () => {
                   handleSearchSubmit()
                 }
               }}
-              placeholder="Nhập từ khóa tìm kiếm..."
+              placeholder="Tìm kiếm"
               className="w-full rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
             />
           </div>
@@ -67,6 +70,32 @@ const SearchPage = () => {
             Tìm kiếm
           </Button>
         </div>
+
+        {/* Tabs */}
+        {query.length >= 2 && (
+          <div className="mt-5 flex border-b border-slate-100">
+            <button
+              onClick={() => goToSearchQuery(query, 1, 'users')}
+              className={`flex-1 pb-3 text-center text-sm font-semibold border-b-2 transition-all duration-200 cursor-pointer outline-none ${
+                tab === 'users'
+                  ? 'border-primary-500 text-primary-600 font-bold'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Tài khoản
+            </button>
+            <button
+              onClick={() => goToSearchQuery(query, 1, 'posts')}
+              className={`flex-1 pb-3 text-center text-sm font-semibold border-b-2 transition-all duration-200 cursor-pointer outline-none ${
+                tab === 'posts'
+                  ? 'border-primary-500 text-primary-600 font-bold'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Bài viết
+            </button>
+          </div>
+        )}
 
         <p className={`mt-3 text-sm ${error ? 'text-red-600' : 'text-slate-500'}`}>{summaryText}</p>
       </section>
@@ -110,19 +139,19 @@ const SearchPage = () => {
       </section>
 
       {query.length >= 2 && (
-        <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
-          <div className="space-y-3">
+        <section className={tab === 'users' ? "rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5" : "space-y-4"}>
+          <div className={tab === 'users' ? "space-y-3" : "space-y-4"}>
             {isLoading && (
               <div className="space-y-3">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <div key={index} className="rounded-xl border border-slate-100 p-3">
-                    <Skeleton height={48} />
+                {Array.from({ length: tab === 'users' ? 6 : 2 }).map((_, index) => (
+                  <div key={index} className="rounded-xl border border-slate-100 p-3 bg-white shadow-sm">
+                    <Skeleton height={tab === 'users' ? 48 : 120} />
                   </div>
                 ))}
               </div>
             )}
 
-            {!isLoading && users.map((item) => {
+            {!isLoading && tab === 'users' && users.map((item) => {
               const userId = item?._id || item?.id
               const displayName = item?.full_name || item?.username || 'Người dùng'
 
@@ -144,19 +173,29 @@ const SearchPage = () => {
               )
             })}
 
-            {!isLoading && users.length === 0 && !error && (
+            {!isLoading && tab === 'posts' && posts.map((post) => (
+              <PostCard key={post._id} post={post} />
+            ))}
+
+            {!isLoading && tab === 'users' && users.length === 0 && !error && (
               <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                Không có dữ liệu hiển thị.
+                Không tìm thấy tài khoản phù hợp.
+              </p>
+            )}
+
+            {!isLoading && tab === 'posts' && posts.length === 0 && !error && (
+              <p className="rounded-xl border border-slate-150 bg-white p-6 shadow-sm text-center text-sm text-slate-500">
+                Không tìm thấy bài viết phù hợp.
               </p>
             )}
           </div>
 
           {query.length >= 2 && totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
+            <div className={`mt-4 flex items-center justify-between pt-4 ${tab === 'users' ? 'border-t border-slate-100' : 'bg-white border border-slate-100 rounded-2xl p-4 shadow-sm'}`}>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => goToSearchQuery(query, page - 1)}
+                onClick={() => goToSearchQuery(query, page - 1, tab)}
                 disabled={!hasPrev || isLoading}
               >
                 Trang trước
@@ -165,7 +204,7 @@ const SearchPage = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => goToSearchQuery(query, page + 1)}
+                onClick={() => goToSearchQuery(query, page + 1, tab)}
                 disabled={!hasNext || isLoading}
               >
                 Trang sau
