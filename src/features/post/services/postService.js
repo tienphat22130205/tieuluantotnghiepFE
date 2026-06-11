@@ -57,6 +57,9 @@ const postService = {
   // Lấy bài viết theo ID
   getById: (postId) => api.get(`/posts/${postId}`),
 
+  // Tìm kiếm bài viết
+  searchPosts: (q, page = 1, limit = 10) => api.get('/posts/search', { params: { q, page, limit } }),
+
   // Lấy bài viết của 1 user cụ thể
   getByUser: async (userId, page = 1) => {
     if (!userId || userId === 'undefined' || userId === 'null') {

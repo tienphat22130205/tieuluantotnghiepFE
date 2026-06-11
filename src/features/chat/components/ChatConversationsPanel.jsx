@@ -6,6 +6,7 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
   const {
     isLoading,
     sortedFriends,
+    unfilteredSortedFriends,
     selectedConversation,
     messages,
     isMessagesLoading,
@@ -38,6 +39,7 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
         selectedConversation={selectedConversation}
         isLoading={isLoading}
         sortedFriends={sortedFriends}
+        unfilteredSortedFriends={unfilteredSortedFriends}
         searchKeyword={searchKeyword}
         onChangeSearch={setSearchKeyword}
         onClose={handleClosePanel}

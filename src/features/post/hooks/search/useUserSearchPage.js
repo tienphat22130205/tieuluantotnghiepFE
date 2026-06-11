@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import userService from '@/features/user/services/userService'
+import postService from '@/features/post/services/postService'
 import { extractItems, getUserId } from '@/utils/friendship'
 
 const RECENT_SEARCHES_KEY = 'recent-user-searches'
@@ -69,6 +70,7 @@ const useUserSearchPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [users, setUsers] = useState([])
+  const [posts, setPosts] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [totalPages, setTotalPages] = useState(1)
@@ -77,6 +79,7 @@ const useUserSearchPage = () => {
 
   const query = (searchParams.get('q') || '').trim()
   const page = Math.max(1, Number(searchParams.get('page') || 1) || 1)
+  const tab = searchParams.get('tab') || 'users'
 
   useEffect(() => {
     setRecentSearches(readRecentSearches())
@@ -85,6 +88,7 @@ const useUserSearchPage = () => {
   useEffect(() => {
     if (query.length < 2) {
       setUsers([])
+      setPosts([])
       setError('')
       setTotalPages(1)
       setTotalItems(0)
@@ -99,18 +103,35 @@ const useUserSearchPage = () => {
       setError('')
 
       try {
-        const response = await userService.searchUsers({ q: query, page, limit: SEARCH_LIMIT })
-        if (!isMounted) return
+        if (tab === 'users') {
+          const response = await userService.searchUsers({ q: query, page, limit: SEARCH_LIMIT })
+          if (!isMounted) return
 
-        const currentUserId = getUserId(currentUser)
-        const normalizedUsers = normalizeUsersFromResponse(response).filter(
-          (item) => String(getUserId(item)) !== String(currentUserId)
-        )
-        const pagination = normalizePagination(response, page, SEARCH_LIMIT, normalizedUsers.length)
+          const currentUserId = getUserId(currentUser)
+          const normalizedUsers = normalizeUsersFromResponse(response).filter(
+            (item) => String(getUserId(item)) !== String(currentUserId)
+          )
+          const pagination = normalizePagination(response, page, SEARCH_LIMIT, normalizedUsers.length)
 
-        setUsers(normalizedUsers)
-        setTotalPages(pagination.totalPages)
-        setTotalItems(pagination.totalItems)
+          setUsers(normalizedUsers)
+          setTotalPages(pagination.totalPages)
+          setTotalItems(pagination.totalItems)
+        } else {
+          const response = await postService.searchPosts(query, page, SEARCH_LIMIT)
+          if (!isMounted) return
+
+          const rawPosts = response?.data?.items || response?.items || []
+          const normalizedPosts = rawPosts.map((post) => ({
+            ...post,
+            user: post.user || post.author,
+          }))
+          const pagination = normalizePagination(response, page, SEARCH_LIMIT, normalizedPosts.length)
+
+          setPosts(normalizedPosts)
+          setTotalPages(pagination.totalPages)
+          setTotalItems(pagination.totalItems)
+        }
+
         setRecentSearches((prev) => {
           const nextList = pushRecentKeyword(prev, query)
           persistRecentSearches(nextList)
@@ -119,9 +140,10 @@ const useUserSearchPage = () => {
       } catch (searchError) {
         if (!isMounted) return
         setUsers([])
+        setPosts([])
         setTotalPages(1)
         setTotalItems(0)
-        setError(searchError?.message || 'Không thể tìm kiếm tài khoản')
+        setError(searchError?.message || (tab === 'users' ? 'Không thể tìm kiếm tài khoản' : 'Không thể tìm kiếm bài viết'))
       } finally {
         if (isMounted) {
           setIsLoading(false)
@@ -134,21 +156,25 @@ const useUserSearchPage = () => {
     return () => {
       isMounted = false
     }
-  }, [query, page, currentUser])
+  }, [query, page, tab, currentUser])
 
   const summaryText = useMemo(() => {
     if (query.length < 2) return 'Tìm kiếm được thực hiện từ ô tìm kiếm ở layout chính.'
-    if (isLoading) return 'Đang tìm kiếm tài khoản...'
+    if (isLoading) return tab === 'users' ? 'Đang tìm kiếm tài khoản...' : 'Đang tìm kiếm bài viết...'
     if (error) return error
-    if (users.length === 0) return 'Không tìm thấy tài khoản phù hợp.'
 
-    return `Tìm thấy ${totalItems || users.length} tài khoản` + (totalPages > 1 ? ` • Trang ${page}/${totalPages}` : '')
-  }, [query.length, isLoading, error, users.length, totalItems, totalPages, page])
+    const count = tab === 'users' ? users.length : posts.length
+    if (count === 0) return tab === 'users' ? 'Không tìm thấy tài khoản phù hợp.' : 'Không tìm thấy bài viết phù hợp.'
 
-  const goToSearchQuery = (keyword, nextPage = 1) => {
+    const label = tab === 'users' ? 'tài khoản' : 'bài viết'
+    return `Tìm thấy ${totalItems || count} ${label}` + (totalPages > 1 ? ` • Trang ${page}/${totalPages}` : '')
+  }, [query.length, isLoading, error, tab, users.length, posts.length, totalItems, totalPages, page])
+
+  const goToSearchQuery = (keyword, nextPage = 1, nextTab = tab) => {
     const normalized = keyword.trim()
     const params = new URLSearchParams()
     if (normalized) params.set('q', normalized)
+    if (nextTab && nextTab !== 'users') params.set('tab', nextTab)
     if (nextPage > 1) params.set('page', String(nextPage))
     setSearchParams(params, { replace: true })
   }
@@ -161,7 +187,9 @@ const useUserSearchPage = () => {
   return {
     query,
     page,
+    tab,
     users,
+    posts,
     isLoading,
     error,
     totalPages,

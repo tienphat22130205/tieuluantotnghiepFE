@@ -44,6 +44,22 @@ const REACTION_EMOJIS = {
 }
 
 
+const getStatusLabel = (status) => {
+  if (!status) return ''
+  switch (status) {
+    case 'Đã xem':
+      return 'Seen'
+    case 'Đang gửi':
+      return 'Sending...'
+    case 'Gửi lỗi':
+      return 'Failed'
+    case 'Đã gửi':
+      return 'Sent'
+    default:
+      return status
+  }
+}
+
 const ChatPage = () => {
   const token = useSelector((state) => state.auth.token)
   const { user } = useSelector((state) => state.auth)
@@ -78,7 +94,27 @@ const ChatPage = () => {
   const [showStickers, setShowStickers] = useState(false)
   const [activeReactionMessageId, setActiveReactionMessageId] = useState(null)
   const [longPressedMessage, setLongPressedMessage] = useState(null)
+  const [selectedMessageId, setSelectedMessageId] = useState(null)
+  const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 0)
   const longPressTimeout = useRef(null)
+
+  useEffect(() => {
+    if (!window.visualViewport) return
+
+    const handleResize = () => {
+      setViewportHeight(window.visualViewport.height)
+    }
+
+    window.visualViewport.addEventListener('resize', handleResize)
+    window.visualViewport.addEventListener('scroll', handleResize)
+
+    handleResize()
+
+    return () => {
+      window.visualViewport.removeEventListener('resize', handleResize)
+      window.visualViewport.removeEventListener('scroll', handleResize)
+    }
+  }, [])
 
   const handleTouchStart = (msg) => (e) => {
     if (window.innerWidth >= 768) return
@@ -169,10 +205,32 @@ const ChatPage = () => {
     })
   }, [filteredFriends])
 
+  const unfilteredSortedFriends = useMemo(() => {
+    return [...friends].sort((a, b) => {
+      const aLastMessageAt = new Date(a.lastMessageAt || 0).getTime()
+      const bLastMessageAt = new Date(b.lastMessageAt || 0).getTime()
+      if (aLastMessageAt !== bLastMessageAt) return bLastMessageAt - aLastMessageAt
+
+      const aUnread = Number(a.newMessagesCount || 0)
+      const bUnread = Number(b.newMessagesCount || 0)
+      if (aUnread !== bUnread) return bUnread - aUnread
+
+      if (a.isOnline && !b.isOnline) return -1
+      if (!a.isOnline && b.isOnline) return 1
+
+      const aLastSeen = new Date(a.lastSeen || 0).getTime()
+      const bLastSeen = new Date(b.lastSeen || 0).getTime()
+      return bLastSeen - aLastSeen
+    })
+  }, [friends])
+
   const isChatActive = selectedFriendId !== null
 
   return (
-    <div className="w-screen h-screen bg-slate-50 flex overflow-hidden">
+    <div
+      style={{ height: `${viewportHeight}px` }}
+      className="w-screen bg-slate-50 flex overflow-hidden"
+    >
       
       {/* ── Left Pane: Conversations List ── */}
       <div
@@ -201,11 +259,63 @@ const ChatPage = () => {
             <input
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="Tìm kiếm cuộc trò chuyện..."
+              placeholder="Tìm kiếm"
               className="w-full text-sm text-slate-700 placeholder-slate-400 focus:outline-none bg-transparent"
             />
           </div>
         </div>
+
+        {/* Horizontal Friends List */}
+        {!isFriendsLoading && unfilteredSortedFriends.length > 0 && (
+          <div className="flex items-center gap-4 px-4 py-4 overflow-x-auto border-b border-slate-100 bg-white shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {/* Create Story Placeholder */}
+            <div className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group">
+              <div className="relative">
+                <Avatar
+                  src={user?.avatar}
+                  name={user?.full_name}
+                  size="lg"
+                  online={false}
+                  className="ring-2 ring-slate-100 group-hover:scale-105 transition"
+                />
+                <div className="absolute bottom-0 right-0 bg-primary-600 border border-white rounded-full p-0.5 flex items-center justify-center text-white">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </div>
+              </div>
+              <span className="text-xs text-slate-500 font-medium max-w-[64px] text-center truncate mt-0.5">
+                Tạo tin
+              </span>
+            </div>
+
+            {/* Friends Loop */}
+            {unfilteredSortedFriends.map((friend) => {
+              const displayName = friend.full_name?.split(' ').slice(-2).join(' ') || friend.username || 'Bạn bè'
+              return (
+                <button
+                  key={`h-page-${friend._id}`}
+                  type="button"
+                  onClick={() => setSelectedFriendId(friend._id)}
+                  className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group focus:outline-none"
+                >
+                  <div className="relative">
+                    <Avatar
+                      src={friend.avatar}
+                      name={friend.full_name}
+                      size="lg"
+                      online={friend.isOnline}
+                      className="group-hover:scale-105 transition"
+                    />
+                  </div>
+                  <span className="text-xs text-slate-700 font-medium max-w-[64px] text-center truncate mt-0.5">
+                    {displayName}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {/* Conversations */}
         <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
@@ -311,10 +421,32 @@ const ChatPage = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Call buttons */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                  title="Gọi video"
+                >
+                  <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                  title="Gọi thoại"
+                >
+                  <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.824-1.806-5.194-4.176-7-7l1.293-.97c.362-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Chat Body */}
-            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-slate-50/30">
               {isMessagesLoading && (
                 <div className="h-full flex items-center justify-center text-sm text-slate-500">
                   Đang tải tin nhắn...
@@ -334,175 +466,197 @@ const ChatPage = () => {
               )}
 
               {!isMessagesLoading &&
-                messages.map((msg) => (
-                  <div
-                    key={msg._id || `${msg.sender}-${msg.createdAt}`}
-                    id={`msg-${msg._id}`}
-                    className={`group relative flex items-end gap-2.5 mb-6 ${
-                      msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'
-                    }`}
-                  >
-                    {msg.sender !== 'me' && (
-                      <Avatar
-                        src={selectedConversation.avatar}
-                        name={selectedConversation.full_name}
-                        size="xs"
-                        online={false}
-                        className="mb-1 shrink-0"
-                      />
-                    )}
+                messages.map((msg, index) => {
+                  const msgId = msg._id || `${msg.sender}-${msg.createdAt}`
+                  const isSelected = selectedMessageId === msgId
+                  const isLast = index === messages.length - 1
+                  const handleToggleMessageDetails = () => {
+                    setSelectedMessageId((prev) => (prev === msgId ? null : msgId))
+                  }
 
-                    {/* Message Bubble or Sticker Content */}
-                    <div className="relative flex flex-col max-w-[65%]">
-                      {msg.replyTo && (
-                        <div
-                          className={`mb-1 px-3 py-1.5 rounded-2xl text-xs flex flex-col max-w-full opacity-85 border select-none cursor-pointer hover:opacity-100 transition-opacity ${
-                            msg.sender === 'me'
-                              ? 'bg-primary-700/40 text-slate-100 border-primary-500/20 rounded-br-none'
-                              : 'bg-slate-100 text-slate-600 border-slate-200 rounded-bl-none'
-                          }`}
-                          onClick={() => {
-                            const element = document.getElementById(`msg-${msg.replyTo._id}`)
-                            if (element) {
-                              element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                              element.classList.add('bg-primary-50', 'animate-pulse')
-                              setTimeout(() => {
-                                element.classList.remove('bg-primary-50', 'animate-pulse')
-                              }, 1500)
-                            }
-                          }}
-                        >
-                          <span className="font-bold text-[10px] text-primary-600">
-                            {msg.replyTo.sender?._id === currentUserId
-                              ? 'Bạn'
-                              : msg.replyTo.sender?.firstName
-                              ? `${msg.replyTo.sender.firstName} ${msg.replyTo.sender.lastName || ''}`.trim()
-                              : 'Người dùng'}
-                          </span>
-                          <span className="truncate max-w-[200px]">
-                            {msg.replyTo.type === 'sticker' ? '[Nhãn dán]' : msg.replyTo.content}
+                  return (
+                    <div key={msgId} className="flex flex-col w-full">
+                      {/* Centered time when selected */}
+                      {isSelected && (
+                        <div className="w-full flex justify-center mb-2.5 select-none animate-fade-in">
+                          <span className="text-[11px] font-semibold text-slate-500 bg-slate-100/80 px-2.5 py-0.5 rounded-full border border-slate-200/50 shadow-sm">
+                            {msg.fullTime || msg.time || (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '')}
                           </span>
                         </div>
                       )}
 
-                      {msg.type === 'sticker' && msg.sticker ? (
-                        <div
-                          className="relative my-0.5"
-                          onTouchStart={handleTouchStart(msg)}
-                          onTouchEnd={handleTouchEnd}
-                          onTouchMove={handleTouchMove}
-                        >
-                          <img
-                            src={msg.sticker}
-                            alt="Sticker"
-                            className={`object-contain select-none rounded-lg ${
-                              msg.sticker.includes('giphy.com')
-                                ? 'max-w-[200px] max-h-[200px] md:max-w-[240px] md:max-h-[240px] shadow-sm border border-slate-100 bg-slate-50/20 p-1'
-                                : 'w-24 h-24'
-                            }`}
+                      <div
+                        id={`msg-${msg._id}`}
+                        className={`group relative flex items-end gap-2.5 mb-4 ${
+                          msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'
+                        }`}
+                      >
+                        {msg.sender !== 'me' && (
+                          <Avatar
+                            src={selectedConversation.avatar}
+                            name={selectedConversation.full_name}
+                            size="xs"
+                            online={false}
+                            className="mb-1 shrink-0"
                           />
-                        </div>
-                      ) : (
-                        <div
-                          className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm leading-relaxed ${
-                            msg.sender === 'me'
-                              ? 'bg-primary-600 text-white rounded-br-md font-medium'
-                              : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
-                          }`}
-                          onTouchStart={handleTouchStart(msg)}
-                          onTouchEnd={handleTouchEnd}
-                          onTouchMove={handleTouchMove}
-                        >
-                          <p className="whitespace-pre-wrap break-all">{msg.text}</p>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Reactions list pill under message bubble */}
-                      {Array.isArray(msg.reactions) && msg.reactions.length > 0 && (
-                        <div
-                          className={`absolute bottom-[-10px] bg-white border border-slate-100 rounded-full px-1.5 py-0.5 shadow-sm flex items-center gap-0.5 text-[10px] select-none z-10 cursor-pointer ${
-                            msg.sender === 'me' ? 'right-3' : 'left-3'
-                          }`}
-                          title={msg.reactions.map((r) => `${r.user?.username || 'Người dùng'}: ${REACTION_EMOJIS[r.type]}`).join('\n')}
-                        >
-                          <span>
-                            {Array.from(new Set(msg.reactions.map((r) => REACTION_EMOJIS[r.type]))).slice(0, 3).join('')}
-                          </span>
-                          {msg.reactions.length > 1 && (
-                            <span className="text-gray-500 font-bold ml-0.5">{msg.reactions.length}</span>
+                        {/* Message Bubble or Sticker Content */}
+                        <div className={`relative flex flex-col max-w-[65%] ${msg.sender === 'me' ? 'items-end' : 'items-start'}`}>
+                          {msg.replyTo && (
+                            <>
+                              {/* Reply Label */}
+                              <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-1 select-none whitespace-nowrap">
+                                <FaReply size={10} className="scale-x-[-1]" />
+                                <span>
+                                  {msg.sender === 'me' ? 'Bạn' : (selectedConversation.full_name)} đã trả lời{' '}
+                                  {msg.replyTo.sender?._id === currentUserId
+                                    ? (msg.sender === 'me' ? 'chính mình' : 'bạn')
+                                    : (selectedConversation.full_name)}
+                                </span>
+                              </div>
+
+                              {/* Parent Message Bubble */}
+                              <div
+                                className={`mb-1 px-3 py-1.5 rounded-2xl text-xs max-w-full opacity-60 border select-none cursor-pointer hover:opacity-85 transition bg-slate-100 text-slate-600 border-slate-200 ${
+                                  msg.sender === 'me' ? 'rounded-br-none' : 'rounded-bl-none'
+                                }`}
+                                onClick={() => {
+                                  const element = document.getElementById(`msg-${msg.replyTo._id}`)
+                                  if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                                    element.classList.add('bg-primary-50', 'animate-pulse')
+                                    setTimeout(() => {
+                                      element.classList.remove('bg-primary-50', 'animate-pulse')
+                                    }, 1500)
+                                  }
+                                }}
+                              >
+                                <p className="truncate max-w-[200px] leading-tight">
+                                  {msg.replyTo.type === 'sticker' ? '[Nhãn dán]' : msg.replyTo.content}
+                                </p>
+                              </div>
+                            </>
+                          )}
+
+                          {msg.type === 'sticker' && msg.sticker ? (
+                            <div
+                              className="relative my-0.5 cursor-pointer hover:opacity-90 active:scale-98 transition select-none"
+                              onClick={handleToggleMessageDetails}
+                              onTouchStart={handleTouchStart(msg)}
+                              onTouchEnd={handleTouchEnd}
+                              onTouchMove={handleTouchMove}
+                            >
+                              <img
+                                src={msg.sticker}
+                                alt="Sticker"
+                                className={`object-contain select-none rounded-lg ${
+                                  msg.sticker.includes('giphy.com')
+                                    ? 'max-w-[200px] max-h-[200px] md:max-w-[240px] md:max-h-[240px] shadow-sm border border-slate-100 bg-slate-50/20 p-1'
+                                    : 'w-24 h-24'
+                                }`}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm leading-relaxed cursor-pointer hover:opacity-95 active:scale-98 transition ${
+                                msg.sender === 'me'
+                                  ? 'bg-primary-600 text-white rounded-br-md font-medium'
+                                  : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
+                              }`}
+                              onClick={handleToggleMessageDetails}
+                              onTouchStart={handleTouchStart(msg)}
+                              onTouchEnd={handleTouchEnd}
+                              onTouchMove={handleTouchMove}
+                            >
+                              <p className="whitespace-pre-wrap break-all">{msg.text}</p>
+                            </div>
+                          )}
+
+                          {/* Reactions list pill under message bubble */}
+                          {Array.isArray(msg.reactions) && msg.reactions.length > 0 && (
+                            <div
+                              className={`absolute bottom-[-10px] bg-white border border-slate-100 rounded-full px-1.5 py-0.5 shadow-sm flex items-center gap-0.5 text-[10px] select-none z-10 cursor-pointer ${
+                                msg.sender === 'me' ? 'right-3' : 'left-3'
+                              }`}
+                              title={msg.reactions.map((r) => `${r.user?.username || 'Người dùng'}: ${REACTION_EMOJIS[r.type]}`).join('\n')}
+                            >
+                              <span>
+                                {Array.from(new Set(msg.reactions.map((r) => REACTION_EMOJIS[r.type]))).slice(0, 3).join('')}
+                              </span>
+                              {msg.reactions.length > 1 && (
+                                <span className="text-gray-500 font-bold ml-0.5">{msg.reactions.length}</span>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Reaction Trigger Button (visible on hover) */}
-                    <div
-                      className={`opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center px-0.5 shrink-0 gap-1 relative ${
-                        msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setReplyToMessage(msg)}
-                        className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-200 cursor-pointer"
-                        title="Phản hồi"
-                      >
-                        <FaReply size={12} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveReactionMessageId(
-                            activeReactionMessageId === msg._id ? null : msg._id
-                          )
-                        }
-                        className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-200 cursor-pointer"
-                        title="Bày tỏ cảm xúc"
-                      >
-                        <AiOutlineSmile size={15} />
-                      </button>
-
-                      {/* Reactions bar popover */}
-                      {activeReactionMessageId === msg._id && (
+                        {/* Reaction Trigger Button (visible on hover) */}
                         <div
-                          className={`absolute bottom-full mb-1.5 bg-white border border-gray-200 rounded-full shadow-lg px-2.5 py-1 flex items-center gap-2 z-[90] ${
-                            msg.sender === 'me' ? 'right-0' : 'left-0'
+                          className={`opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center px-0.5 shrink-0 gap-1 relative ${
+                            msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'
                           }`}
                         >
-                          {Object.entries(REACTION_EMOJIS).map(([type, emoji]) => (
-                            <button
-                              key={type}
-                              type="button"
-                              onClick={() => {
-                                toggleReaction?.(msg._id, type)
-                                setActiveReactionMessageId(null)
-                              }}
-                              className="hover:scale-130 active:scale-95 transition text-base cursor-pointer"
+                          <button
+                            type="button"
+                            onClick={() => setReplyToMessage(msg)}
+                            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-200 cursor-pointer"
+                            title="Phản hồi"
+                          >
+                            <FaReply size={12} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveReactionMessageId(
+                                activeReactionMessageId === msg._id ? null : msg._id
+                              )
+                            }
+                            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-200 cursor-pointer"
+                            title="Bày tỏ cảm xúc"
+                          >
+                            <AiOutlineSmile size={15} />
+                          </button>
+
+                          {/* Reactions bar popover */}
+                          {activeReactionMessageId === msg._id && (
+                            <div
+                              className={`absolute bottom-full mb-1.5 bg-white border border-gray-200 rounded-full shadow-lg px-2.5 py-1 flex items-center gap-2 z-[90] ${
+                                msg.sender === 'me' ? 'right-0' : 'left-0'
+                              }`}
                             >
-                              {emoji}
-                            </button>
-                          ))}
+                              {Object.entries(REACTION_EMOJIS).map(([type, emoji]) => (
+                                <button
+                                  key={type}
+                                  type="button"
+                                  onClick={() => {
+                                    toggleReaction?.(msg._id, type)
+                                    setActiveReactionMessageId(null)
+                                  }}
+                                  className="hover:scale-130 active:scale-95 transition text-base cursor-pointer"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Display delivery status under selected/last message */}
+                      {msg.sender === 'me' && msg.deliveryStatus && (
+                        <div className={`w-full flex justify-end transition-all duration-200 select-none ${
+                          isSelected || isLast ? 'h-4 opacity-100 mb-2' : 'h-0 opacity-0 overflow-hidden pointer-events-none'
+                        }`}>
+                          <span className="text-[10px] text-slate-400 font-medium pr-3.5">
+                            {getStatusLabel(msg.deliveryStatus)}
+                          </span>
                         </div>
                       )}
                     </div>
-
-                    <div
-                      className={`pointer-events-none absolute bottom-full mb-1 rounded-lg bg-slate-800 text-white px-2 py-1 text-[10px] opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 whitespace-nowrap z-10 ${
-                        msg.sender === 'me' ? 'right-0' : 'left-8'
-                      }`}
-                    >
-                      {msg.fullTime || msg.time}
-                    </div>
-
-                    {/* Display delivery status under last message */}
-                    {msg.sender === 'me' && msg.deliveryStatus && (
-                      <span className="text-[10px] text-slate-400 absolute top-full mt-1 right-0 font-medium">
-                        {msg.deliveryStatus}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
             </div>
 
             {/* Input Box */}
@@ -581,12 +735,17 @@ const ChatPage = () => {
 
       {/* Mobile context menu bottom sheet */}
       {longPressedMessage && (
-        <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/45 animate-fade-in md:hidden">
+        <div className="fixed inset-0 z-[150] flex flex-col justify-end bg-black/60 animate-fade-in md:hidden">
+          {/* Overlay to close */}
           <div className="absolute inset-0" onClick={() => setLongPressedMessage(null)} />
-          <div className="relative w-full max-w-md bg-white rounded-t-3xl p-5 shadow-2xl z-10 animate-slide-up pb-8 border-t border-slate-100">
-            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3 px-1">Bày tỏ cảm xúc</p>
-            <div className="flex items-center justify-between bg-slate-50 rounded-2xl p-2.5 mb-5 border border-slate-100/50">
+          
+          <div className="relative z-10 w-full bg-[#1c1c1e] rounded-t-3xl px-5 pt-6 pb-8 shadow-2xl border-t border-zinc-800 animate-slide-up flex flex-col gap-6">
+            
+            {/* Handle/bar at top */}
+            <div className="w-12 h-1 bg-zinc-700 rounded-full mx-auto -mt-2" />
+
+            {/* Emoji Reactions pill */}
+            <div className="flex items-center justify-between bg-zinc-800/80 backdrop-blur-md rounded-full px-4 py-2.5 mx-auto max-w-md w-full border border-zinc-700/50 shadow-lg">
               {Object.entries(REACTION_EMOJIS).map(([type, emoji]) => (
                 <button
                   key={type}
@@ -595,39 +754,82 @@ const ChatPage = () => {
                     toggleReaction?.(longPressedMessage._id, type)
                     setLongPressedMessage(null)
                   }}
-                  className="text-3xl active:scale-130 transition duration-150 p-1 cursor-pointer"
+                  className="text-2xl active:scale-140 hover:scale-110 transition p-1 cursor-pointer"
                 >
                   {emoji}
                 </button>
               ))}
+              <button
+                type="button"
+                className="text-zinc-400 bg-zinc-700/50 hover:bg-zinc-700 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition"
+                title="Thêm cảm xúc"
+              >
+                <span className="text-lg font-bold leading-none">+</span>
+              </button>
             </div>
-            <div className="space-y-2">
+
+            {/* Action buttons row */}
+            <div className="grid grid-cols-4 gap-2 pt-2 border-t border-zinc-800/80">
               <button
                 type="button"
                 onClick={() => {
                   setReplyToMessage(longPressedMessage)
                   setLongPressedMessage(null)
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 transition active:bg-slate-100 cursor-pointer"
+                className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800/30 transition cursor-pointer"
               >
-                <span className="p-2 bg-primary-50 text-primary-600 rounded-lg shrink-0">
-                  <FaReply size={14} />
-                </span>
-                <div className="flex flex-col">
-                  <span className="font-semibold text-slate-800">Phản hồi tin nhắn</span>
-                  <span className="text-xs text-slate-400 font-medium truncate max-w-[240px]">
-                    "{longPressedMessage.text || (longPressedMessage.type === 'sticker' ? '[Nhãn dán]' : '')}"
-                  </span>
+                <div className="p-3 bg-zinc-800/60 rounded-full flex items-center justify-center text-primary-400">
+                  <FaReply size={16} />
                 </div>
+                <span className="text-xs font-semibold">Reply</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(longPressedMessage.text || '')
+                  setLongPressedMessage(null)
+                }}
+                className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800/30 transition cursor-pointer"
+              >
+                <div className="p-3 bg-zinc-800/60 rounded-full flex items-center justify-center text-blue-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                  </svg>
+                </div>
+                <span className="text-xs font-semibold">Copy</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  // Translate placeholder
+                  setLongPressedMessage(null)
+                }}
+                className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800/30 transition cursor-pointer"
+              >
+                <div className="p-3 bg-zinc-800/60 rounded-full flex items-center justify-center text-emerald-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 0A18.015 18.015 0 0110 14.828M10 14.828a18.01 18.01 0 01-3.588-5.83M10 14.828l-1.84 3.7m0 0a17.98 17.98 0 01-1.301-3.7m1.301 3.7H3m18-3H15v1.5a1.5 1.5 0 001.5 1.5H19v2.5M15 19v-4.5"></path>
+                  </svg>
+                </div>
+                <span className="text-xs font-semibold">Translate</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setLongPressedMessage(null)}
-                className="w-full py-3.5 rounded-xl text-center text-sm font-bold text-slate-500 bg-slate-50 hover:bg-slate-100 transition cursor-pointer"
+                className="flex flex-col items-center justify-center gap-1.5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800/30 transition cursor-pointer"
               >
-                Hủy bỏ
+                <div className="p-3 bg-zinc-800/60 rounded-full flex items-center justify-center text-amber-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+                  </svg>
+                </div>
+                <span className="text-xs font-semibold">More</span>
               </button>
             </div>
+
           </div>
         </div>
       )}

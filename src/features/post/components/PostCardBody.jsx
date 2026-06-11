@@ -6,7 +6,8 @@ import { resolveMediaUrl } from '@/utils/mediaUrl'
  * Props: post
  */
 const PostCardBody = ({ post }) => {
-  const postUserId = post?.user?.id || post?.user?._id
+  const author = post?.user || post?.author || {}
+  const postUserId = author.id || author._id
   const profilePath = postUserId ? `/profile/${postUserId}` : '#'
   const content = post?.caption || post?.content || ''
   const sharedPostId = post?.sharedPost?._id || post?.sharedPost?.id || null
@@ -26,7 +27,7 @@ const PostCardBody = ({ post }) => {
             to={profilePath}
             className="font-semibold mr-1.5 hover:text-primary-600"
           >
-            {post.user?.username}
+            {author.username || author.full_name || 'Người dùng'}
           </Link>
           {content}
         </p>

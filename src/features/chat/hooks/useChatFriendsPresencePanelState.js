@@ -67,9 +67,29 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     })
   }, [filteredFriends])
 
+  const unfilteredSortedFriends = useMemo(() => {
+    return [...friends].sort((a, b) => {
+      const aLastMessageAt = new Date(a.lastMessageAt || 0).getTime()
+      const bLastMessageAt = new Date(b.lastMessageAt || 0).getTime()
+      if (aLastMessageAt !== bLastMessageAt) return bLastMessageAt - aLastMessageAt
+
+      const aUnread = Number(a.newMessagesCount || 0)
+      const bUnread = Number(b.newMessagesCount || 0)
+      if (aUnread !== bUnread) return bUnread - aUnread
+
+      if (a.isOnline && !b.isOnline) return -1
+      if (!a.isOnline && b.isOnline) return 1
+
+      const aLastSeen = new Date(a.lastSeen || 0).getTime()
+      const bLastSeen = new Date(b.lastSeen || 0).getTime()
+      return bLastSeen - aLastSeen
+    })
+  }, [friends])
+
   return {
     isLoading,
     sortedFriends,
+    unfilteredSortedFriends,
     selectedConversation,
     messages,
     isMessagesLoading,

@@ -1,5 +1,6 @@
 import { AiOutlineSearch, AiOutlineClose, AiOutlineExpand } from 'react-icons/ai'
 import { useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import { Avatar } from '@/components/ui'
 import formatLastSeenText from '@/utils/formatLastSeenText'
 
@@ -23,12 +24,14 @@ const ChatFriendsListPanel = ({
   selectedConversation,
   isLoading,
   sortedFriends,
+  unfilteredSortedFriends = [],
   searchKeyword,
   onChangeSearch,
   onClose,
   onSelectFriend,
 }) => {
   const navigate = useNavigate()
+  const { user } = useSelector((state) => state.auth)
 
   const handleExpand = () => {
     onClose?.()
@@ -48,7 +51,7 @@ const ChatFriendsListPanel = ({
             type="button"
             onClick={handleExpand}
             title="Mở rộng trang chat"
-            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            className="hidden md:inline-flex p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
           >
             <AiOutlineExpand size={16} />
           </button>
@@ -68,11 +71,63 @@ const ChatFriendsListPanel = ({
           <input
             value={searchKeyword}
             onChange={(e) => onChangeSearch(e.target.value)}
-            placeholder="Tìm bạn bè..."
+            placeholder="Tìm kiếm"
             className="w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
           />
         </div>
       </div>
+
+      {/* Horizontal Friends List */}
+      {!isLoading && unfilteredSortedFriends.length > 0 && (
+        <div className="flex items-center gap-4 px-4 py-4 overflow-x-auto border-b border-gray-100 bg-white shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {/* Create Story Placeholder */}
+          <div className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group">
+            <div className="relative">
+              <Avatar
+                src={user?.avatar}
+                name={user?.full_name}
+                size="lg"
+                online={false}
+                className="ring-2 ring-slate-100 group-hover:scale-105 transition"
+              />
+              <div className="absolute bottom-0 right-0 bg-primary-600 border border-white rounded-full p-0.5 flex items-center justify-center text-white">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </div>
+            </div>
+            <span className="text-xs text-slate-500 font-medium max-w-[64px] text-center truncate mt-0.5">
+              Tạo tin
+            </span>
+          </div>
+
+          {/* Friends Loop */}
+          {unfilteredSortedFriends.map((friend) => {
+            const displayName = friend.full_name?.split(' ').slice(-2).join(' ') || friend.username || 'Bạn bè'
+            return (
+              <button
+                key={`h-panel-${friend._id}`}
+                type="button"
+                onClick={() => onSelectFriend(friend._id)}
+                className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group focus:outline-none"
+              >
+                <div className="relative">
+                  <Avatar
+                    src={friend.avatar}
+                    name={friend.full_name}
+                    size="lg"
+                    online={friend.isOnline}
+                    className="group-hover:scale-105 transition"
+                  />
+                </div>
+                <span className="text-xs text-slate-700 font-medium max-w-[64px] text-center truncate mt-0.5">
+                  {displayName}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-y-auto py-1">
         {isLoading && (
