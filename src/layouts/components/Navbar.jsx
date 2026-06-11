@@ -21,6 +21,8 @@ import {
   AiOutlineRight,
 } from 'react-icons/ai'
 import { FaUserFriends } from 'react-icons/fa'
+import { MdOutlineOndemandVideo, MdOndemandVideo } from 'react-icons/md'
+import { HiOutlineUserGroup, HiUserGroup } from 'react-icons/hi'
 import { Avatar } from '@/components/ui'
 import { useAuth } from '@/features/auth'
 import useNotifications from '@/features/notification/hooks/useNotifications'
@@ -32,7 +34,8 @@ import { canAccessAdminDashboard } from '@/utils/auth'
 const TRANSLATIONS = {
   vi: {
     home: 'Trang chủ',
-    explore: 'Khám phá',
+    watch: 'Watch',
+    groups: 'Nhóm',
     notifications: 'Thông báo',
     friends: 'Bạn bè',
     create: 'Đăng bài',
@@ -51,7 +54,8 @@ const TRANSLATIONS = {
   },
   en: {
     home: 'Home',
-    explore: 'Explore',
+    watch: 'Watch',
+    groups: 'Groups',
     notifications: 'Notifications',
     friends: 'Friends',
     create: 'Create',
@@ -191,10 +195,10 @@ const Navbar = () => {
 
   const navLinks = [
     { path: '/', icon: AiOutlineHome, activeIcon: AiFillHome, labelKey: 'home' },
-    { path: '/explore', icon: AiOutlineGlobal, activeIcon: AiOutlineGlobal, labelKey: 'explore' },
-    { path: '/notifications', icon: AiOutlineBell, activeIcon: AiFillBell, labelKey: 'notifications' },
+    { path: '/watch', icon: MdOutlineOndemandVideo, activeIcon: MdOndemandVideo, labelKey: 'watch' },
+    { path: '/groups', icon: HiOutlineUserGroup, activeIcon: HiUserGroup, labelKey: 'groups' },
     { path: '/friends', icon: AiOutlineTeam, activeIcon: FaUserFriends, labelKey: 'friends' },
-    { path: '/create', icon: AiOutlinePlusCircle, activeIcon: AiFillPlusCircle, labelKey: 'create' },
+    { path: '/notifications', icon: AiOutlineBell, activeIcon: AiFillBell, labelKey: 'notifications' },
     ...(canAccessAdminDashboard(user, role)
       ? [{ path: '/admin', icon: AiOutlineDashboard, activeIcon: AiOutlineDashboard, labelKey: 'admin' }]
       : []),

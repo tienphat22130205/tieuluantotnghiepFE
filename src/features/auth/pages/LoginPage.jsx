@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import { AiOutlineClose } from 'react-icons/ai'
 import { FcGoogle } from 'react-icons/fc'
-import { signInWithPopup } from 'firebase/auth'
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth'
 import { auth, googleProvider } from '@/services/firebase'
 import { login, checkRole, loginWithGoogle } from '../store/authSlice'
 import LoginForm from '../components/LoginForm'
@@ -23,6 +23,41 @@ const LoginPage = () => {
   } = useLockNotice()
 
   const [form, setForm] = useState({ email: '', password: '' })
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+
+  // Xử lý kết quả khi Firebase redirect trở về (mobile fallback)
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth)
+        if (!result) return // Không có redirect result → bỏ qua
+
+        setIsGoogleLoading(true)
+        const idToken = await result.user.getIdToken()
+        const authData = await dispatch(loginWithGoogle(idToken)).unwrap()
+        clearNotice()
+        toast.success('Đăng nhập bằng Google thành công! 🎉', { autoClose: 2000 })
+
+        if (authData?.user?.usernameSelected === false) {
+          navigate('/set-username')
+        } else {
+          try {
+            const roleData = await dispatch(checkRole()).unwrap()
+            navigate(getRedirectPathByRole(roleData?.role))
+          } catch {
+            navigate('/home')
+          }
+        }
+      } catch (err) {
+        if (err?.code === 'auth/popup-closed-by-user') return
+        console.error('Redirect result error:', err)
+      } finally {
+        setIsGoogleLoading(false)
+      }
+    }
+
+    handleRedirectResult()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -34,14 +69,10 @@ const LoginPage = () => {
       await dispatch(login(form)).unwrap()
       clearNotice()
       toast.success('Đăng nhập thành công! 🎉', { autoClose: 2000 })
-
-      // Kiểm tra role từ backend
       try {
         const roleData = await dispatch(checkRole()).unwrap()
-        const redirectPath = getRedirectPathByRole(roleData?.role)
-        navigate(redirectPath)
+        navigate(getRedirectPathByRole(roleData?.role))
       } catch (roleCheckErr) {
-        // Nếu checkRole fail, redirect mặc định
         console.warn('Role check failed, redirecting to home:', roleCheckErr)
         navigate('/home')
       }
@@ -55,35 +86,56 @@ const LoginPage = () => {
   }
 
   const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true)
     try {
+      // Thử popup trước (hoạt động tốt trên desktop và hầu hết mobile)
       const result = await signInWithPopup(auth, googleProvider)
       const idToken = await result.user.getIdToken()
-      
+
       const authData = await dispatch(loginWithGoogle(idToken)).unwrap()
       clearNotice()
       toast.success('Đăng nhập bằng Google thành công! 🎉', { autoClose: 2000 })
-      
+
       if (authData?.user?.usernameSelected === false) {
         navigate('/set-username')
       } else {
         try {
           const roleData = await dispatch(checkRole()).unwrap()
-          const redirectPath = getRedirectPathByRole(roleData?.role)
-          navigate(redirectPath)
-        } catch (roleCheckErr) {
-          console.warn('Role check failed, redirecting to home:', roleCheckErr)
+          navigate(getRedirectPathByRole(roleData?.role))
+        } catch {
           navigate('/home')
         }
       }
     } catch (err) {
-      if (err.code === 'auth/popup-closed-by-user') {
+      // User tự đóng popup → không cần báo lỗi
+      if (
+        err.code === 'auth/popup-closed-by-user' ||
+        err.code === 'auth/cancelled-popup-request'
+      ) {
+        setIsGoogleLoading(false)
         return
       }
+
+      // Popup bị chặn (thường xảy ra trên mobile) → fallback sang redirect
+      if (
+        err.code === 'auth/popup-blocked' ||
+        err.code === 'auth/operation-not-supported-in-this-environment'
+      ) {
+        try {
+          // Redirect sẽ tải lại trang; kết quả xử lý ở useEffect getRedirectResult
+          await signInWithRedirect(auth, googleProvider)
+          return
+        } catch (redirectErr) {
+          console.error('Redirect login failed:', redirectErr)
+        }
+      }
+
       const errorMsg =
         (typeof err === 'string' ? err : err?.message)
         || 'Đăng nhập Google thất bại. Vui lòng thử lại'
       showNotice(errorMsg)
       console.error('Google login failed:', err)
+      setIsGoogleLoading(false)
     }
   }
 
@@ -137,11 +189,15 @@ const LoginPage = () => {
       <button
         type="button"
         onClick={handleGoogleLogin}
-        disabled={isLoading}
+        disabled={isLoading || isGoogleLoading}
         className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
-        <FcGoogle size={20} />
-        <span>Đăng nhập bằng Google</span>
+        {isGoogleLoading ? (
+          <span className="h-4 w-4 rounded-full border-2 border-slate-300 border-t-slate-700 animate-spin" />
+        ) : (
+          <FcGoogle size={20} />
+        )}
+        <span>{isGoogleLoading ? 'Đang xử lý...' : 'Đăng nhập bằng Google'}</span>
       </button>
 
       <p className="mt-8 text-center text-sm text-slate-500">

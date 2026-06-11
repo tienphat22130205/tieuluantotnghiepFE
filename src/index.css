@@ -177,3 +177,42 @@ html.dark .shadow-2xl {
     opacity: 0.8 !important;
   }
 }
+
+/* 📺 Custom CSS for Watch and Groups Pages */
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 12s linear infinite;
+}
+
+@keyframes ping-once {
+  0% { transform: scale(0.8); opacity: 1; }
+  50% { opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.animate-ping-once {
+  animation: ping-once 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slide-in {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbar Hiding utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}

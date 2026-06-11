@@ -195,7 +195,8 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
     setAiOptions((prev) => ({ ...prev, [key]: value }))
   }
 
-  const normalizeAIResult = (payload) => {
+  const normalizeAIResult = (payload, options = {}) => {
+    const skipHashtags = options.includeHashtags === false
     const normalizeTextForCompare = (value) => {
       if (typeof value !== 'string') return ''
       return value
@@ -510,13 +511,17 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
     const captions = expandedCaptionItems
       .map((item) => stripLocationFromCaption(item.text, location))
       .filter(Boolean)
-    const captionHashtags = expandedCaptionItems.map((item) => item.hashtags)
-    const tagsFromCaptions = expandedCaptionItems.flatMap((item) => item.hashtags)
+    // Khi skipHashtags=true (user tắt includeHashtags), trả captionHashtags rỗng
+    // để tránh hiện hashtag rác trích xuất từ nội dung caption
+    const captionHashtags = skipHashtags
+      ? expandedCaptionItems.map(() => [])
+      : expandedCaptionItems.map((item) => item.hashtags)
+    const tagsFromCaptions = skipHashtags ? [] : expandedCaptionItems.flatMap((item) => item.hashtags)
 
     return {
       captions,
       captionHashtags,
-      hashtags: [...new Set([...globalHashtags, ...tagsFromCaptions, ...discoveredHashtags])],
+      hashtags: skipHashtags ? [] : [...new Set([...globalHashtags, ...tagsFromCaptions, ...discoveredHashtags])],
     }
   }
 
@@ -576,12 +581,13 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
       }
 
       const result = await postService.generateContentUpload(formData)
-      const { captions, hashtags, captionHashtags } = normalizeAIResult(result)
+      const { captions, hashtags, captionHashtags } = normalizeAIResult(result, { includeHashtags: aiOptions.includeHashtags })
 
       console.debug('AI generate payload parsed', {
         rawResult: result,
         captionsCount: captions.length,
         hashtagsCount: hashtags.length,
+        includeHashtags: aiOptions.includeHashtags,
       })
 
       if (captions.length === 0) {
@@ -599,6 +605,9 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
 
       if (hashtags.length > 0) {
         setHashtags(hashtags.join(' '))
+      } else if (!aiOptions.includeHashtags) {
+        // Xóa hashtag cũ nếu user chọn không kèm hashtag
+        setHashtags('')
       }
 
       return true
