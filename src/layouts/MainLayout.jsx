@@ -3,7 +3,6 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import { AnimatePresence, motion as Motion } from 'framer-motion'
-import { AiOutlineSearch } from 'react-icons/ai'
 import Navbar from './components/Navbar'
 import RightSidebar from './components/RightSidebar'
 import UsernameSelectionModal from '@/features/auth/components/UsernameSelectionModal'
@@ -22,7 +21,6 @@ const MainLayout = () => {
   const navigate = useNavigate()
   const [suggestedUsernames, setSuggestedUsernames] = useState([])
   const [showUsernameModal, setShowUsernameModal] = useState(false)
-  const [desktopSearchKeyword, setDesktopSearchKeyword] = useState('')
 
   // Only show the right sidebar on the Home Feed and Post Details page
   const showRightSidebar = location.pathname === '/' || (location.pathname.startsWith('/post/') && !location.pathname.endsWith('/edit'))
@@ -86,23 +84,6 @@ const MainLayout = () => {
     toast.error(message, { autoClose: 3000 })
   }
 
-  const handleDesktopSearchSubmit = () => {
-    const normalizedKeyword = desktopSearchKeyword.trim()
-    if (normalizedKeyword.length < 2) return
-
-    const params = new URLSearchParams()
-    params.set('q', normalizedKeyword)
-    params.set('page', '1')
-    navigate(`/search?${params.toString()}`)
-  }
-
-  const trendingTopics = [
-    '#HocTap',
-    '#FrontEnd',
-    '#ReactJS',
-    '#TinCongNghe',
-    '#Zivo',
-  ]
 
   return (
     <div className="min-h-screen bg-[#f4f7fb]">
@@ -128,62 +109,7 @@ const MainLayout = () => {
 
             {showRightSidebar && (
               <aside className="hidden lg:block">
-                <div className="sticky top-5 space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <label htmlFor="global-search" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Tìm kiếm
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        id="global-search"
-                        type="text"
-                        value={desktopSearchKeyword}
-                        onChange={(event) => setDesktopSearchKeyword(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            event.preventDefault()
-                            handleDesktopSearchSubmit()
-                          }
-                        }}
-                        placeholder="Tìm kiếm"
-                        className="w-full rounded-full border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleDesktopSearchSubmit}
-                        className="rounded-full bg-primary-600 p-2 text-white transition hover:bg-primary-700"
-                        aria-label="Tìm kiếm"
-                      >
-                        <AiOutlineSearch size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-base font-bold text-slate-900">Khám phá</p>
-                    <p className="mt-1 text-sm text-slate-500">Theo dõi chủ đề bạn quan tâm.</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {trendingTopics.map((topic) => (
-                        <button
-                          key={topic}
-                          type="button"
-                          className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
-                        >
-                          {topic}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-base font-bold text-slate-900">Gợi ý hôm nay</p>
-                    <ul className="mt-3 space-y-3 text-sm text-slate-700">
-                      <li className="rounded-xl bg-slate-50 px-3 py-2">Xem bạn bè mới vừa tham gia Zivo.</li>
-                      <li className="rounded-xl bg-slate-50 px-3 py-2">Thử đăng bài có ảnh để tăng tương tác.</li>
-                      <li className="rounded-xl bg-slate-50 px-3 py-2">Cập nhật hồ sơ để mọi người dễ tìm thấy bạn.</li>
-                    </ul>
-                  </div>
-                </div>
+                <RightSidebar />
               </aside>
             )}
           </div>

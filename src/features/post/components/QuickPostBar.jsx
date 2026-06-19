@@ -1,24 +1,14 @@
-import { useNavigate } from 'react-router-dom'
 import { AiOutlinePicture, AiOutlineVideoCamera, AiOutlineSmile } from 'react-icons/ai'
 import { Avatar } from '@/components/ui'
 import { useAuth } from '@/features/auth'
 
 /**
  * QuickPostBar – Thanh tạo bài viết nhanh ở trang chủ.
- * Style giống Facebook: Avatar + input placeholder + các nút tắt tắt.
+ * Gọi onOpen() để mở CreatePostModal thay vì navigate.
  */
-const QuickPostBar = () => {
-  const navigate = useNavigate()
+const QuickPostBar = ({ onOpen }) => {
   const { user } = useAuth()
   const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Bạn'
-
-  const goToCreate = (tab) => {
-    if (tab) {
-      navigate(`/create?tab=${tab}`)
-    } else {
-      navigate('/create')
-    }
-  }
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
@@ -32,7 +22,7 @@ const QuickPostBar = () => {
         />
         <button
           type="button"
-          onClick={() => goToCreate()}
+          onClick={onOpen}
           className="flex-1 text-left rounded-full bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-sm text-slate-500 font-normal transition-colors duration-150 cursor-text"
         >
           {displayName} ơi, bạn đang nghĩ gì vậy?
@@ -40,13 +30,13 @@ const QuickPostBar = () => {
       </div>
 
       {/* Divider */}
-      <div className="mt-3 border-t border-slate-100" />
+      <div className="mt-3 border-t border-slate-100/80" />
 
       {/* Action Buttons */}
       <div className="mt-2 flex items-center justify-around">
         <button
           type="button"
-          onClick={() => goToCreate('video')}
+          onClick={onOpen}
           className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors duration-150"
         >
           <AiOutlineVideoCamera size={20} className="text-red-500" />
@@ -58,7 +48,7 @@ const QuickPostBar = () => {
 
         <button
           type="button"
-          onClick={() => goToCreate('photo')}
+          onClick={onOpen}
           className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors duration-150"
         >
           <AiOutlinePicture size={20} className="text-emerald-500" />
@@ -70,7 +60,7 @@ const QuickPostBar = () => {
 
         <button
           type="button"
-          onClick={() => goToCreate('feeling')}
+          onClick={onOpen}
           className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors duration-150"
         >
           <AiOutlineSmile size={20} className="text-yellow-500" />

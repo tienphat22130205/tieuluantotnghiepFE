@@ -167,6 +167,7 @@ const usePostCardController = (post) => {
   const isDemoMode = token === mockToken
   const postAuthorId = post?.user?._id || post?.user?.id
   const canManage = Boolean(currentUserId && postAuthorId && String(currentUserId) === String(postAuthorId))
+  const groupId = post.group?._id || post.group?.id || (typeof post.group === 'string' ? post.group : null)
 
   useEffect(() => {
     if (Array.isArray(post.comments)) {
@@ -194,7 +195,7 @@ const usePostCardController = (post) => {
     return [...new Set(postImages)]
   }, [post.images, post.image_url])
 
-  const handleLike = () => dispatch(toggleLike({ postId: post._id, isLiked, currentUserId }))
+  const handleLike = () => dispatch(toggleLike({ postId: post._id, isLiked, currentUserId, groupId }))
   const handleSave = () => setSaved((prev) => !prev)
   const handleEditPost = () => navigate(`/post/${post._id}/edit`)
 
@@ -224,7 +225,7 @@ const usePostCardController = (post) => {
   const confirmDelete = async () => {
     setIsConfirmDeleteOpen(false)
     try {
-      await dispatch(deletePost(post._id)).unwrap()
+      await dispatch(deletePost({ postId: post._id, groupId })).unwrap()
       toast.success('Xóa bài viết thành công!')
     } catch (_err) {
       toast.error('Xóa bài viết thất bại!')
@@ -245,10 +246,11 @@ const usePostCardController = (post) => {
       } else {
         let list
         try {
-          list = await postService.getComments(post._id)
+          list = await postService.getComments(post._id, groupId)
         } catch (_getErr) {
           try {
-            const postResponse = await postService.getById(post._id)
+            const detailEndpoint = groupId ? `/groups/${groupId}/posts/${post._id}` : `/posts/${post._id}`
+            const postResponse = await api.get(detailEndpoint)
             const postPayload = postResponse?.data || postResponse?.post || postResponse || {}
             list = Array.isArray(postPayload?.comments)
               ? postPayload.comments
@@ -418,7 +420,7 @@ const usePostCardController = (post) => {
         }
         setComments((prev) => mergeIncomingComment(prev, optimistic))
       } else {
-        const result = await postService.addComment(post._id, content, parentCommentId)
+        const result = await postService.addComment(post._id, content, parentCommentId, groupId)
         const incomingComment = normalizeComment(result?.comment, user)
         if (incomingComment) {
           setComments((prev) => mergeIncomingComment(prev, incomingComment))
@@ -443,7 +445,7 @@ const usePostCardController = (post) => {
 
     setDeletingCommentId(commentId)
     try {
-      const result = await postService.deleteComment(post._id, commentId)
+      const result = await postService.deleteComment(post._id, commentId, groupId)
       setComments((prev) => prev.filter((comment) => comment?._id !== commentId))
       if (typeof result?.commentCount === 'number') {
         setCommentsCount(result.commentCount)

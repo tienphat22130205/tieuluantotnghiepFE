@@ -57,12 +57,13 @@ const PostCard = ({ post }) => {
       <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
         <PostCardHeader
           user={post.user || post.author}
-          createdAt={post.created_at}
+          createdAt={post.createdAt || post.created_at}
           visibility={post.visibility}
           location={post.location || post.locationData || post.locationContext || null}
           canManage={canManage}
           onEdit={handleEditPost}
           onDelete={handleDeletePost}
+          group={post.group}
         />
 
         {/* Hình ảnh */}
