@@ -126,7 +126,8 @@ const StoryArchiveModal = ({ isOpen, onClose, onDeleteStoryFromParent }) => {
                       ) : story.mediaType === 'video' ? (
                         <video
                           src={resolveMediaUrl(story.mediaUrl)}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-${story.objectFit || 'cover'}`}
+                          style={{ filter: story.imageFilter && story.imageFilter !== 'none' ? story.imageFilter : undefined }}
                           muted
                           playsInline
                         />
@@ -134,7 +135,8 @@ const StoryArchiveModal = ({ isOpen, onClose, onDeleteStoryFromParent }) => {
                         <img
                           src={resolveMediaUrl(story.mediaUrl)}
                           alt="Archived story"
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-${story.objectFit || 'cover'}`}
+                          style={{ filter: story.imageFilter && story.imageFilter !== 'none' ? story.imageFilter : undefined }}
                           loading="lazy"
                         />
                       )}
@@ -228,7 +230,8 @@ const StoryArchiveModal = ({ isOpen, onClose, onDeleteStoryFromParent }) => {
                   ) : selectedStory.mediaType === 'video' ? (
                     <video
                       src={resolveMediaUrl(selectedStory.mediaUrl)}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-${selectedStory.objectFit || 'cover'}`}
+                      style={{ filter: selectedStory.imageFilter && selectedStory.imageFilter !== 'none' ? selectedStory.imageFilter : undefined }}
                       controls
                       autoPlay
                       playsInline
@@ -237,7 +240,8 @@ const StoryArchiveModal = ({ isOpen, onClose, onDeleteStoryFromParent }) => {
                     <img
                       src={resolveMediaUrl(selectedStory.mediaUrl)}
                       alt="Archived story preview"
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-${selectedStory.objectFit || 'cover'}`}
+                      style={{ filter: selectedStory.imageFilter && selectedStory.imageFilter !== 'none' ? selectedStory.imageFilter : undefined }}
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/50 pointer-events-none" />
