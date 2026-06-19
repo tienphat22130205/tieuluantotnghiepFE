@@ -187,9 +187,11 @@ export const updatePost = createAsyncThunk(
 // Xóa bài viết
 export const deletePost = createAsyncThunk(
   'posts/delete',
-  async (postId, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      await postService.softDelete(postId)
+      const postId = typeof payload === 'string' ? payload : payload?.postId
+      const groupId = typeof payload === 'object' ? payload?.groupId : null
+      await postService.softDelete(postId, groupId)
       return { postId, isDeleted: true, deletedAt: new Date().toISOString() }
     } catch (err) {
       return rejectWithValue(err.message || 'Xóa bài viết thất bại')
@@ -205,7 +207,8 @@ export const toggleLike = createAsyncThunk(
       const postId = typeof payload === 'string' ? payload : payload?.postId
       const isLiked = typeof payload === 'object' ? payload?.isLiked : false
       const currentUserId = typeof payload === 'object' ? payload?.currentUserId : null
-      const result = await postService.toggleLike(postId, isLiked)
+      const groupId = typeof payload === 'object' ? payload?.groupId : null
+      const result = await postService.toggleLike(postId, isLiked, groupId)
       return { ...result, postId, currentUserId }
     } catch (err) {
       return rejectWithValue(err.message)

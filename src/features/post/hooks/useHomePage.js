@@ -229,6 +229,12 @@ const useHomePage = () => {
     }
   }, [dispatch, effectiveHasMore, isDemoMode, isLoading])
 
+  const refetch = useCallback(() => {
+    if (isDemoMode) return
+    dispatch(clearPosts())
+    dispatch(fetchFeed({ page: 1, limit: FEED_PAGE_SIZE }))
+  }, [dispatch, isDemoMode])
+
   return {
     posts: visiblePosts,
     isLoading,
@@ -236,6 +242,7 @@ const useHomePage = () => {
     user,
     isDemoMode,
     handleLoadMore,
+    refetch,
   }
 }
 

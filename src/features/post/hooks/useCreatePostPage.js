@@ -7,7 +7,7 @@ import { createPost, updatePost } from '../store/postSlice'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 import { normalizeVisibility } from '@/utils/friendship'
 
-const useCreatePostPage = ({ postId, isEditMode }) => {
+const useCreatePostPage = ({ postId, isEditMode, onSuccess } = {}) => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
@@ -672,7 +672,11 @@ const useCreatePostPage = ({ postId, isEditMode }) => {
       }
 
       toast.success('Dang bai thanh cong!')
-      navigate('/')
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        navigate('/')
+      }
     } catch {
       toast.error(isEditMode ? 'Cap nhat bai viet that bai!' : 'Dang bai that bai! Vui long thu lai.')
     } finally {

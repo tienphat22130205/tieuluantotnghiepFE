@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import authReducer from '@/features/auth/store/authSlice'
 import postReducer from '@/features/post/store/postSlice'
+import groupReducer from '@/features/group/store/groupSlice'
 
 /**
  * Redux Store tổng hợp.
@@ -10,6 +11,7 @@ const store = configureStore({
   reducer: {
     auth: authReducer,
     posts: postReducer,
+    group: groupReducer,
   },
 })
 

@@ -8,7 +8,6 @@
 // Pages
 export { default as ProfilePage } from './pages/ProfilePage'
 export { default as FriendsPage } from './pages/FriendsPage'
-export { default as GroupsPage } from './pages/GroupsPage'
 
 // Components
 export { default as CoverPhoto } from './components/CoverPhoto'

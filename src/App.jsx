@@ -12,7 +12,8 @@ import AuthLayout from '@/layouts/AuthLayout'
 // Feature Pages
 import { LoginPage, RegisterPage, SupportRequestPage, VerifyEmailPage } from '@/features/auth'
 import { HomePage, CreatePostPage, PostDetailPage, SearchPage, WatchPage } from '@/features/post'
-import { FriendsPage, ProfilePage, GroupsPage } from '@/features/user'
+import { FriendsPage, ProfilePage } from '@/features/user'
+import { GroupsPage, GroupDetailPage } from '@/features/group'
 import { NotificationPage } from '@/features/notification'
 import { ChatPage } from '@/features/chat'
 import { AdminDashboardPage, AdminDashboardOverviewPage } from '@/features/admin'
@@ -119,6 +120,7 @@ const App = () => {
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/watch" element={<WatchPage />} />
           <Route path="/groups" element={<GroupsPage />} />
+          <Route path="/groups/:groupId" element={<GroupDetailPage />} />
           <Route path="/notifications" element={<NotificationPage />} />
           <Route path="/log" element={<Navigate to="/notifications" replace />} />
           <Route path="/search" element={<SearchPage />} />

@@ -99,7 +99,10 @@ const postService = {
   update: (postId, data) => api.patch(`/posts/${postId}`, data),
 
   // Soft delete bài viết (backend sẽ xóa cứng theo lịch)
-  softDelete: (postId) => api.delete(`/posts/${postId}`),
+  softDelete: (postId, groupId = null) => {
+    const endpoint = groupId ? `/groups/${groupId}/posts/${postId}` : `/posts/${postId}`
+    return api.delete(endpoint)
+  },
 
   // Chia sẻ lại bài viết
   sharePost: (postId, payload = {}) =>
@@ -110,8 +113,9 @@ const postService = {
     }),
 
   // Like bài viết
-  likePost: async (postId) => {
-    const response = await api.post(`/posts/${postId}/like`)
+  likePost: async (postId, groupId = null) => {
+    const endpoint = groupId ? `/groups/${groupId}/posts/${postId}/like` : `/posts/${postId}/like`
+    const response = await api.post(endpoint)
     const data = unwrapDataPayload(response)
     return {
       postId: data?.postId || postId,
@@ -121,8 +125,9 @@ const postService = {
   },
 
   // Bỏ like bài viết
-  unlikePost: async (postId) => {
-    const response = await api.delete(`/posts/${postId}/like`)
+  unlikePost: async (postId, groupId = null) => {
+    const endpoint = groupId ? `/groups/${groupId}/posts/${postId}/like` : `/posts/${postId}/like`
+    const response = await api.delete(endpoint)
     const data = unwrapDataPayload(response)
     return {
       postId: data?.postId || postId,
@@ -132,12 +137,13 @@ const postService = {
   },
 
   // Toggle like theo trạng thái hiện tại
-  toggleLike: (postId, isLiked) => (isLiked ? postService.unlikePost(postId) : postService.likePost(postId)),
+  toggleLike: (postId, isLiked, groupId = null) => (isLiked ? postService.unlikePost(postId, groupId) : postService.likePost(postId, groupId)),
 
   // Lấy danh sách comment của bài viết
-  getComments: async (postId) => {
+  getComments: async (postId, groupId = null) => {
     try {
-      const response = await api.get(`/posts/${postId}/comments`)
+      const endpoint = groupId ? `/groups/${groupId}/posts/${postId}/comments` : `/posts/${postId}/comments`
+      const response = await api.get(endpoint)
       const data = unwrapDataPayload(response)
       if (Array.isArray(data)) return data
       if (Array.isArray(data?.comments)) return data.comments
@@ -148,7 +154,8 @@ const postService = {
       if (error?.status === 404) {
         // Fallback: Nếu không có endpoint GET comments riêng, lấy post detail và trích xuất comments
         try {
-          const postResponse = await api.get(`/posts/${postId}`)
+          const detailEndpoint = groupId ? `/groups/${groupId}/posts/${postId}` : `/posts/${postId}`
+          const postResponse = await api.get(detailEndpoint)
           const postData = unwrapDataPayload(postResponse) || postResponse
           const fromPost = postData?.comments || postData?.post?.comments
           if (Array.isArray(fromPost)) return fromPost
@@ -162,8 +169,9 @@ const postService = {
   },
 
   // Thêm comment
-  addComment: async (postId, content, replyTo = null) => {
-    const response = await api.post(`/posts/${postId}/comments`, { content, replyTo })
+  addComment: async (postId, content, replyTo = null, groupId = null) => {
+    const endpoint = groupId ? `/groups/${groupId}/posts/${postId}/comments` : `/posts/${postId}/comments`
+    const response = await api.post(endpoint, { content, replyTo })
     const data = unwrapDataPayload(response)
     return {
       postId: data?.postId || postId,
@@ -173,8 +181,9 @@ const postService = {
   },
 
   // Xóa comment
-  deleteComment: async (postId, commentId) => {
-    const response = await api.delete(`/posts/${postId}/comments/${commentId}`)
+  deleteComment: async (postId, commentId, groupId = null) => {
+    const endpoint = groupId ? `/groups/${groupId}/posts/${postId}/comments/${commentId}` : `/posts/${postId}/comments/${commentId}`
+    const response = await api.delete(endpoint)
     const data = unwrapDataPayload(response)
     return {
       postId: data?.postId || postId,
