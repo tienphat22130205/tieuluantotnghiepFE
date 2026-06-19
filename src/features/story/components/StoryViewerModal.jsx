@@ -430,7 +430,8 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
             ) : activeStory.mediaType === 'video' ? (
               <video
                 src={resolveMediaUrl(activeStory.mediaUrl)}
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-${activeStory.objectFit || 'cover'}`}
+                style={{ filter: activeStory.imageFilter && activeStory.imageFilter !== 'none' ? activeStory.imageFilter : undefined }}
                 autoPlay
                 muted={isMuted}
                 loop
@@ -440,7 +441,8 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
               <img
                 src={resolveMediaUrl(activeStory.mediaUrl)}
                 alt={activeGroup.user.fullName}
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-${activeStory.objectFit || 'cover'}`}
+                style={{ filter: activeStory.imageFilter && activeStory.imageFilter !== 'none' ? activeStory.imageFilter : undefined }}
               />
             )}
             {/* Top and bottom dark overlays */}

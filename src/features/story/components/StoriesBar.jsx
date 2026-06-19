@@ -297,7 +297,8 @@ const StoriesBar = () => {
                 ) : latestStory.mediaType === 'video' ? (
                   <video
                     src={resolveMediaUrl(latestStory.mediaUrl)}
-                    className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
+                    className={`w-full h-full object-${latestStory.objectFit || 'cover'} group-hover/card:scale-105 transition-transform duration-500`}
+                    style={{ filter: latestStory.imageFilter && latestStory.imageFilter !== 'none' ? latestStory.imageFilter : undefined }}
                     muted
                     playsInline
                   />
@@ -305,7 +306,8 @@ const StoriesBar = () => {
                   <img
                     src={resolveMediaUrl(latestStory.mediaUrl)}
                     alt={group.user.fullName}
-                    className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
+                    className={`w-full h-full object-${latestStory.objectFit || 'cover'} group-hover/card:scale-105 transition-transform duration-500`}
+                    style={{ filter: latestStory.imageFilter && latestStory.imageFilter !== 'none' ? latestStory.imageFilter : undefined }}
                     loading="lazy"
                   />
                 )}
