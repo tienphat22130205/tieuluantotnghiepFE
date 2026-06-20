@@ -32,6 +32,12 @@ const storyService = {
     const response = await api.get('/stories/archive')
     return response?.data || response || []
   },
+
+  // Bày tỏ cảm xúc với tin tức
+  reactStory: async (storyId, reaction) => {
+    const response = await api.post(`/stories/${storyId}/react`, { reaction })
+    return response?.data || response
+  },
 }
 
 export default storyService
