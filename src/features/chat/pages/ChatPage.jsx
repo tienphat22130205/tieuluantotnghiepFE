@@ -14,6 +14,7 @@ import {
 import { Avatar } from '@/components/ui'
 import { FaReply } from 'react-icons/fa'
 import formatLastSeenText from '@/utils/formatLastSeenText'
+import { resolveMediaUrl } from '@/utils/mediaUrl'
 import useChatFriendsInitialData from '@/features/chat/hooks/useChatFriendsInitialData'
 import useChatPresenceRealtimeSync from '@/features/chat/hooks/useChatPresenceRealtimeSync'
 import useChatDirectConversationRuntime from '@/features/chat/hooks/useChatDirectConversationRuntime'
@@ -537,6 +538,52 @@ const ChatPage = () => {
                                 </p>
                               </div>
                             </>
+                          )}
+
+                          {msg.storyReply && msg.storyReply.storyId && (
+                            <div
+                              className={`mb-1 relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 group/story shadow-sm select-none cursor-pointer hover:brightness-95 transition-all ${
+                                msg.sender === 'me' ? 'rounded-br-none' : 'rounded-bl-none'
+                              }`}
+                              style={{
+                                width: '100px',
+                                height: '150px',
+                              }}
+                            >
+                              {msg.storyReply.bgColor ? (
+                                <div
+                                  className="w-full h-full flex items-center justify-center p-2 text-center"
+                                  style={{ background: msg.storyReply.bgColor }}
+                                >
+                                  <span className="text-[8px] font-bold line-clamp-6 break-words text-white">
+                                    {msg.storyReply.textContent}
+                                  </span>
+                                </div>
+                              ) : msg.storyReply.mediaType === 'video' ? (
+                                <video
+                                  src={resolveMediaUrl(msg.storyReply.mediaUrl)}
+                                  className="w-full h-full object-cover filter blur-[1.5px] opacity-80"
+                                  muted
+                                  playsInline
+                                />
+                              ) : (
+                                <img
+                                  src={resolveMediaUrl(msg.storyReply.mediaUrl)}
+                                  alt="Story reply preview"
+                                  className="w-full h-full object-cover filter blur-[1.5px] opacity-80"
+                                />
+                              )}
+
+                              {/* Blurry gradient / overlay */}
+                              <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px] flex flex-col justify-between p-2">
+                                <span className="text-[8px] text-white/95 font-bold bg-black/55 rounded-full px-1.5 py-0.5 self-start border border-white/5 whitespace-nowrap">
+                                  Phản hồi tin
+                                </span>
+                                <span className="text-[7px] text-slate-300 font-medium truncate">
+                                  {msg.storyReply.mediaType === 'video' ? 'Video' : msg.storyReply.bgColor ? 'Văn bản' : 'Hình ảnh'}
+                                </span>
+                              </div>
+                            </div>
                           )}
 
                           {msg.type === 'sticker' && msg.sticker ? (

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { HiChevronLeft, HiChevronRight } from 'react-icons/hi'
 import { FiPlus } from 'react-icons/fi'
 import { Avatar } from '@/components/ui'
@@ -78,12 +78,28 @@ const StoriesBar = () => {
       setStories((prev) => prev.filter((s) => String(s.id || s._id || '') !== String(storyId)))
     }
 
+    const handleStoryViewedSocket = ({ storyId, viewers }) => {
+      setStories((prev) =>
+        prev.map((s) => {
+          if (String(s.id || s._id || '') === String(storyId)) {
+            return {
+              ...s,
+              viewers,
+            }
+          }
+          return s
+        })
+      )
+    }
+
     socket.on('story:created', handleStoryCreatedSocket)
     socket.on('story:deleted', handleStoryDeletedSocket)
+    socket.on('story:viewed', handleStoryViewedSocket)
 
     return () => {
       socket.off('story:created', handleStoryCreatedSocket)
       socket.off('story:deleted', handleStoryDeletedSocket)
+      socket.off('story:viewed', handleStoryViewedSocket)
     }
   }, [token])
 
@@ -134,11 +150,11 @@ const StoriesBar = () => {
     })
   }
 
-  const handleDeleteStoryFromState = (storyId) => {
+  const handleDeleteStoryFromState = useCallback((storyId) => {
     setStories((prev) => prev.filter((s) => String(s.id || s._id || '') !== String(storyId)))
-  }
+  }, [])
 
-  const handleStoryViewed = (storyId) => {
+  const handleStoryViewed = useCallback((storyId) => {
     setStories((prev) =>
       prev.map((s) => {
         if (String(s.id || s._id || '') === String(storyId)) {
@@ -154,7 +170,7 @@ const StoriesBar = () => {
         return s
       })
     )
-  }
+  }, [user])
 
   // Group stories by User ID
   const groupStoriesByUser = (flatStories) => {
@@ -196,8 +212,25 @@ const StoriesBar = () => {
     groups.forEach((group) => {
       group.stories.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     })
-    return groups
-  }, [stories])
+
+    const currentUserId = String(user?.id || user?._id || '')
+
+    // Sort groups:
+    // 1. Current user group always first
+    // 2. Friends' groups sorted by their latest story's createdAt time (newest first, i.e., descending)
+    return groups.sort((a, b) => {
+      const isMeA = String(a.userId) === currentUserId
+      const isMeB = String(b.userId) === currentUserId
+
+      if (isMeA && !isMeB) return -1
+      if (!isMeA && isMeB) return 1
+
+      const timeA = a.latestStory ? new Date(a.latestStory.createdAt).getTime() : 0
+      const timeB = b.latestStory ? new Date(b.latestStory.createdAt).getTime() : 0
+
+      return timeB - timeA
+    })
+  }, [stories, user])
 
   // Check if a group has any stories that the current user has not viewed yet
   const hasUnviewedStory = (group, currentUserId) => {
