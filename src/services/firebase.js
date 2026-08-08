@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app'
+import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 
 const firebaseConfig = {
@@ -10,10 +10,25 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-const app = initializeApp(firebaseConfig)
-export const auth = getAuth(app)
+let app = null
+if (!getApps().length) {
+  if (firebaseConfig.apiKey) {
+    try {
+      app = initializeApp(firebaseConfig)
+    } catch (err) {
+      console.error('Failed to initialize Firebase App:', err)
+    }
+  } else {
+    console.warn('⚠️ VITE_FIREBASE_API_KEY is missing in frontend environment variables.')
+  }
+} else {
+  app = getApp()
+}
+
+export const auth = app ? getAuth(app) : null
 
 export const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({ prompt: 'select_account' })
 googleProvider.addScope('profile')
 googleProvider.addScope('email')
+

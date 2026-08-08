@@ -18,6 +18,12 @@ import { NotificationPage } from '@/features/notification'
 import { ChatPage } from '@/features/chat'
 import { AdminDashboardPage, AdminDashboardOverviewPage } from '@/features/admin'
 import { canAccessAdminDashboard } from '@/utils/auth'
+import { useCallStore } from '@/features/chat/store/useCallStore'
+import { useChatStore } from '@/features/chat/store/useChatStore'
+import { useNotificationStore } from '@/features/notification/store/useNotificationStore'
+import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
+import { getSocket } from '@/services/socketClient'
+import CallModal from '@/features/chat/components/panel/CallModal'
 
 /**
  * ProtectedRoute – Chặn truy cập nếu chưa đăng nhập.
@@ -60,6 +66,7 @@ const RoleHomeRedirect = () => {
  */
 const App = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const { user, token } = useSelector((state) => state.auth)
 
   useEffect(() => {
     const handleResize = () => {
@@ -68,6 +75,32 @@ const App = () => {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  useEffect(() => {
+    if (user && token) {
+      useCallStore.getState().initPeer(user, token)
+      useNotificationStore.getState().fetchUnreadCount()
+      useNotificationStore.getState().fetchNotifications()
+
+      const socket = getSocket(token)
+      if (socket) {
+        const cleanupChat = useChatStore.getState().setupSocketListeners(socket, String(user.id || user._id))
+        const cleanupNotif = useNotificationStore.getState().setupSocketListeners(socket)
+        const cleanupPresence = usePresenceStore.getState().setupSocketListeners(socket)
+
+        return () => {
+          if (cleanupChat) cleanupChat()
+          if (cleanupNotif) cleanupNotif()
+          if (cleanupPresence) cleanupPresence()
+        }
+      }
+    } else {
+      useCallStore.getState().destroyPeer()
+      useChatStore.getState().closeConversation(null)
+      useNotificationStore.setState({ notifications: [], unreadCount: 0 })
+      usePresenceStore.setState({ friends: [] })
+    }
+  }, [user, token])
 
   return (
     <MotionConfig
@@ -79,106 +112,107 @@ const App = () => {
     >
       <BrowserRouter>
         <ToastContainer
-          position={isMobile ? "top-center" : "top-right"}
-          autoClose={isMobile ? 2500 : 4000}
-          hideProgressBar={isMobile}
-          newestOnTop={true}
-          closeOnClick={true}
-          rtl={false}
-          pauseOnFocusLoss={!isMobile}
-          draggable={true}
-          toastClassName={isMobile ? "mobile-toast" : ""}
-        />
-        <Routes>
-        {/* ── Auth Routes (Guest only) ── */}
-        <Route
-          element={
-            <GuestRoute>
-              <AuthLayout />
-            </GuestRoute>
-          }
-        >
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/support-request" element={<SupportRequestPage />} />
-        </Route>
+            position={isMobile ? "top-center" : "top-right"}
+            autoClose={isMobile ? 2500 : 4000}
+            hideProgressBar={isMobile}
+            newestOnTop={true}
+            closeOnClick={true}
+            rtl={false}
+            pauseOnFocusLoss={!isMobile}
+            draggable={true}
+            toastClassName={isMobile ? "mobile-toast" : ""}
+          />
+          <Routes>
+          {/* ── Auth Routes (Guest only) ── */}
+          <Route
+            element={
+              <GuestRoute>
+                <AuthLayout />
+              </GuestRoute>
+            }
+          >
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/support-request" element={<SupportRequestPage />} />
+          </Route>
 
-        {/* ── Public Auth Utility Routes ── */}
-        <Route element={<AuthLayout />}>
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
-        </Route>
+          {/* ── Public Auth Utility Routes ── */}
+          <Route element={<AuthLayout />}>
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+          </Route>
 
-        {/* ── Protected Routes (Logged in) ── */}
-        <Route
-          element={
-            <ProtectedRoute>
-              <MainLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/" element={<RoleHomeRedirect />} />
-          <Route path="/friends" element={<FriendsPage />} />
-          <Route path="/watch" element={<WatchPage />} />
-          <Route path="/groups" element={<GroupsPage />} />
-          <Route path="/groups/:groupId" element={<GroupDetailPage />} />
-          <Route path="/notifications" element={<NotificationPage />} />
-          <Route path="/log" element={<Navigate to="/notifications" replace />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/create" element={<CreatePostPage />} />
-          <Route path="/post/:postId/edit" element={<CreatePostPage />} />
-          <Route path="/profile/:userId" element={<ProfilePage />} />
-          <Route path="/post/:postId" element={<PostDetailPage />} />
-        </Route>
+          {/* ── Protected Routes (Logged in) ── */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/" element={<RoleHomeRedirect />} />
+            <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/watch" element={<WatchPage />} />
+            <Route path="/groups" element={<GroupsPage />} />
+            <Route path="/groups/:groupId" element={<GroupDetailPage />} />
+            <Route path="/notifications" element={<NotificationPage />} />
+            <Route path="/log" element={<Navigate to="/notifications" replace />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/create" element={<CreatePostPage />} />
+            <Route path="/post/:postId/edit" element={<CreatePostPage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
+            <Route path="/post/:postId" element={<PostDetailPage />} />
+          </Route>
 
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <ChatPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminRoute>
-                <AdminDashboardPage />
-              </AdminRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute>
-              <AdminRoute>
-                <AdminDashboardOverviewPage />
-              </AdminRoute>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminDashboardPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminDashboardOverviewPage />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* ── 404 – Fallback ── */}
-        <Route
-          path="*"
-          element={
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-              <div className="text-center">
-                <h1 className="text-6xl font-bold text-gray-300 mb-4">404</h1>
-                <p className="text-gray-500 mb-6">Trang không tồn tại</p>
-                <a
-                  href="/"
-                  className="text-primary-600 font-medium hover:underline"
-                >
-                  Quay về trang chủ
-                </a>
+          {/* ── 404 – Fallback ── */}
+          <Route
+            path="*"
+            element={
+              <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                  <h1 className="text-6xl font-bold text-gray-300 mb-4">404</h1>
+                  <p className="text-gray-500 mb-6">Trang không tồn tại</p>
+                  <a
+                    href="/"
+                    className="text-primary-600 font-medium hover:underline"
+                  >
+                    Quay về trang chủ
+                  </a>
+                </div>
               </div>
-            </div>
-          }
-        />
-        </Routes>
+            }
+          />
+          </Routes>
+          <CallModal />
       </BrowserRouter>
     </MotionConfig>
   )

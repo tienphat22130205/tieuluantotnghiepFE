@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui'
 import formatLastSeenText from '@/utils/formatLastSeenText'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 import StickerPicker from '../StickerPicker'
+import { useCallStore } from '@/features/chat/store/useCallStore'
 
 const REACTION_EMOJIS = {
   like: '👍',
@@ -51,6 +52,7 @@ const ChatConversationWindow = ({
   onSetReplyToMessage = () => {},
 }) => {
   const { user } = useSelector((state) => state.auth)
+  const { makeCall } = useCallStore()
   const currentUserId = String(user?._id || user?.id || '')
   const messagesContainerRef = useRef(null)
   const navigate = useNavigate()
@@ -161,7 +163,8 @@ const ChatConversationWindow = ({
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                className="md:hidden p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+                onClick={() => makeCall(selectedConversation, true)}
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
                 title="Gọi video"
               >
                 <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -170,7 +173,8 @@ const ChatConversationWindow = ({
               </button>
               <button
                 type="button"
-                className="md:hidden p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+                onClick={() => makeCall(selectedConversation, false)}
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
                 title="Gọi thoại"
               >
                 <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

@@ -149,7 +149,7 @@ const RightSidebar = () => {
   const handleOpenChat = (friend) => {
     window.dispatchEvent(new CustomEvent('chat:open'))
     window.dispatchEvent(
-      new CustomEvent('chat:select-friend', { detail: { friendId: friend._id } })
+      new CustomEvent('chat:select-friend', { detail: { friendId: friend._id || friend.id, friend } })
     )
   }
 

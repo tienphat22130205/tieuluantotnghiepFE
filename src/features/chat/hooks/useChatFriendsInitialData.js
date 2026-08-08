@@ -5,6 +5,8 @@ import userService from '@/features/user/services/userService'
 import { extractItems } from '@/utils/friendship'
 import { mapPresenceItems, normalizeFriendUser } from '@/utils/chatFriendAdapters'
 
+import { usePresenceStore } from '../store/usePresenceStore'
+
 const CHAT_FRIENDS_CACHE_PREFIX = 'chat-friends-cache-v1'
 
 const getChatFriendsCacheKey = (userId) => `${CHAT_FRIENDS_CACHE_PREFIX}:${String(userId || 'guest')}`
@@ -54,7 +56,8 @@ const writeChatFriendsCache = (cacheKey, friends) => {
 const useChatFriendsInitialData = ({ isOpen }) => {
   const authUserId = useSelector((state) => state.auth.user?._id || state.auth.user?.id || null)
   const cacheKey = getChatFriendsCacheKey(authUserId)
-  const [friends, setFriends] = useState([])
+  const friends = usePresenceStore((state) => state.friends)
+  const setFriends = usePresenceStore((state) => state.setFriends)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -65,7 +68,7 @@ const useChatFriendsInitialData = ({ isOpen }) => {
   }, [cacheKey, friends])
 
   useEffect(() => {
-    if (!isOpen) return
+    if (!authUserId) return
 
     let isMounted = true
 
@@ -137,7 +140,7 @@ const useChatFriendsInitialData = ({ isOpen }) => {
     return () => {
       isMounted = false
     }
-  }, [cacheKey, isOpen])
+  }, [cacheKey, authUserId])
 
   return {
     friends,

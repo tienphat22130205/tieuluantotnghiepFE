@@ -12,7 +12,7 @@ export const socketDebugLog = (...args) => {
 
 const trimSlash = (value) => value?.replace(/\/+$/, '') || ''
 
-const deriveSocketUrl = () => {
+export const deriveSocketUrl = () => {
   const rawApiUrl = trimSlash(import.meta.env.VITE_API_URL)
 
   if (!rawApiUrl) {

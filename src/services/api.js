@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { getAuthToken, removeAuthToken, removeStoredAuthUser } from '@/utils/authStorage'
+import { getCookie } from '@/utils/cookieUtils'
 
 let isHandlingForcedLogout = false
 const FORCED_LOGOUT_NOTICE_KEY = 'auth_forced_logout_notice'
@@ -87,13 +88,22 @@ const handleForcedLogout = (responseData) => {
 }
 
 // ──── Request Interceptor ────
-// Tự động gắn token vào header mỗi request
+// Đọc tệp tin cookie của trình duyệt để lấy token (Firebase JWT) và userId (UID)
+// Nếu tồn tại token, tự động thêm header Authorization: Bearer <token>
+// Nếu tồn tại userId, tự động thêm header x-user-uid: <userId>
 api.interceptors.request.use(
   (config) => {
-    const token = getAuthToken()
+    const token = getCookie('token') || getCookie('firebase_token') || getAuthToken()
+    const userId = getCookie('userId') || getCookie('uid') || getCookie('x-user-uid')
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    if (userId) {
+      config.headers['x-user-uid'] = userId
+    }
+
     return config
   },
   (error) => Promise.reject(error)

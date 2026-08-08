@@ -88,6 +88,12 @@ const LoginPage = () => {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true)
     try {
+      if (!auth) {
+        toast.error('Firebase Auth chưa được khởi tạo. Vui lòng thêm các biến môi trường VITE_FIREBASE_* trên Vercel/Render.')
+        setIsGoogleLoading(false)
+        return
+      }
+
       // Thử popup trước (hoạt động tốt trên desktop và hầu hết mobile)
       const result = await signInWithPopup(auth, googleProvider)
       const idToken = await result.user.getIdToken()
