@@ -16,8 +16,9 @@ import { FaReply } from 'react-icons/fa'
 import formatLastSeenText from '@/utils/formatLastSeenText'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 import useChatFriendsInitialData from '@/features/chat/hooks/useChatFriendsInitialData'
-import useChatPresenceRealtimeSync from '@/features/chat/hooks/useChatPresenceRealtimeSync'
-import useChatDirectConversationRuntime from '@/features/chat/hooks/useChatDirectConversationRuntime'
+import { useChatStore } from '@/features/chat/store/useChatStore'
+import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
+import { getSocket } from '@/services/socketClient'
 import StickerPicker from '../components/StickerPicker'
 
 const formatMessageAge = (value) => {
@@ -68,8 +69,8 @@ const ChatPage = () => {
   const navigate = useNavigate()
 
   // Load and sync initial list of friends (chats)
-  const { friends, setFriends, isLoading: isFriendsLoading } = useChatFriendsInitialData({ isOpen: true })
-  useChatPresenceRealtimeSync({ isOpen: true, token, setFriends })
+  const { isLoading: isFriendsLoading } = useChatFriendsInitialData({ isOpen: true })
+  const friends = usePresenceStore((state) => state.friends)
 
   // Search params tracking for active conversation
   const [searchParams, setSearchParams] = useSearchParams()
@@ -140,21 +141,46 @@ const ChatPage = () => {
 
 
   const {
+    messages: rawMessages,
     isMessagesLoading,
     isSending,
-    messages,
-    sendMessage,
-    sendSticker,
-    toggleReaction,
     replyToMessage,
+    openConversation,
+    closeConversation,
+    sendMessage: storeSendMessage,
+    sendSticker: storeSendSticker,
+    toggleReaction: storeToggleReaction,
     setReplyToMessage,
-  } = useChatDirectConversationRuntime({
-    isOpen: true,
-    selectedConversation,
-    setFriends,
-    messageInput,
-    setMessageInput,
-  })
+  } = useChatStore()
+
+  const messages = useMemo(() => {
+    return useChatStore.getState().getViewMessages(currentUserId)
+  }, [rawMessages, currentUserId])
+
+  const activeSelectedFriendId = selectedConversation?._id || selectedConversation?.id || null
+
+  useEffect(() => {
+    if (activeSelectedFriendId && selectedConversation) {
+      openConversation(selectedConversation, token, currentUserId)
+    } else {
+      closeConversation(getSocket(token))
+    }
+  }, [activeSelectedFriendId, token, currentUserId])
+
+  const sendMessage = () => {
+    const content = String(messageInput || '').trim()
+    if (!content) return
+    storeSendMessage(content, currentUserId, user?.username)
+    setMessageInput('')
+  }
+
+  const sendSticker = (stickerUrl) => {
+    storeSendSticker(stickerUrl, currentUserId, user?.username)
+  }
+
+  const toggleReaction = (messageId, emojiType) => {
+    storeToggleReaction(messageId, emojiType, currentUserId, user?.username)
+  }
 
   // Scroll messages viewport to bottom
   const messagesContainerRef = useRef(null)

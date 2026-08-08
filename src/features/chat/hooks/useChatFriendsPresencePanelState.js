@@ -1,13 +1,17 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import useChatFriendsInitialData from './useChatFriendsInitialData'
 import useChatPanelUiState from './useChatPanelUiState'
-import useChatPresenceRealtimeSync from './useChatPresenceRealtimeSync'
-import useChatDirectConversationRuntime from './useChatDirectConversationRuntime'
+import { useChatStore } from '../store/useChatStore'
+import { usePresenceStore } from '../store/usePresenceStore'
+import { getSocket } from '@/services/socketClient'
 
 const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
   const token = useSelector((state) => state.auth.token)
-  const { friends, setFriends, isLoading } = useChatFriendsInitialData({ isOpen })
+  const { user } = useSelector((state) => state.auth)
+  const currentUserId = String(user?._id || user?.id || '')
+
+  const { friends, isLoading } = useChatFriendsInitialData({ isOpen })
   const {
     selectedConversation,
     messageInput,
@@ -19,30 +23,50 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     handleSelectFriend,
   } = useChatPanelUiState({ friends, onClose })
 
-  useChatPresenceRealtimeSync({ isOpen, token, setFriends })
   const {
+    messages,
     isMessagesLoading,
     isSending,
-    messages,
-    sendMessage,
-    sendSticker,
-    toggleReaction,
     replyToMessage,
+    openConversation,
+    closeConversation,
+    sendMessage: storeSendMessage,
+    sendSticker: storeSendSticker,
+    toggleReaction: storeToggleReaction,
     setReplyToMessage,
-  } = useChatDirectConversationRuntime({
-    isOpen,
-    selectedConversation,
-    setFriends,
-    messageInput,
-    setMessageInput,
-  })
+  } = useChatStore()
+
+  const selectedFriendId = selectedConversation?._id || selectedConversation?.id || null
+
+  useEffect(() => {
+    if (selectedFriendId && selectedConversation) {
+      openConversation(selectedConversation, token, currentUserId)
+    } else {
+      closeConversation(getSocket(token))
+    }
+  }, [selectedFriendId, token, currentUserId])
+
+  const sendMessage = () => {
+    const content = String(messageInput || '').trim()
+    if (!content) return
+    storeSendMessage(content, currentUserId, user?.username)
+    setMessageInput('')
+  }
+
+  const sendSticker = (stickerUrl) => {
+    storeSendSticker(stickerUrl, currentUserId, user?.username)
+  }
+
+  const toggleReaction = (messageId, emojiType) => {
+    storeToggleReaction(messageId, emojiType, currentUserId, user?.username)
+  }
 
   const filteredFriends = useMemo(() => {
     const keyword = String(searchKeyword || '').trim().toLowerCase()
     if (!keyword) return friends
 
     return friends.filter((friend) => {
-      const fullName = String(friend?.full_name || '').toLowerCase()
+      const fullName = String(friend?.full_name || friend?.fullName || '').toLowerCase()
       const username = String(friend?.username || '').toLowerCase()
       return fullName.includes(keyword) || username.includes(keyword)
     })
@@ -86,12 +110,16 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     })
   }, [friends])
 
+  const viewMessages = useMemo(() => {
+    return useChatStore.getState().getViewMessages(currentUserId)
+  }, [messages, currentUserId])
+
   return {
     isLoading,
     sortedFriends,
     unfilteredSortedFriends,
     selectedConversation,
-    messages,
+    messages: viewMessages,
     isMessagesLoading,
     isSending,
     messageInput,

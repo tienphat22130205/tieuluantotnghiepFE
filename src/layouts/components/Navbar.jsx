@@ -30,6 +30,7 @@ import friendService from '@/features/user/services/friendService'
 import { extractItems } from '@/utils/friendship'
 import ChatConversationsPanel from '@/features/chat/components/ChatConversationsPanel'
 import { canAccessAdminDashboard } from '@/utils/auth'
+import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
 
 const TRANSLATIONS = {
   vi: {
@@ -99,6 +100,9 @@ const getStoredPreferences = (storageKey) => {
 const Navbar = () => {
   const { user, role, handleLogout } = useAuth()
   const { unreadCount, refreshUnreadCount } = useNotifications({ fetchList: false, fetchUnreadCount: true })
+  const unreadMessageCount = usePresenceStore((state) =>
+    state.friends.reduce((total, friend) => total + (Number(friend.newMessagesCount) || 0), 0)
+  )
   const location = useLocation()
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -256,7 +260,14 @@ const Navbar = () => {
               onClick={() => setIsChatOpen((prev) => !prev)}
               className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-[15px] font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
             >
-              <AiOutlineMessage size={22} />
+              <span className="relative inline-flex">
+                <AiOutlineMessage size={22} />
+                {unreadMessageCount > 0 && (
+                  <span className="absolute -right-2 -top-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                  </span>
+                )}
+              </span>
               <span>{text.messages}</span>
             </button>
           </div>
@@ -310,11 +321,16 @@ const Navbar = () => {
 
             <button
               type="button"
-              className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer"
+              className="relative p-2 rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer"
               aria-label={text.messages}
               onClick={() => setIsChatOpen(true)}
             >
               <AiOutlineMessage size={22} />
+              {unreadMessageCount > 0 && (
+                <span className="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
+                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                </span>
+              )}
             </button>
 
             <button

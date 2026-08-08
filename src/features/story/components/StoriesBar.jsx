@@ -9,8 +9,6 @@ import CreateStoryModal from './CreateStoryModal'
 import StoryViewerModal from './StoryViewerModal'
 import { getSocket } from '@/services/socketClient'
 
-import { mockStoriesData } from '../data/mockStories'
-
 const StoriesBar = () => {
   const { user, token } = useAuth()
   const [stories, setStories] = useState([])
@@ -27,7 +25,7 @@ const StoriesBar = () => {
     const fetchStories = async () => {
       try {
         const data = await storyService.getStories()
-        const rawStories = data && data.length > 0 ? data : mockStoriesData
+        const rawStories = data && data.length > 0 ? data : []
         const mapped = rawStories.map((story) => {
           const u = story.user || {}
           const fullName = u.fullName || u.full_name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username || 'Người dùng'

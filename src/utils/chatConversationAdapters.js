@@ -145,6 +145,26 @@ export const normalizeChatMessage = (message, options = {}) => {
     || fallbackSenderId
     || null
 
+  let replyTo = message?.replyTo || message?.reply_to || null
+  if (replyTo && typeof replyTo === 'object') {
+    const replySender = replyTo?.sender
+    const replySenderId =
+      (typeof replySender === 'object' && replySender !== null
+        ? replySender?._id || replySender?.id || replySender?.userId
+        : replySender) || null
+
+    replyTo = {
+      ...replyTo,
+      _id: replyTo?._id || replyTo?.id,
+      content: replyTo?.content || replyTo?.text || '',
+      type: replyTo?.type || 'text',
+      sticker: replyTo?.sticker || null,
+      sender: typeof replySender === 'object' && replySender !== null
+        ? replySender
+        : { _id: replySenderId },
+    }
+  }
+
   return {
     ...message,
     _id: message?._id || message?.id,
@@ -154,5 +174,6 @@ export const normalizeChatMessage = (message, options = {}) => {
     isMine: Boolean(forceMine || message?.isMine || message?.is_mine),
     readAt: message?.readAt || message?.read_at || null,
     status: message?.status || null,
+    replyTo: replyTo,
   }
 }
