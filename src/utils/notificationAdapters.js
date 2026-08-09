@@ -1,7 +1,10 @@
 export const getItemsFromResponse = (response) => {
   if (Array.isArray(response?.data?.items)) return response.data.items
+  if (Array.isArray(response?.data?.notifications)) return response.data.notifications
   if (Array.isArray(response?.items)) return response.items
+  if (Array.isArray(response?.notifications)) return response.notifications
   if (Array.isArray(response?.data)) return response.data
+  if (Array.isArray(response)) return response
   return []
 }
 

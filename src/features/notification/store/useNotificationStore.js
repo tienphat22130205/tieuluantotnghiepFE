@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import notificationService from '../services/notificationService'
-import { normalizeNotification } from '@/utils/notificationAdapters'
+import { getItemsFromResponse, normalizeNotification } from '@/utils/notificationAdapters'
 import { socketDebugLog } from '@/services/socketClient'
 
 export const useNotificationStore = create((set, get) => ({
@@ -14,8 +14,7 @@ export const useNotificationStore = create((set, get) => ({
       const response = await notificationService.getNotifications({
         unread: unreadOnly ? true : undefined,
       })
-      const rawList = response?.notifications || response?.data?.notifications || response?.data || []
-      const list = Array.isArray(rawList) ? rawList : []
+      const list = getItemsFromResponse(response)
       const normalizedList = list.map(normalizeNotification).filter(Boolean)
       set({ notifications: normalizedList })
     } catch (err) {

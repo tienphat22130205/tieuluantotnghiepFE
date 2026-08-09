@@ -25,6 +25,30 @@ const LoginPage = () => {
   const [form, setForm] = useState({ email: '', password: '' })
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
+  const handleGoogleSuccessRedirect = async (authData, googleResult) => {
+    clearNotice()
+
+    const isNewUser = Boolean(authData?.isNewUser || authData?.data?.isNewUser)
+    const displayName =
+      authData?.user?.firstName ||
+      authData?.user?.username ||
+      googleResult?.user?.displayName ||
+      'bạn'
+
+    if (isNewUser) {
+      toast.success(`🎉 Chào mừng ${displayName} lần đầu gia nhập Mạng xã hội Zivo!`, { autoClose: 3500 })
+    } else {
+      toast.success(`Chào mừng ${displayName} trở lại với Zivo! 🎉`, { autoClose: 2000 })
+    }
+
+    try {
+      const roleData = await dispatch(checkRole()).unwrap()
+      navigate(getRedirectPathByRole(roleData?.role))
+    } catch {
+      navigate('/home')
+    }
+  }
+
   // Xử lý kết quả khi Firebase redirect trở về (mobile fallback)
   useEffect(() => {
     const handleRedirectResult = async () => {
@@ -35,19 +59,7 @@ const LoginPage = () => {
         setIsGoogleLoading(true)
         const idToken = await result.user.getIdToken()
         const authData = await dispatch(loginWithGoogle(idToken)).unwrap()
-        clearNotice()
-        toast.success('Đăng nhập bằng Google thành công! 🎉', { autoClose: 2000 })
-
-        if (authData?.user?.usernameSelected === false) {
-          navigate('/set-username')
-        } else {
-          try {
-            const roleData = await dispatch(checkRole()).unwrap()
-            navigate(getRedirectPathByRole(roleData?.role))
-          } catch {
-            navigate('/home')
-          }
-        }
+        await handleGoogleSuccessRedirect(authData, result)
       } catch (err) {
         if (err?.code === 'auth/popup-closed-by-user') return
         console.error('Redirect result error:', err)
@@ -99,19 +111,7 @@ const LoginPage = () => {
       const idToken = await result.user.getIdToken()
 
       const authData = await dispatch(loginWithGoogle(idToken)).unwrap()
-      clearNotice()
-      toast.success('Đăng nhập bằng Google thành công! 🎉', { autoClose: 2000 })
-
-      if (authData?.user?.usernameSelected === false) {
-        navigate('/set-username')
-      } else {
-        try {
-          const roleData = await dispatch(checkRole()).unwrap()
-          navigate(getRedirectPathByRole(roleData?.role))
-        } catch {
-          navigate('/home')
-        }
-      }
+      await handleGoogleSuccessRedirect(authData, result)
     } catch (err) {
       // User tự đóng popup → không cần báo lỗi
       if (

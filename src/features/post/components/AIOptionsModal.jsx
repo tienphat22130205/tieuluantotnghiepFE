@@ -167,8 +167,8 @@ const AIOptionsModal = ({
                       <BiHash size={15} className="text-slate-500" />
                       Kèm hashtags gợi ý
                     </span>
-                    <div className={`relative h-5 w-9 rounded-full transition-colors duration-200 ${options.includeHashtags ? 'bg-primary-600' : 'bg-slate-300'}`}>
-                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${options.includeHashtags ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                    <div className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${options.includeHashtags ? 'bg-primary-600' : 'bg-slate-300'}`}>
+                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${options.includeHashtags ? 'translate-x-5' : 'translate-x-0'}`} />
                     </div>
                   </button>
                 </div>
