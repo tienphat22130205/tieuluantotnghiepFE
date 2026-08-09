@@ -23,6 +23,21 @@ const VideoPlayer = ({ stream, muted, className }) => {
   )
 }
 
+const AudioPlayer = ({ stream }) => {
+  const audioRef = useRef(null)
+
+  useEffect(() => {
+    if (audioRef.current && stream) {
+      audioRef.current.srcObject = stream
+      audioRef.current.play().catch((e) => {
+        console.warn('[AudioPlayer] Play error:', e)
+      })
+    }
+  }, [stream])
+
+  return <audio ref={audioRef} autoPlay playsInline />
+}
+
 const CallModal = () => {
   const {
     callStatus,
@@ -145,14 +160,7 @@ const CallModal = () => {
           ) : (
             /* Voice Call Wave Animation */
             <div className="w-full h-full flex items-center justify-center relative">
-              {isConnected && remoteStream ? (
-                <audio
-                  ref={(ref) => {
-                    if (ref && remoteStream) ref.srcObject = remoteStream
-                  }}
-                  autoPlay
-                />
-              ) : null}
+              {isConnected && remoteStream && <AudioPlayer stream={remoteStream} />}
 
               {isConnected && (
                 <div className="flex items-center gap-2 justify-center h-12">
