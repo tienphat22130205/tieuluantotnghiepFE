@@ -5,10 +5,7 @@ import chatService from '../services/chatService'
 import { useChatStore } from './useChatStore'
 import { normalizeChatMessage } from '@/utils/chatConversationAdapters'
 
-const INCOMING_RING_URL = 'https://assets.mixkit.co/active_storage/sfx/1359/1359-84.wav'
-const OUTGOING_RING_URL = 'https://assets.mixkit.co/active_storage/sfx/2056/2056-84.wav'
-
-// Public STUN servers for WebRTC NAT traversal
+// Comprehensive STUN servers for WebRTC NAT traversal
 const RTC_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -16,6 +13,10 @@ const RTC_CONFIG = {
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.ekiga.net' },
+    { urls: 'stun:stun.ideasip.com' },
+    { urls: 'stun:stun.voiparound.com' },
+    { urls: 'stun:stun.voipbuster.com' },
   ],
 }
 
@@ -23,55 +24,55 @@ const RTC_CONFIG = {
 let rtcPeerConnection = null
 let iceCandidatesQueue = []
 let localStreamRef = null
-let incomingRingAudio = null
-let outgoingRingAudio = null
+let ringInterval = null
 let socketInstance = null
 let callTimerInterval = null
 let callConnectedTime = null
+let audioCtx = null
 
-const initAudio = () => {
-  if (typeof window !== 'undefined') {
-    try {
-      if (!incomingRingAudio) {
-        incomingRingAudio = new Audio(INCOMING_RING_URL)
-        incomingRingAudio.loop = true
-      }
-      if (!outgoingRingAudio) {
-        outgoingRingAudio = new Audio(OUTGOING_RING_URL)
-        outgoingRingAudio.loop = true
-      }
-    } catch (e) {
-      console.warn('Audio init error:', e)
-    }
+const playRingtoneBeep = (isIncoming) => {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext
+    if (!AudioContextClass) return
+    if (!audioCtx) audioCtx = new AudioContextClass()
+    if (audioCtx.state === 'suspended') audioCtx.resume()
+
+    const ctx = audioCtx
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(isIncoming ? 440 : 480, ctx.currentTime)
+
+    gain.gain.setValueAtTime(0.1, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
+
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+
+    osc.start()
+    osc.stop(ctx.currentTime + 0.8)
+  } catch (e) {
+    console.warn('Web Audio synthesis error:', e)
   }
 }
 
 const startSound = (type) => {
-  initAudio()
   stopSounds()
   try {
-    if (type === 'incoming' && incomingRingAudio) {
-      incomingRingAudio.play().catch((e) => console.warn('Audio play block:', e))
-    } else if (type === 'outgoing' && outgoingRingAudio) {
-      outgoingRingAudio.play().catch((e) => console.warn('Audio play block:', e))
-    }
+    playRingtoneBeep(type === 'incoming')
+    ringInterval = setInterval(() => {
+      playRingtoneBeep(type === 'incoming')
+    }, 2000)
   } catch (e) {
-    console.warn('Sound play error:', e)
+    console.warn('Sound start error:', e)
   }
 }
 
 const stopSounds = () => {
-  try {
-    if (incomingRingAudio) {
-      incomingRingAudio.pause()
-      incomingRingAudio.currentTime = 0
-    }
-    if (outgoingRingAudio) {
-      outgoingRingAudio.pause()
-      outgoingRingAudio.currentTime = 0
-    }
-  } catch (e) {
-    console.warn('Sound pause error:', e)
+  if (ringInterval) {
+    clearInterval(ringInterval)
+    ringInterval = null
   }
 }
 
@@ -137,9 +138,15 @@ const createPeerConnection = (targetUserId, socket, set) => {
 
   // Handle incoming remote media tracks
   pc.ontrack = (event) => {
-    console.log('[WebRTC] Received remote media track:', event.streams?.[0])
+    console.log('[WebRTC] Received remote media track:', event.track?.kind, event.streams?.[0])
     if (event.streams && event.streams[0]) {
       set({ remoteStream: event.streams[0] })
+    } else if (event.track) {
+      set((state) => {
+        const currentStream = state.remoteStream || new MediaStream()
+        currentStream.addTrack(event.track)
+        return { remoteStream: currentStream }
+      })
     }
   }
 
@@ -168,7 +175,11 @@ const processIceCandidatesQueue = async (pc) => {
 const requestUserMedia = async (isVideo) => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
       video: isVideo,
     })
     return stream
@@ -191,7 +202,11 @@ const requestUserMedia = async (isVideo) => {
         console.log('[WebRTC] Retrying fallback to audio-only...')
         toast.info('Chuyển sang cuộc gọi thoại không dùng Camera...')
         const audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
           video: false,
         })
         return audioStream
