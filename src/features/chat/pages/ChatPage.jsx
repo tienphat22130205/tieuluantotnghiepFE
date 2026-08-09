@@ -13,10 +13,12 @@ import {
 
 import { Avatar } from '@/components/ui'
 import { FaReply } from 'react-icons/fa'
+import { FiPhone, FiVideo, FiPhoneOff, FiPhoneMissed } from 'react-icons/fi'
 import formatLastSeenText from '@/utils/formatLastSeenText'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 import useChatFriendsInitialData from '@/features/chat/hooks/useChatFriendsInitialData'
 import { useChatStore } from '@/features/chat/store/useChatStore'
+import { useCallStore } from '@/features/chat/store/useCallStore'
 import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
 import { getSocket } from '@/services/socketClient'
 import StickerPicker from '../components/StickerPicker'
@@ -139,6 +141,8 @@ const ChatPage = () => {
     if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
   }
 
+
+  const { makeCall } = useCallStore()
 
   const {
     messages: rawMessages,
@@ -450,24 +454,22 @@ const ChatPage = () => {
               </div>
 
               {/* Call buttons */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                  onClick={() => makeCall(selectedConversation, true)}
+                  className="p-2 rounded-full text-slate-600 hover:text-primary-600 hover:bg-primary-50 transition cursor-pointer"
                   title="Gọi video"
                 >
-                  <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
+                  <FiVideo size={20} />
                 </button>
                 <button
                   type="button"
-                  className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                  onClick={() => makeCall(selectedConversation, false)}
+                  className="p-2 rounded-full text-slate-600 hover:text-primary-600 hover:bg-primary-50 transition cursor-pointer"
                   title="Gọi thoại"
                 >
-                  <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.824-1.806-5.194-4.176-7-7l1.293-.97c.362-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-                  </svg>
+                  <FiPhone size={20} />
                 </button>
               </div>
             </div>
@@ -612,7 +614,32 @@ const ChatPage = () => {
                             </div>
                           )}
 
-                          {msg.type === 'sticker' && msg.sticker ? (
+                          {msg.type === 'call' || (msg.text && msg.text.includes('Cuộc gọi')) ? (
+                            <div
+                              className={`rounded-2xl px-4 py-2.5 text-xs font-semibold border flex items-center gap-2 shadow-sm select-none cursor-pointer hover:opacity-90 transition ${
+                                msg.text?.includes('nhỡ') || msg.text?.includes('từ chối')
+                                  ? 'bg-red-50 text-red-600 border-red-200'
+                                  : msg.sender === 'me'
+                                  ? 'bg-emerald-600 text-white border-emerald-500'
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              }`}
+                              onClick={handleToggleMessageDetails}
+                              onTouchStart={handleTouchStart(msg)}
+                              onTouchEnd={handleTouchEnd}
+                              onTouchMove={handleTouchMove}
+                            >
+                              {msg.text?.includes('video') ? (
+                                <FiVideo size={16} />
+                              ) : msg.text?.includes('nhỡ') ? (
+                                <FiPhoneMissed size={16} />
+                              ) : msg.text?.includes('từ chối') ? (
+                                <FiPhoneOff size={16} />
+                              ) : (
+                                <FiPhone size={16} />
+                              )}
+                              <span>{msg.text}</span>
+                            </div>
+                          ) : msg.type === 'sticker' && msg.sticker ? (
                             <div
                               className="relative my-0.5 cursor-pointer hover:opacity-90 active:scale-98 transition select-none"
                               onClick={handleToggleMessageDetails}

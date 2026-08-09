@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AiOutlineClose, AiOutlineArrowLeft, AiOutlineSend, AiOutlineExpand, AiOutlineSmile } from 'react-icons/ai'
 import { FaReply } from 'react-icons/fa'
+import { FiPhone, FiVideo, FiPhoneOff, FiPhoneMissed } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Avatar } from '@/components/ui'
@@ -333,7 +334,32 @@ const ChatConversationWindow = ({
                         </div>
                       )}
 
-                      {msg.type === 'sticker' && msg.sticker ? (
+                      {msg.type === 'call' || (msg.text && msg.text.includes('Cuộc gọi')) ? (
+                        <div
+                          className={`rounded-2xl px-3.5 py-2 text-xs font-semibold border flex items-center gap-2 shadow-sm select-none cursor-pointer hover:opacity-90 transition ${
+                            msg.text?.includes('nhỡ') || msg.text?.includes('từ chối')
+                              ? 'bg-red-50 text-red-600 border-red-200'
+                              : msg.sender === 'me'
+                              ? 'bg-emerald-600 text-white border-emerald-500'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          }`}
+                          onClick={handleToggleMessageDetails}
+                          onTouchStart={handleTouchStart(msg)}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchMove={handleTouchMove}
+                        >
+                          {msg.text?.includes('video') ? (
+                            <FiVideo size={15} />
+                          ) : msg.text?.includes('nhỡ') ? (
+                            <FiPhoneMissed size={15} />
+                          ) : msg.text?.includes('từ chối') ? (
+                            <FiPhoneOff size={15} />
+                          ) : (
+                            <FiPhone size={15} />
+                          )}
+                          <span>{msg.text}</span>
+                        </div>
+                      ) : msg.type === 'sticker' && msg.sticker ? (
                         <div
                           className="relative my-0.5 cursor-pointer hover:opacity-90 active:scale-98 transition select-none"
                           onClick={handleToggleMessageDetails}

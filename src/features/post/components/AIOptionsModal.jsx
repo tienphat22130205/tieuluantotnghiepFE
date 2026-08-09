@@ -33,7 +33,7 @@ const AIOptionsModal = ({
           <Dialog.Portal forceMount>
             <Dialog.Overlay asChild forceMount>
               <Motion.div
-                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999]"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 transition={{ duration: 0.18 }}
               />
@@ -44,7 +44,7 @@ const AIOptionsModal = ({
               onPointerDownOutside={(e) => { if (isLoading) e.preventDefault() }}
             >
               <Motion.div
-                className="fixed top-1/2 left-1/2 w-[92%] max-w-md -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl z-50 overflow-hidden border border-slate-200"
+                className="fixed top-1/2 left-1/2 w-[92%] max-w-md -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl z-[9999] overflow-hidden border border-slate-200"
                 initial={{ opacity: 0, y: 12, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.98 }}

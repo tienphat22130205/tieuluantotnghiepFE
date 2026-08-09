@@ -26,4 +26,35 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React runtime – cached long-term, rarely changes
+          'vendor-react': [
+            'react',
+            'react-dom',
+            'react-router-dom',
+          ],
+          // UI libraries – animations, toasts, icons
+          'vendor-ui': [
+            'framer-motion',
+            'react-toastify',
+            'react-icons',
+          ],
+          // Real-time communication
+          'vendor-realtime': [
+            'socket.io-client',
+            'peerjs',
+          ],
+          // State management
+          'vendor-state': [
+            'zustand',
+            '@reduxjs/toolkit',
+            'react-redux',
+          ],
+        },
+      },
+    },
+  },
 })

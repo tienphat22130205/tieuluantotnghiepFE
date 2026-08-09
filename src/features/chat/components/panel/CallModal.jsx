@@ -32,11 +32,12 @@ const CallModal = () => {
     callInfo,
     localStream,
     remoteStream,
+    callDurationFormatted,
     answerCall,
     rejectCall,
     endCall,
     toggleMic,
-    toggleCam
+    toggleCam,
   } = useCallStore()
 
   if (callStatus === 'idle' || !callInfo) return null
@@ -46,91 +47,104 @@ const CallModal = () => {
   const isConnected = callStatus === 'connected'
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/80 backdrop-blur-md select-none text-white animate-fade-in">
-      
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/85 backdrop-blur-xl select-none text-white animate-fade-in p-4">
       {styleTag}
 
       {/* Glassmorphic Container Card */}
-      <div className="relative w-full max-w-[500px] h-[650px] md:h-[700px] rounded-3xl overflow-hidden bg-slate-900/40 border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] flex flex-col justify-between p-8 backdrop-blur-xl">
+      <div className="relative w-full max-w-[480px] h-[640px] md:h-[680px] rounded-3xl overflow-hidden bg-slate-900/60 border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] flex flex-col justify-between p-6 md:p-8 backdrop-blur-2xl">
         
         {/* Dynamic Glow Nodes */}
-        <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary-600/30 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none" />
 
-        {/* CALL HEADER: Info Area */}
-        <div className="relative z-10 text-center flex flex-col items-center mt-6">
+        {/* CALL HEADER: Info & Timer Area */}
+        <div className="relative z-10 text-center flex flex-col items-center mt-4">
           {!isConnected || !isVideoCall ? (
             <>
-              {/* Profile Avatar with waves */}
-              <div className="relative mb-6">
+              {/* Profile Avatar with pulsating wave effect */}
+              <div className="relative mb-5">
                 {isRingingIn || isRingingOut ? (
-                  <div className="absolute inset-0 rounded-full bg-primary-500/20 animate-ping-slow scale-150" />
+                  <>
+                    <div className="absolute inset-0 rounded-full bg-primary-500/30 animate-ping-slow scale-150" />
+                    <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping-slow [animation-delay:0.6s] scale-125" />
+                  </>
                 ) : null}
                 <Avatar
                   src={callInfo.avatar}
                   name={callInfo.fullName}
                   size="xl"
-                  className="w-24 h-24 border-4 border-white/10 shadow-2xl relative z-10"
+                  className="w-24 h-24 border-4 border-white/20 shadow-2xl relative z-10 ring-4 ring-primary-500/20"
                 />
               </div>
 
-              <h2 className="text-xl font-bold tracking-tight drop-shadow">
+              <h2 className="text-xl font-bold tracking-tight drop-shadow-md text-white">
                 {callInfo.fullName}
               </h2>
               
-              <span className="text-xs text-slate-400 font-medium tracking-wide mt-2.5 block uppercase">
-                {isRingingIn ? 'Cuộc gọi đến...' : isRingingOut ? 'Đang đổ chuông...' : 'Cuộc gọi đang kết nối...'}
-              </span>
+              <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md">
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-ping'}`} />
+                <span className="text-xs font-semibold tracking-wide uppercase text-slate-200">
+                  {isRingingIn
+                    ? 'Cuộc gọi đến...'
+                    : isRingingOut
+                    ? 'Đang đổ chuông...'
+                    : `Đã kết nối • ${callDurationFormatted}`}
+                </span>
+              </div>
             </>
           ) : (
-            <div className="text-left w-full flex items-center gap-3 bg-black/30 backdrop-blur-xs p-3 rounded-2xl border border-white/5 absolute top-0 left-0 right-0">
-              <Avatar
-                src={callInfo.avatar}
-                name={callInfo.fullName}
-                size="sm"
-                className="border border-white/10"
-              />
-              <div>
-                <span className="text-xs font-bold block">{callInfo.fullName}</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5 uppercase tracking-wide">Video Call</span>
+            /* Video Call Compact Top Bar */
+            <div className="text-left w-full flex items-center justify-between bg-black/40 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10">
+              <div className="flex items-center gap-3">
+                <Avatar
+                  src={callInfo.avatar}
+                  name={callInfo.fullName}
+                  size="sm"
+                  className="border border-white/20"
+                />
+                <div>
+                  <span className="text-xs font-bold block text-white">{callInfo.fullName}</span>
+                  <span className="text-[10px] text-emerald-400 font-medium block uppercase tracking-wide">
+                    Cuộc gọi Video • {callDurationFormatted}
+                  </span>
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* MEDIA AREA: Video Tracks container */}
-        <div className="flex-1 flex items-center justify-center my-6 relative min-h-0">
+        {/* MEDIA AREA: Stream Container */}
+        <div className="flex-1 flex items-center justify-center my-4 relative min-h-0">
           {isConnected && isVideoCall ? (
-            <div className="w-full h-full relative rounded-2xl overflow-hidden bg-black/60 border border-white/5">
+            <div className="w-full h-full relative rounded-2xl overflow-hidden bg-black/80 border border-white/10 shadow-2xl">
               
-              {/* Remote stream video (Full screen card) */}
+              {/* Remote Stream (Main view) */}
               {remoteStream ? (
                 <VideoPlayer stream={remoteStream} muted={false} />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-xs text-slate-500 gap-2">
-                  <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                  Đang nhận luồng video...
+                <div className="w-full h-full flex flex-col items-center justify-center text-xs text-slate-400 gap-3">
+                  <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                  <span>Đang tải luồng camera đối phương...</span>
                 </div>
               )}
 
-              {/* Local stream video (Small box in bottom right) */}
+              {/* Local Stream (Small floating PIP) */}
               {localStream && !isCamOff ? (
-                <div className="absolute bottom-4 right-4 w-[110px] h-[155px] rounded-xl overflow-hidden border-2 border-white/20 shadow-xl z-20 bg-slate-900">
+                <div className="absolute bottom-3 right-3 w-[115px] h-[160px] rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl z-20 bg-slate-900">
                   <VideoPlayer stream={localStream} muted={true} />
                 </div>
               ) : null}
 
-              {/* If Local Camera is Off */}
+              {/* Camera Off Indicator */}
               {isCamOff && (
-                <div className="absolute bottom-4 right-4 w-[110px] h-[155px] rounded-xl border border-white/5 shadow-xl z-20 bg-slate-800 flex items-center justify-center text-slate-500">
-                  <FiVideoOff size={18} />
+                <div className="absolute bottom-3 right-3 w-[115px] h-[160px] rounded-xl border border-white/10 shadow-2xl z-20 bg-slate-800 flex items-center justify-center text-slate-400">
+                  <FiVideoOff size={20} />
                 </div>
               )}
             </div>
           ) : (
-            // Voice Call Center Indicator
+            /* Voice Call Wave Animation */
             <div className="w-full h-full flex items-center justify-center relative">
-              {/* Hidden audio element to capture remote voice stream */}
               {isConnected && remoteStream ? (
                 <audio
                   ref={(ref) => {
@@ -140,47 +154,44 @@ const CallModal = () => {
                 />
               ) : null}
 
-              {/* Sound wave graphics while talking */}
               {isConnected && (
-                <div className="flex items-center gap-1.5 justify-center h-10">
-                  <span className="w-1 bg-primary-500 rounded-full animate-sound-wave h-8" style={{ animationDelay: '0.1s' }} />
-                  <span className="w-1 bg-primary-500 rounded-full animate-sound-wave h-5" style={{ animationDelay: '0.3s' }} />
-                  <span className="w-1 bg-primary-500 rounded-full animate-sound-wave h-10" style={{ animationDelay: '0.5s' }} />
-                  <span className="w-1 bg-primary-500 rounded-full animate-sound-wave h-4" style={{ animationDelay: '0.2s' }} />
-                  <span className="w-1 bg-primary-500 rounded-full animate-sound-wave h-7" style={{ animationDelay: '0.4s' }} />
+                <div className="flex items-center gap-2 justify-center h-12">
+                  <span className="w-1.5 bg-primary-500 rounded-full animate-sound-wave h-10" style={{ animationDelay: '0.1s' }} />
+                  <span className="w-1.5 bg-primary-400 rounded-full animate-sound-wave h-6" style={{ animationDelay: '0.3s' }} />
+                  <span className="w-1.5 bg-primary-500 rounded-full animate-sound-wave h-12" style={{ animationDelay: '0.5s' }} />
+                  <span className="w-1.5 bg-primary-300 rounded-full animate-sound-wave h-5" style={{ animationDelay: '0.2s' }} />
+                  <span className="w-1.5 bg-primary-500 rounded-full animate-sound-wave h-8" style={{ animationDelay: '0.4s' }} />
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* CALL FOOTER: Actions / Controls Bar */}
-        <div className="relative z-10 flex flex-col gap-6 items-center">
+        {/* CALL FOOTER: Action Controls */}
+        <div className="relative z-10 flex flex-col gap-5 items-center">
           
-          {/* Controls button row (Mute, Toggle Cam) */}
+          {/* Mute / Cam Toggles */}
           {isConnected && (
             <div className="flex gap-4">
-              {/* Microphone mute toggle */}
               <button
                 onClick={toggleMic}
-                className={`p-4 rounded-full border transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+                className={`p-4 rounded-full border transition-all duration-200 cursor-pointer hover:scale-110 active:scale-95 shadow-lg ${
                   isMuted
-                    ? 'bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500/30'
-                    : 'bg-white/10 border-white/10 hover:bg-white/20 text-white'
+                    ? 'bg-red-500/30 border-red-500 text-red-400 hover:bg-red-500/40'
+                    : 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
                 }`}
                 title={isMuted ? 'Mở tiếng' : 'Tắt tiếng'}
               >
                 {isMuted ? <FiMicOff size={20} /> : <FiMic size={20} />}
               </button>
 
-              {/* Camera cam toggle (Video call only) */}
               {isVideoCall && (
                 <button
                   onClick={toggleCam}
-                  className={`p-4 rounded-full border transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+                  className={`p-4 rounded-full border transition-all duration-200 cursor-pointer hover:scale-110 active:scale-95 shadow-lg ${
                     isCamOff
-                      ? 'bg-red-500/20 border-red-500 text-red-500 hover:bg-red-500/30'
-                      : 'bg-white/10 border-white/10 hover:bg-white/20 text-white'
+                      ? 'bg-red-500/30 border-red-500 text-red-400 hover:bg-red-500/40'
+                      : 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
                   }`}
                   title={isCamOff ? 'Bật Camera' : 'Tắt Camera'}
                 >
@@ -190,33 +201,33 @@ const CallModal = () => {
             </div>
           )}
 
-          {/* Accept / Decline Action Trigger Buttons */}
-          <div className="flex gap-6 justify-center w-full mt-2">
+          {/* Action Trigger Buttons */}
+          <div className="flex gap-5 justify-center w-full">
             {isRingingIn ? (
               <>
-                {/* Accept Button (Green) */}
+                {/* Accept Button */}
                 <button
                   onClick={answerCall}
-                  className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer shadow-emerald-900/30"
+                  className="flex-1 max-w-[170px] flex items-center justify-center gap-2.5 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-bold shadow-lg shadow-emerald-900/40 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
                 >
                   <FiPhone size={18} className="animate-bounce" />
                   <span>Trả lời</span>
                 </button>
 
-                {/* Decline Button (Red) */}
+                {/* Reject Button */}
                 <button
                   onClick={rejectCall}
-                  className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer shadow-red-900/30"
+                  className="flex-1 max-w-[170px] flex items-center justify-center gap-2.5 py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-full font-bold shadow-lg shadow-red-900/40 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
                 >
                   <FiPhoneOff size={18} />
                   <span>Từ chối</span>
                 </button>
               </>
             ) : (
-              /* Outgoing call or connected call hang up button */
+              /* Hang up Button */
               <button
                 onClick={endCall}
-                className="flex items-center justify-center gap-2.5 px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer shadow-red-900/30 w-[180px]"
+                className="w-full max-w-[200px] flex items-center justify-center gap-2.5 py-4 bg-red-600 hover:bg-red-500 text-white rounded-full font-bold shadow-lg shadow-red-900/50 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
               >
                 <FiPhoneOff size={18} />
                 <span>Gác máy</span>
@@ -230,7 +241,7 @@ const CallModal = () => {
   )
 }
 
-// Inline Styles for Ripple and Waves
+// Inline Styles for Waves and Animations
 const styleTag = (
   <style>{`
     @keyframes pingSlow {
@@ -239,7 +250,7 @@ const styleTag = (
         opacity: 0.8;
       }
       100% {
-        transform: scale(1.5);
+        transform: scale(1.6);
         opacity: 0;
       }
     }
@@ -251,7 +262,7 @@ const styleTag = (
         transform: scaleY(1);
       }
       50% {
-        transform: scaleY(2.2);
+        transform: scaleY(2.4);
       }
     }
     .animate-sound-wave {
@@ -260,13 +271,15 @@ const styleTag = (
     @keyframes fadeIn {
       from {
         opacity: 0;
+        transform: scale(0.96);
       }
       to {
         opacity: 1;
+        transform: scale(1);
       }
     }
     .animate-fade-in {
-      animation: fadeIn 0.25s ease-out forwards;
+      animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
   `}</style>
 )
