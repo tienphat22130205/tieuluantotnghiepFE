@@ -1,22 +1,15 @@
-import { useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { ToastContainer } from 'react-toastify'
 import { MotionConfig } from 'framer-motion'
 import 'react-toastify/dist/ReactToastify.css'
 
-// Layouts
+// Layouts – loaded eagerly (small, always needed)
 import MainLayout from '@/layouts/MainLayout'
 import AuthLayout from '@/layouts/AuthLayout'
 
-// Feature Pages
-import { LoginPage, RegisterPage, SupportRequestPage, VerifyEmailPage } from '@/features/auth'
-import { HomePage, CreatePostPage, PostDetailPage, SearchPage, WatchPage } from '@/features/post'
-import { FriendsPage, ProfilePage } from '@/features/user'
-import { GroupsPage, GroupDetailPage } from '@/features/group'
-import { NotificationPage } from '@/features/notification'
-import { ChatPage } from '@/features/chat'
-import { AdminDashboardPage, AdminDashboardOverviewPage } from '@/features/admin'
+// Non-page imports that are always needed
 import { canAccessAdminDashboard } from '@/utils/auth'
 import { useCallStore } from '@/features/chat/store/useCallStore'
 import { useChatStore } from '@/features/chat/store/useChatStore'
@@ -24,6 +17,46 @@ import { useNotificationStore } from '@/features/notification/store/useNotificat
 import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
 import { getSocket } from '@/services/socketClient'
 import CallModal from '@/features/chat/components/panel/CallModal'
+import { PageLoadingFallback } from '@/components/ui'
+
+// ──────────────────────────────────────────────
+// Lazy-loaded Pages – only loaded when navigated to
+// ──────────────────────────────────────────────
+
+// Auth pages
+const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'))
+const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'))
+const SupportRequestPage = lazy(() => import('@/features/auth/pages/SupportRequestPage'))
+const VerifyEmailPage = lazy(() => import('@/features/auth/pages/VerifyEmailPage'))
+
+// Post pages
+const HomePage = lazy(() => import('@/features/post/pages/HomePage'))
+const CreatePostPage = lazy(() => import('@/features/post/pages/CreatePostPage'))
+const PostDetailPage = lazy(() => import('@/features/post/pages/PostDetailPage'))
+const SearchPage = lazy(() => import('@/features/post/pages/SearchPage'))
+const WatchPage = lazy(() => import('@/features/post/pages/WatchPage'))
+
+// User pages
+const FriendsPage = lazy(() => import('@/features/user/pages/FriendsPage'))
+const ProfilePage = lazy(() => import('@/features/user/pages/ProfilePage'))
+
+// Group pages
+const GroupsPage = lazy(() => import('@/features/group/pages/GroupsPage'))
+const GroupDetailPage = lazy(() => import('@/features/group/pages/GroupDetailPage'))
+
+// Notification page
+const NotificationPage = lazy(() => import('@/features/notification/pages/NotificationPage'))
+
+// Chat page
+const ChatPage = lazy(() => import('@/features/chat/pages/ChatPage'))
+
+// Admin pages
+const AdminDashboardPage = lazy(() => import('@/features/admin/pages/AdminDashboardPage'))
+const AdminDashboardOverviewPage = lazy(() => import('@/features/admin/pages/AdminDashboardOverviewPage'))
+
+// ──────────────────────────────────────────────
+// Route Guard Components
+// ──────────────────────────────────────────────
 
 /**
  * ProtectedRoute – Chặn truy cập nếu chưa đăng nhập.
@@ -61,6 +94,10 @@ const RoleHomeRedirect = () => {
   return <HomePage />
 }
 
+// ──────────────────────────────────────────────
+// App Component
+// ──────────────────────────────────────────────
+
 /**
  * App Component – Cấu hình Router chính.
  */
@@ -68,12 +105,20 @@ const App = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const { user, token } = useSelector((state) => state.auth)
 
+  // Debounced resize listener – prevents excessive re-renders during window resize
   useEffect(() => {
+    let timeoutId = null
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
+      if (timeoutId) clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768)
+      }, 150)
     }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    window.addEventListener('resize', handleResize, { passive: true })
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      if (timeoutId) clearTimeout(timeoutId)
+    }
   }, [])
 
   useEffect(() => {
@@ -122,6 +167,8 @@ const App = () => {
             draggable={true}
             toastClassName={isMobile ? "mobile-toast" : ""}
           />
+
+          <Suspense fallback={<PageLoadingFallback />}>
           <Routes>
           {/* ── Auth Routes (Guest only) ── */}
           <Route
@@ -212,6 +259,8 @@ const App = () => {
             }
           />
           </Routes>
+          </Suspense>
+
           <CallModal />
       </BrowserRouter>
     </MotionConfig>

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import usePostCardController from '../hooks/post-card/usePostCardController'
 import PostCardHeader from './PostCardHeader'
 import PostCardActions from './PostCardActions'
@@ -151,4 +152,17 @@ const PostCard = ({ post }) => {
   )
 }
 
-export default PostCard
+export default memo(PostCard, (prevProps, nextProps) => {
+  const p = prevProps.post
+  const n = nextProps.post
+  if (!p || !n) return false
+  return (
+    p._id === n._id &&
+    p.content === n.content &&
+    p.updatedAt === n.updatedAt &&
+    (p.likeCount ?? p.likes?.length ?? 0) === (n.likeCount ?? n.likes?.length ?? 0) &&
+    (p.commentCount ?? p.comments?.length ?? 0) === (n.commentCount ?? n.comments?.length ?? 0) &&
+    p.visibility === n.visibility &&
+    p.images?.length === n.images?.length
+  )
+})
