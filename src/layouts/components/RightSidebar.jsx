@@ -1,24 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import {
-  AiOutlineSearch,
   AiOutlineCheck,
   AiOutlineClose,
-  AiOutlineUserAdd,
   AiOutlineMessage,
 } from 'react-icons/ai'
+import { FiPhone, FiVideo } from 'react-icons/fi'
 import { Avatar } from '@/components/ui'
 import friendService from '@/features/user/services/friendService'
 import userService from '@/features/user/services/userService'
 import { extractItems } from '@/utils/friendship'
+import { StoriesBar } from '@/features/story'
+import { useCallStore } from '@/features/chat/store/useCallStore'
+import { useAuth } from '@/features/auth'
+import { getSocket } from '@/services/socketClient'
 
 const normalizeUser = (user) => {
   if (!user || typeof user !== 'object') return null
+  const computedName =
+    user.full_name ||
+    user.fullName ||
+    user.name ||
+    `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+    user.username ||
+    'Người dùng'
+
   return {
     ...user,
     _id: user._id || user.id,
-    full_name: user.full_name || user.fullName || user.name || '',
+    full_name: computedName,
     avatar: user.avatar || null,
     username: user.username || '',
   }
@@ -27,29 +38,13 @@ const normalizeUser = (user) => {
 const RightSidebar = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const [searchKeyword, setSearchKeyword] = useState(
-    () => new URLSearchParams(location.search).get('q') || ''
-  )
+  const makeCall = useCallStore((state) => state.makeCall)
+
   const [friendRequests, setFriendRequests] = useState([])
   const [friends, setFriends] = useState([])
   const [isLoadingRequests, setIsLoadingRequests] = useState(false)
   const [isLoadingFriends, setIsLoadingFriends] = useState(false)
   const [actingRequestId, setActingRequestId] = useState(null)
-
-  // Sync search keyword with URL
-  useEffect(() => {
-    setSearchKeyword(new URLSearchParams(location.search).get('q') || '')
-  }, [location.search])
-
-  const handleSearchSubmit = () => {
-    const trimmed = searchKeyword.trim()
-    if (trimmed.length < 2) return
-
-    const params = new URLSearchParams()
-    params.set('q', trimmed)
-    params.set('page', '1')
-    navigate(`/search?${params.toString()}`)
-  }
 
   // Load incoming friend requests
   const loadIncomingRequests = async () => {
@@ -64,7 +59,7 @@ const RightSidebar = () => {
           user: sender,
         }
       }).filter((item) => item.user)
-      setFriendRequests(formatted.slice(0, 3)) // display top 3 requests
+      setFriendRequests(formatted.slice(0, 3))
     } catch {
       setFriendRequests([])
     } finally {
@@ -72,7 +67,7 @@ const RightSidebar = () => {
     }
   }
 
-  // Load friends list & their presence
+  // Load friends list & presence
   const loadFriendsAndPresence = async () => {
     setIsLoadingFriends(true)
     try {
@@ -94,13 +89,6 @@ const RightSidebar = () => {
           isOnline: presenceMap.get(String(f._id)) || false,
         }))
 
-        // Sort: online first, then alphabetical
-        finalFriends.sort((a, b) => {
-          if (a.isOnline && !b.isOnline) return -1
-          if (!a.isOnline && b.isOnline) return 1
-          return String(a.full_name).localeCompare(String(b.full_name))
-        })
-
         setFriends(finalFriends)
       } else {
         setFriends([])
@@ -112,17 +100,46 @@ const RightSidebar = () => {
     }
   }
 
+  const { token } = useAuth()
+
   useEffect(() => {
     loadIncomingRequests()
     loadFriendsAndPresence()
 
-    // Periodically sync presence every 30s
+    // Real-time socket listener for presence updates (0-second delay)
+    if (token) {
+      const socket = getSocket(token)
+      if (socket) {
+        const handlePresenceUpdate = (payload) => {
+          const targetUserId = String(payload?.userId || payload?.data?.userId || '')
+          if (!targetUserId) return
+          const isOnline = Boolean(payload?.isOnline ?? payload?.data?.isOnline)
+
+          setFriends((prevFriends) =>
+            prevFriends.map((friend) => {
+              if (String(friend._id || friend.id) === targetUserId) {
+                return { ...friend, isOnline }
+              }
+              return friend
+            })
+          )
+        }
+
+        socket.on('presence:update', handlePresenceUpdate)
+
+        return () => {
+          socket.off('presence:update', handlePresenceUpdate)
+        }
+      }
+    }
+
+    // Fallback interval check every 30s
     const intervalId = setInterval(() => {
       loadFriendsAndPresence()
     }, 30000)
 
     return () => clearInterval(intervalId)
-  }, [])
+  }, [token])
 
   const handleRespondRequest = async (requestId, action) => {
     setActingRequestId(requestId)
@@ -137,7 +154,6 @@ const RightSidebar = () => {
         toast.success('Đã từ chối lời mời kết bạn.')
       }
       
-      // Dispatch events to notify Badge update
       window.dispatchEvent(new Event('friends:incoming-updated'))
     } catch (err) {
       toast.error(err?.message || 'Có lỗi xảy ra khi xử lý yêu cầu.')
@@ -153,70 +169,30 @@ const RightSidebar = () => {
     )
   }
 
-  const trendingTopics = [
-    '#HocTap',
-    '#FrontEnd',
-    '#ReactJS',
-    '#TinCongNghe',
-    '#Zivo',
-  ]
-
-  const handleTopicClick = (topic) => {
-    const keyword = topic.replace('#', '')
-    const params = new URLSearchParams()
-    params.set('q', keyword)
-    navigate(`/search?${params.toString()}`)
-  }
+  const onlineFriends = useMemo(() => friends.filter((f) => f.isOnline), [friends])
+  const offlineFriends = useMemo(() => friends.filter((f) => !f.isOnline), [friends])
 
   return (
-    <div className="sticky top-5 space-y-4">
-      {/* Search block */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800">
-        <label htmlFor="global-search" className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-400">
-          Tìm kiếm
-        </label>
-        <div className="flex items-center gap-2">
-          <input
-            id="global-search"
-            type="text"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                handleSearchSubmit()
-              }
-            }}
-            placeholder="Tìm kiếm"
-            className="w-full rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 dark:focus:border-primary-500"
-          />
-          <button
-            type="button"
-            onClick={handleSearchSubmit}
-            className="rounded-full bg-primary-600 p-2 text-white transition hover:bg-primary-700 cursor-pointer shrink-0"
-            aria-label="Tìm kiếm"
-          >
-            <AiOutlineSearch size={16} />
-          </button>
-        </div>
-      </div>
+    <div className="sticky top-16 space-y-4">
+      {/* 1. Stories Section moved to top of RightSidebar */}
+      <StoriesBar />
 
-      {/* Friend Requests (conditional) */}
+      {/* 2. Friend Requests (conditional) */}
       {friendRequests.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800">
-          <p className="text-sm font-bold text-slate-900 dark:text-white flex items-center justify-between">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center justify-between">
             <span>Lời mời kết bạn</span>
-            <span className="rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-600 font-extrabold dark:bg-slate-800">
+            <span className="rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-600 font-extrabold">
               {friendRequests.length}
             </span>
           </p>
-          <div className="mt-3 space-y-3">
+          <div className="mt-3 space-y-2.5">
             {friendRequests.map((req) => (
-              <div key={req._id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 p-2 dark:bg-slate-900/50">
+              <div key={req._id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 p-2 border border-slate-100">
                 <div className="flex items-center gap-2 min-w-0">
                   <Avatar src={req.user.avatar} name={req.user.full_name} size="sm" to={`/profile/${req.user._id}`} />
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-slate-900 dark:text-white">
+                    <p className="truncate text-xs font-bold text-slate-900">
                       {req.user.full_name}
                     </p>
                     <p className="truncate text-[10px] text-slate-400">
@@ -238,7 +214,7 @@ const RightSidebar = () => {
                     type="button"
                     onClick={() => handleRespondRequest(req._id, 'declined')}
                     disabled={actingRequestId === req._id}
-                    className="rounded-full bg-slate-200 p-1.5 text-slate-700 hover:bg-slate-300 disabled:opacity-50 transition cursor-pointer dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+                    className="rounded-full bg-slate-200 p-1.5 text-slate-700 hover:bg-slate-300 disabled:opacity-50 transition cursor-pointer"
                     title="Từ chối"
                   >
                     <AiOutlineClose size={12} />
@@ -250,68 +226,135 @@ const RightSidebar = () => {
         </div>
       )}
 
-      {/* Discover Topics */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800">
-        <p className="text-sm font-bold text-slate-900 dark:text-white">Khám phá xu hướng</p>
-        <p className="mt-0.5 text-xs text-slate-400">Theo dõi chủ đề bạn quan tâm.</p>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {trendingTopics.map((topic) => (
-            <button
-              key={topic}
-              type="button"
-              onClick={() => handleTopicClick(topic)}
-              className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary-500"
-            >
-              {topic}
-            </button>
-          ))}
+      {/* 3. Grouped Chat Contacts List */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+            Trò chuyện / Liên hệ
+          </h3>
+          <span className="text-[11px] font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
+            {onlineFriends.length} Trực tuyến
+          </span>
         </div>
-      </div>
 
-      {/* Online Contacts list */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800">
-        <p className="text-sm font-bold text-slate-900 dark:text-white">Liên hệ trực tuyến</p>
-        <p className="mt-0.5 text-xs text-slate-400">Click vào bạn bè để nhắn tin nhanh.</p>
-        
         {isLoadingFriends && friends.length === 0 ? (
-          <div className="mt-3 py-4 text-center text-xs text-slate-400">
+          <div className="py-4 text-center text-xs text-slate-400">
             Đang tải danh sách...
           </div>
         ) : friends.length === 0 ? (
-          <div className="mt-3 rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-500 dark:bg-slate-900/50">
+          <div className="rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-500">
             <p className="font-medium">Chưa có bạn bè</p>
             <p className="mt-1 text-[10px] text-slate-400">Hãy kết nối thêm bạn bè để trò chuyện!</p>
           </div>
         ) : (
-          <div className="mt-3 max-h-[300px] overflow-y-auto pr-1 space-y-1 custom-scrollbar">
-            {friends.map((friend) => (
-              <button
-                key={friend._id}
-                type="button"
-                onClick={() => handleOpenChat(friend)}
-                className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer group"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Avatar
-                    src={friend.avatar}
-                    name={friend.full_name}
-                    size="sm"
-                    online={friend.isOnline}
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-slate-800 group-hover:text-primary-600 transition dark:text-slate-300">
-                      {friend.full_name}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      {friend.isOnline ? 'Đang hoạt động' : 'Ngoại tuyến'}
-                    </p>
-                  </div>
+          <div className="max-h-[360px] overflow-y-auto pr-1 space-y-4 custom-scrollbar">
+            {/* ONLINE SECTION */}
+            {onlineFriends.length > 0 && (
+              <div>
+                <p className="text-[10px] font-extrabold text-emerald-600 tracking-wider uppercase mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Đang hoạt động ({onlineFriends.length})
+                </p>
+                <div className="space-y-1">
+                  {onlineFriends.map((friend) => (
+                    <div
+                      key={friend._id}
+                      className="flex items-center justify-between gap-2 rounded-xl p-2 transition hover:bg-slate-100 group"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleOpenChat(friend)}
+                        className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer"
+                      >
+                        <Avatar
+                          src={friend.avatar}
+                          name={friend.full_name}
+                          size="sm"
+                          online={true}
+                        />
+                        <span className="truncate text-xs font-semibold text-slate-800 group-hover:text-primary-600 transition">
+                          {friend.full_name}
+                        </span>
+                      </button>
+
+                      {/* Quick Call Action Icons */}
+                      <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => makeCall(friend._id, false)}
+                          title="Gọi thoại"
+                          className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-white rounded-full shadow-xs transition cursor-pointer"
+                        >
+                          <FiPhone size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => makeCall(friend._id, true)}
+                          title="Gọi Video"
+                          className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-white rounded-full shadow-xs transition cursor-pointer"
+                        >
+                          <FiVideo size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <span className="text-slate-300 opacity-0 group-hover:opacity-100 group-hover:text-primary-500 transition shrink-0 pr-1">
-                  <AiOutlineMessage size={14} />
-                </span>
-              </button>
-            ))}
+              </div>
+            )}
+
+            {/* OFFLINE SECTION */}
+            {offlineFriends.length > 0 && (
+              <div>
+                <p className="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-slate-300" />
+                  Ngoại tuyến ({offlineFriends.length})
+                </p>
+                <div className="space-y-1">
+                  {offlineFriends.map((friend) => (
+                    <div
+                      key={friend._id}
+                      className="flex items-center justify-between gap-2 rounded-xl p-2 transition hover:bg-slate-100 group"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleOpenChat(friend)}
+                        className="flex items-center gap-2.5 min-w-0 flex-1 text-left cursor-pointer"
+                      >
+                        <Avatar
+                          src={friend.avatar}
+                          name={friend.full_name || 'Người dùng'}
+                          size="sm"
+                          online={false}
+                        />
+                        <span className="truncate text-xs font-semibold text-slate-800 group-hover:text-primary-600 transition">
+                          {friend.full_name || 'Người dùng'}
+                        </span>
+                      </button>
+
+                      {/* Quick Call Action Icons */}
+                      <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => makeCall(friend._id, false)}
+                          title="Gọi thoại"
+                          className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-white rounded-full shadow-xs transition cursor-pointer"
+                        >
+                          <FiPhone size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => makeCall(friend._id, true)}
+                          title="Gọi Video"
+                          className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-white rounded-full shadow-xs transition cursor-pointer"
+                        >
+                          <FiVideo size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

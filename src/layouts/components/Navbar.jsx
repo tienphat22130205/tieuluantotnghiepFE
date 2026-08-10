@@ -32,6 +32,8 @@ import ChatConversationsPanel from '@/features/chat/components/ChatConversations
 import { canAccessAdminDashboard } from '@/utils/auth'
 import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
 
+import TopHeader from './TopHeader'
+
 const TRANSLATIONS = {
   vi: {
     home: 'Trang chủ',
@@ -210,92 +212,114 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="hidden md:flex fixed left-0 top-0 bottom-0 z-50 w-72 border-r border-slate-200 bg-white/95 backdrop-blur-sm">
-        <div className="flex h-full w-full flex-col px-4 py-5">
-          <Link to="/" className="mb-6 flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-100">
-            <div className="h-11 w-11 overflow-hidden rounded-full bg-slate-100">
-              <img src="/Zlogo.png" alt="Zivo" className="h-full w-full object-cover" />
+      <TopHeader onOpenSettings={() => setIsMobileMenuOpen(true)} />
+
+      <nav className="hidden md:flex fixed left-0 top-14 bottom-0 z-40 w-72 border-r border-slate-200 bg-white/95 backdrop-blur-sm overflow-y-auto">
+        <div className="flex h-full w-full flex-col px-3 py-4 space-y-5">
+          {/* Section 1: MENU CHÍNH */}
+          <div>
+            <p className="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+              Menu chính
+            </p>
+            <div className="space-y-1">
+              {navLinks.map(({ path, icon: Icon, activeIcon: ActiveIcon, labelKey }) => {
+                const active = isActive(path)
+                const label = text[labelKey] || labelKey
+                const isNotificationLink = path === '/notifications'
+                const isFriendLink = path === '/friends'
+
+                return (
+                  <Link
+                    key={path}
+                    to={path}
+                    title={label}
+                    className={`group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+                      active
+                        ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-600 rounded-l-none'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <span className="relative inline-flex">
+                      {active ? <ActiveIcon size={20} className="text-primary-600" /> : <Icon size={20} className="text-slate-500" />}
+                      {isNotificationLink && unreadCount > 0 && (
+                        <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                      {isFriendLink && incomingRequestCount > 0 && (
+                        <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white">
+                          {incomingRequestCount > 99 ? '99+' : incomingRequestCount}
+                        </span>
+                      )}
+                    </span>
+                    <span>{label}</span>
+                  </Link>
+                )
+              })}
             </div>
-            <span className="text-xl font-black tracking-tight text-slate-900">Zivo</span>
-          </Link>
-
-          <div className="space-y-1">
-            {navLinks.map(({ path, icon: Icon, activeIcon: ActiveIcon, labelKey }) => {
-              const active = isActive(path)
-              const label = text[labelKey] || labelKey
-              const isNotificationLink = path === '/notifications'
-              const isFriendLink = path === '/friends'
-
-              return (
-                <Link
-                  key={path}
-                  to={path}
-                  title={label}
-                  className={`group flex items-center gap-4 rounded-xl px-4 py-3 text-[15px] font-semibold transition ${
-                    active
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                >
-                  <span className="relative inline-flex">
-                    {active ? <ActiveIcon size={22} /> : <Icon size={22} />}
-                    {isNotificationLink && unreadCount > 0 && (
-                      <span className="absolute -right-2 -top-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
-                    {isFriendLink && incomingRequestCount > 0 && (
-                      <span className="absolute -right-2 -top-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white">
-                        {incomingRequestCount > 99 ? '99+' : incomingRequestCount}
-                      </span>
-                    )}
-                  </span>
-                  <span>{label}</span>
-                </Link>
-              )
-            })}
-
-            <button
-              type="button"
-              onClick={() => setIsChatOpen((prev) => !prev)}
-              className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-[15px] font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
-            >
-              <span className="relative inline-flex">
-                <AiOutlineMessage size={22} />
-                {unreadMessageCount > 0 && (
-                  <span className="absolute -right-2 -top-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
-                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                  </span>
-                )}
-              </span>
-              <span>{text.messages}</span>
-            </button>
           </div>
 
-          <Link
-            to="/create"
-            className="mt-5 inline-flex items-center justify-center rounded-full bg-primary-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-700"
-          >
-            {text.quickPost}
-          </Link>
+          {/* Section 2: LỐI TẮT CỦA BẠN */}
+          <div>
+            <p className="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+              Lối tắt của bạn
+            </p>
+            <div className="space-y-1">
+              <Link
+                to={profilePath}
+                className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+                  isProfileActive
+                    ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-600 rounded-l-none'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <Avatar src={user?.avatar} name={displayName} size="xs" />
+                <span className="truncate">{displayName || text.unknownUser}</span>
+              </Link>
 
-          <div className="mt-auto space-y-2 border-t border-slate-200 pt-4">
-            <Link to={profilePath} className="flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-100">
-              <Avatar src={user?.avatar} name={displayName} size="sm" />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-900">{displayName || text.unknownUser}</p>
-                <p className="truncate text-xs text-slate-500">@{user?.username || 'zivo'}</p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsChatOpen((prev) => !prev)}
+                className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                <span className="relative inline-flex">
+                  <AiOutlineMessage size={20} className="text-slate-500" />
+                  {unreadMessageCount > 0 && (
+                    <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
+                      {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                    </span>
+                  )}
+                </span>
+                <span>{text.messages}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section 3: CÀI ĐẶT & TÀI KHOẢN */}
+          <div className="mt-auto pt-3 border-t border-slate-200 space-y-1">
+            <p className="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+              Tài khoản & Cài đặt
+            </p>
+            <Link
+              to="/settings"
+              className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+                isActive('/settings')
+                  ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-600 rounded-l-none'
+                  : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <AiOutlineSetting size={20} className={isActive('/settings') ? 'text-primary-600' : 'text-slate-500'} />
+              <span>{text.settingsPrivacy}</span>
             </Link>
 
             <button
               type="button"
               onClick={handleLogout}
               title={text.logout}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+              className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
             >
-              <AiOutlineLogout size={18} />
-              {text.logout}
+              <AiOutlineLogout size={20} />
+              <span>{text.logout}</span>
             </button>
           </div>
         </div>

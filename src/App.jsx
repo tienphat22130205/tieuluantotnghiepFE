@@ -39,6 +39,7 @@ const WatchPage = lazy(() => import('@/features/post/pages/WatchPage'))
 // User pages
 const FriendsPage = lazy(() => import('@/features/user/pages/FriendsPage'))
 const ProfilePage = lazy(() => import('@/features/user/pages/ProfilePage'))
+const SettingsPage = lazy(() => import('@/features/user/pages/SettingsPage'))
 
 // Group pages
 const GroupsPage = lazy(() => import('@/features/group/pages/GroupsPage'))
@@ -204,10 +205,11 @@ const App = () => {
             <Route path="/notifications" element={<NotificationPage />} />
             <Route path="/log" element={<Navigate to="/notifications" replace />} />
             <Route path="/search" element={<SearchPage />} />
-            <Route path="/create" element={<CreatePostPage />} />
+            <Route path="/create" element={<Navigate to="/" replace />} />
             <Route path="/post/:postId/edit" element={<CreatePostPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/post/:postId" element={<PostDetailPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
           <Route

@@ -79,13 +79,14 @@ const useCreatePostPage = ({ postId, isEditMode, onSuccess } = {}) => {
     try {
       const controller = new AbortController()
       const timeoutId = window.setTimeout(() => controller.abort(), reverseGeocodeTimeoutMs)
-      const url = `${reverseGeocodeUrl}?format=jsonv2&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}`
+      const url = `${reverseGeocodeUrl}?format=jsonv2&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lng))}&accept-language=vi`
 
       const response = await fetch(url, {
         method: 'GET',
         signal: controller.signal,
         headers: {
           Accept: 'application/json',
+          'Accept-Language': 'vi,en;q=0.9',
         },
       })
       window.clearTimeout(timeoutId)
@@ -94,10 +95,21 @@ const useCreatePostPage = ({ postId, isEditMode, onSuccess } = {}) => {
         const data = await response.json()
         const address = data?.address || {}
 
-        locationPayload.city = address?.city || address?.town || address?.village || address?.state_district || ''
+        const city = address?.city || address?.town || address?.village || address?.state || ''
+        const district = address?.suburb || address?.quarter || address?.city_district || address?.district || address?.county || address?.neighbourhood || address?.road || ''
+        const country = address?.country || 'Việt Nam'
+
+        locationPayload.city = city
         locationPayload.region = address?.state || address?.region || ''
-        locationPayload.country = address?.country || ''
-        locationPayload.placeName = data?.name || data?.display_name || ''
+        locationPayload.country = country
+
+        if (district && city && district.toLowerCase() !== city.toLowerCase()) {
+          locationPayload.placeName = `${district}, ${city}`
+        } else if (city) {
+          locationPayload.placeName = `${city}, ${country}`
+        } else {
+          locationPayload.placeName = data?.name || data?.display_name || 'Việt Nam'
+        }
       }
     } catch {
       // Keep lat/lng only when reverse geocode is unavailable.

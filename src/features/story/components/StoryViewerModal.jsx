@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { ConfirmModal } from '@/components/ui'
 import { toast } from 'react-toastify'
@@ -323,8 +324,8 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
 
   const reactionEmojis = ['👍', '❤️', '😆', '😮', '😢', '😡']
 
-  return (
-    <div className="fixed inset-0 z-50 flex bg-black text-white select-none">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex bg-black text-white select-none">
       
       {/* CSS Floating Emoji styles */}
       <style>{`
@@ -383,15 +384,33 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
         )}
 
         {/* Navigation - Right Floating Arrow */}
-        <button
-          type="button"
-          onClick={handleNext}
-          className="absolute right-3 lg:right-4 z-20 flex items-center justify-center w-12 h-12 rounded-full bg-slate-950/40 hover:bg-slate-900/80 border border-white/5 text-white/40 hover:text-white transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-lg backdrop-blur-xs"
-        >
-          <FiChevronRight size={24} />
-        </button>
+        {(currentStoryIndex < activeStories.length - 1 || currentGroupIndex < groups.length - 1) && (
+          <button
+            type="button"
+            onClick={handleNext}
+            className="absolute right-3 lg:right-4 z-20 flex items-center justify-center w-12 h-12 rounded-full bg-slate-950/40 hover:bg-slate-900/80 border border-white/5 text-white/40 hover:text-white transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-lg backdrop-blur-xs"
+          >
+            <FiChevronRight size={24} />
+          </button>
+        )}
 
-        {/* Interactive Story Container card */}
+        {/* Floating Emoji Animations overlay */}
+        <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
+          {floatingEmojis.map((item) => (
+            <div
+              key={item.id}
+              className="absolute bottom-16 text-3xl emoji-float"
+              style={{
+                left: `${item.leftOffset}%`,
+                transform: `rotate(${item.rotate}deg)`,
+              }}
+            >
+              {item.emoji}
+            </div>
+          ))}
+        </div>
+
+        {/* ACTIVE STORY CARD FRAME */}
         <StoryCard
           activeStory={activeStory}
           activeStories={activeStories}
@@ -413,19 +432,33 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
           reactionEmojis={reactionEmojis}
           setShowViewersList={setShowViewersList}
           shouldPause={shouldPause}
-        >
-          {/* Viewers list bottom sheet */}
-          <StoryViewersBottomSheet
-            isOpen={showViewersList}
-            onClose={() => setShowViewersList(false)}
-            viewers={activeStory.viewers}
-          />
-        </StoryCard>
+        />
 
-        {/* Mini close button (mobile fallback) */}
+        {/* Mobile Viewers Sheet Trigger Button (Bottom bar) */}
+        {isMyStory && (
+          <button
+            type="button"
+            onClick={() => setShowViewersList(true)}
+            className="lg:hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-xs font-semibold text-white/90 hover:text-white transition cursor-pointer"
+          >
+            <span>👀 {activeStory?.viewers?.length || 0} lượt xem</span>
+          </button>
+        )}
+
+        {/* Mobile Viewers Bottom Sheet Overlay */}
+        {showViewersList && (
+          <StoryViewersBottomSheet
+            story={activeStory}
+            onClose={() => setShowViewersList(false)}
+          />
+        )}
+
+        {/* Floating Desktop Close Button */}
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 md:hidden z-30 p-2 rounded-full bg-black/60 text-white cursor-pointer"
+          className="absolute top-4 right-4 z-30 flex items-center justify-center w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 border border-white/10 text-white/70 hover:text-white transition cursor-pointer"
+          title="Đóng"
         >
           <FiX size={18} />
         </button>
@@ -446,7 +479,8 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
         onClose={() => setIsArchiveOpen(false)}
         onDeleteStoryFromParent={onDeleteStory}
       />
-    </div>
+    </div>,
+    document.body
   )
 }
 
