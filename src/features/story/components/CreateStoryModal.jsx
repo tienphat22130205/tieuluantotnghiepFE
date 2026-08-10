@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { FiX, FiMusic, FiImage, FiType, FiUploadCloud } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import storyService from '../services/storyService'
@@ -142,8 +143,8 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
       song.artist.toLowerCase().includes(musicSearch.toLowerCase())
   )
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm md:p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm md:p-4">
       {/* ==================== MOBILE LAYOUT ==================== */}
       <div className="md:hidden relative w-full h-full bg-slate-900 flex flex-col overflow-hidden">
 
@@ -742,9 +743,9 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
         </div>
-
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

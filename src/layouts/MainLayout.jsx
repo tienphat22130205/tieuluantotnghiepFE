@@ -25,10 +25,10 @@ const MainLayout = () => {
   // Only show the right sidebar on the Home Feed and Post Details page
   const showRightSidebar = location.pathname === '/' || (location.pathname.startsWith('/post/') && !location.pathname.endsWith('/edit'))
 
-  const rightColumnClass = showRightSidebar ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : 'lg:grid-cols-1'
+  const rightColumnClass = showRightSidebar ? 'lg:grid-cols-[minmax(0,1fr)_360px]' : 'lg:grid-cols-1'
 
   // Determine layout max-width to compress blank space and improve layout density
-  let containerMaxWidthClass = 'max-w-6xl' // 1152px for standard layouts (Home, Friends)
+  let containerMaxWidthClass = 'max-w-[1240px]' // 1152px for standard layouts (Home, Friends)
   if (
     location.pathname.startsWith('/profile')
     || (location.pathname.startsWith('/post/') && location.pathname.endsWith('/edit'))
@@ -89,7 +89,7 @@ const MainLayout = () => {
     <div className="min-h-screen bg-[#f4f7fb]">
       <Navbar />
 
-      <main className="pt-16 pb-16 md:pb-6 md:pl-72">
+      <main className="pt-20 pb-16 md:pb-6 md:pl-72">
         <div className={`mx-auto w-full px-3 md:px-6 ${containerMaxWidthClass}`}>
           <div className={`grid grid-cols-1 gap-6 ${rightColumnClass}`}>
             <section className="min-w-0">

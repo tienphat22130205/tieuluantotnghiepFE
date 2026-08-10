@@ -7,7 +7,9 @@ const FORCED_LOGOUT_NOTICE_KEY = 'auth_forced_logout_notice'
 
 const normalizeBaseUrl = (url) => {
   if (!url) return '/api'
-  return `${url.replace(/\/$/, '')}/api`
+  const trimmed = url.trim().replace(/\/$/, '')
+  if (trimmed.endsWith('/api')) return trimmed
+  return `${trimmed}/api`
 }
 
 /**

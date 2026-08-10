@@ -15,7 +15,6 @@ const HomePage = () => {
   return (
     <div className="space-y-4">
       <QuickPostBar onOpen={() => setIsCreateOpen(true)} />
-      <StoriesBar />
 
       <main className="space-y-4">
         <PostList

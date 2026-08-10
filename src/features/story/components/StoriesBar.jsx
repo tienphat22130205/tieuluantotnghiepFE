@@ -240,15 +240,21 @@ const StoriesBar = () => {
   }
 
   return (
-    <div className="relative group/bar select-none">
+    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 mb-4 relative group/bar select-none">
+      {/* Header title */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <h3 className="text-sm font-bold text-slate-800 tracking-tight">Tin ngắn (Stories)</h3>
+        <span className="text-xs text-slate-400 font-medium">Vuốt để xem</span>
+      </div>
+
       {/* Scroll left button */}
       {showLeftArrow && (
         <button
           type="button"
           onClick={() => scroll('left')}
-          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/90 shadow-md border border-slate-100 text-slate-700 hover:bg-white hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+          className="absolute left-6 top-[60%] -translate-y-1/2 z-30 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:bg-white hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
         >
-          <HiChevronLeft size={24} />
+          <HiChevronLeft size={22} />
         </button>
       )}
 
@@ -257,24 +263,24 @@ const StoriesBar = () => {
         <button
           type="button"
           onClick={() => scroll('right')}
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/90 shadow-md border border-slate-100 text-slate-700 hover:bg-white hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+          className="absolute right-6 top-[60%] -translate-y-1/2 z-30 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:bg-white hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
         >
-          <HiChevronRight size={24} />
+          <HiChevronRight size={22} />
         </button>
       )}
 
       {/* Stories list container */}
       <div
         ref={scrollRef}
-        className="flex gap-2.5 overflow-x-auto py-1 px-0.5 scrollbar-none scroll-smooth"
+        className="flex gap-3 overflow-x-auto py-0.5 px-0.5 scrollbar-none scroll-smooth"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {/* Create Story Card */}
         <div
           onClick={() => setIsCreateOpen(true)}
-          className="relative w-[115px] h-[190px] flex-shrink-0 rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card"
+          className="relative w-[110px] sm:w-[120px] h-[185px] flex-shrink-0 rounded-xl overflow-hidden border border-slate-200/90 bg-slate-50 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card"
         >
-          <div className="h-[130px] overflow-hidden bg-slate-100">
+          <div className="h-[125px] overflow-hidden bg-slate-100">
             {user?.avatar ? (
               <img
                 src={user.avatar}
@@ -282,15 +288,15 @@ const StoriesBar = () => {
                 className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
               />
             ) : (
-              <div className="w-full h-full bg-primary-50 flex items-center justify-center text-primary-500 font-bold text-xl">
+              <div className="w-full h-full bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-2xl">
                 {displayName.charAt(0)}
               </div>
             )}
           </div>
-          <div className="absolute top-[115px] left-1/2 -translate-x-1/2 z-10 w-9 h-9 rounded-full bg-primary-600 border-[3px] border-white flex items-center justify-center text-white shadow group-hover/card:scale-110 transition-transform duration-200">
-            <FiPlus size={20} strokeWidth={3} />
+          <div className="absolute top-[110px] left-1/2 -translate-x-1/2 z-20 w-8 h-8 rounded-full bg-primary-600 border-2 border-white flex items-center justify-center text-white shadow-md group-hover/card:scale-110 transition-transform duration-200">
+            <FiPlus size={18} strokeWidth={3} />
           </div>
-          <div className="h-[60px] pt-4 px-2 pb-2 text-center bg-white">
+          <div className="h-[60px] pt-4 px-1.5 pb-2 text-center bg-white">
             <span className="text-[12px] font-semibold text-slate-800 block truncate">Tạo tin</span>
           </div>
         </div>
@@ -306,16 +312,16 @@ const StoriesBar = () => {
               onClick={() => {
                 setViewerIndex(index)
               }}
-              className="relative w-[115px] h-[190px] flex-shrink-0 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card border border-slate-100"
+              className="relative w-[110px] sm:w-[120px] h-[185px] flex-shrink-0 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card border border-slate-200/80"
             >
               {/* Dark gradient overlay for text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 z-10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/20 z-10" />
 
               {/* Story Background */}
               <div className="w-full h-full bg-slate-900">
                 {latestStory.bgColor ? (
                   <div
-                    className="w-full h-full flex items-center justify-center p-3.5 text-center"
+                    className="w-full h-full flex items-center justify-center p-3 text-center"
                     style={{ background: latestStory.bgColor }}
                   >
                     <span
@@ -345,29 +351,22 @@ const StoriesBar = () => {
               </div>
 
               {/* Author Avatar with blue or gray ring */}
-              <div className="absolute top-3 left-3 z-15">
-                <div className={`rounded-full ring-[3px] ${
-                  hasNew ? 'ring-primary-500 animate-pulse' : 'ring-slate-400/70'
-                } ring-offset-1 ring-offset-transparent bg-white overflow-hidden w-9 h-9 flex items-center justify-center shadow-md`}>
+              <div className="absolute top-2.5 left-2.5 z-20">
+                <div className={`rounded-full ring-[2.5px] ${
+                  hasNew ? 'ring-primary-500 animate-pulse' : 'ring-white/80'
+                } bg-white overflow-hidden w-8 h-8 flex items-center justify-center shadow-md`}>
                   <Avatar
                     src={group.user.avatar}
                     name={group.user.fullName}
-                    size="sm"
+                    size="xs"
                     className="w-full h-full border-0 shadow-none"
                   />
                 </div>
               </div>
 
-              {/* Background Music sticker indicator */}
-              {group.stories.some((s) => s.music?.title || s.spotifyUrl) && (
-                <div className="absolute top-3 right-3 z-15 bg-black/40 backdrop-blur-xs rounded-full p-1 text-[9px] text-white flex items-center justify-center">
-                  🎵
-                </div>
-              )}
-
-              {/* Author Name */}
-              <div className="absolute bottom-2.5 left-2.5 right-2.5 z-15">
-                <span className="text-[12px] font-medium text-white block truncate drop-shadow-md">
+              {/* User Name Label at bottom */}
+              <div className="absolute bottom-2 left-2 right-2 z-20">
+                <span className="text-[11px] font-semibold text-white block truncate drop-shadow-md">
                   {group.user.fullName}
                 </span>
               </div>

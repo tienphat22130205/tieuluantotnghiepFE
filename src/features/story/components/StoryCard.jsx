@@ -11,9 +11,11 @@ const getSpotifyEmbedWithAutoplay = (url) => {
 };
 
 const StoryCard = ({
-  activeStory,
+  activeStory: propActiveStory,
+  story,
   activeStories = [],
   activeGroup,
+  author,
   currentStoryIndex,
   setCurrentStoryIndex,
   progress,
@@ -31,8 +33,12 @@ const StoryCard = ({
   reactionEmojis = [],
   setShowViewersList,
   shouldPause,
-  children, // This is where the viewers bottom sheet will be rendered
+  children,
 }) => {
+  const activeStory = propActiveStory || story
+  const displayAuthor = activeGroup?.user || author
+
+  if (!activeStory) return null
   return (
     <div
       onMouseDown={() => setIsPaused(true)}
