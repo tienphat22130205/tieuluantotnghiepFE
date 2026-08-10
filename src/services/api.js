@@ -16,7 +16,7 @@ const normalizeBaseUrl = (url) => {
  */
 const api = axios.create({
   baseURL: normalizeBaseUrl(import.meta.env.VITE_API_URL),
-  timeout: 15000,
+  timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 })
 
