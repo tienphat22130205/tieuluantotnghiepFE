@@ -200,15 +200,7 @@ const postService = {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: aiTimeout,
     }
-
-    try {
-      return await api.post('/ai/generate-content-upload', formData, config)
-    } catch (error) {
-      if (error?.status === 404) {
-        return api.post('/generate-content-upload', formData, config)
-      }
-      throw error
-    }
+    return api.post('/ai/generate-content-upload', formData, config)
   },
 
   // Alias giữ tương thích ngược với code cũ
