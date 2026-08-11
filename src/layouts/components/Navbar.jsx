@@ -19,8 +19,10 @@ import {
   AiOutlineGlobal,
   AiOutlineBulb,
   AiOutlineRight,
+  AiOutlineHeart,
 } from 'react-icons/ai'
 import { FaUserFriends } from 'react-icons/fa'
+import { FiPlus } from 'react-icons/fi'
 import { MdOutlineOndemandVideo, MdOndemandVideo } from 'react-icons/md'
 import { HiOutlineUserGroup, HiUserGroup } from 'react-icons/hi'
 import { Avatar } from '@/components/ui'
@@ -29,8 +31,10 @@ import useNotifications from '@/features/notification/hooks/useNotifications'
 import friendService from '@/features/user/services/friendService'
 import { extractItems } from '@/utils/friendship'
 import ChatConversationsPanel from '@/features/chat/components/ChatConversationsPanel'
+import CreatePostModal from '@/features/post/components/CreatePostModal'
 import { canAccessAdminDashboard } from '@/utils/auth'
 import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
+import { NotificationsPanel } from '@/features/notification'
 
 import TopHeader from './TopHeader'
 
@@ -109,6 +113,8 @@ const Navbar = () => {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(true)
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false)
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [incomingRequestCount, setIncomingRequestCount] = useState(0)
 
   const profileUserId = user?.id || user?._id
@@ -228,6 +234,28 @@ const Navbar = () => {
                 const isNotificationLink = path === '/notifications'
                 const isFriendLink = path === '/friends'
 
+                if (isNotificationLink) {
+                  return (
+                    <button
+                      key={path}
+                      type="button"
+                      onClick={() => setIsNotificationOpen((prev) => !prev)}
+                      title={label}
+                      className="group flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
+                    >
+                      <span className="relative inline-flex">
+                        <Icon size={20} className="text-slate-500" />
+                        {unreadCount > 0 && (
+                          <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </span>
+                      <span>{label}</span>
+                    </button>
+                  )
+                }
+
                 return (
                   <Link
                     key={path}
@@ -241,11 +269,6 @@ const Navbar = () => {
                   >
                     <span className="relative inline-flex">
                       {active ? <ActiveIcon size={20} className="text-primary-600" /> : <Icon size={20} className="text-slate-500" />}
-                      {isNotificationLink && unreadCount > 0 && (
-                        <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
                       {isFriendLink && incomingRequestCount > 0 && (
                         <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white">
                           {incomingRequestCount > 99 ? '99+' : incomingRequestCount}
@@ -325,90 +348,134 @@ const Navbar = () => {
         </div>
       </nav>
 
-      <nav className="md:hidden fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between h-14 px-4">
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-100">
-              <img src="/Zlogo.png" alt="Zivo" className="w-full h-full object-cover" />
-            </div>
-            <span className="text-base font-bold text-gray-900">Zivo</span>
-          </Link>
-
-          <div className="flex items-center gap-1">
-            <Link
-              to="/search"
-              aria-label="Mở trang tìm kiếm"
-              className="rounded-lg p-2 text-gray-700 transition hover:bg-gray-100"
-            >
-              <AiOutlineSearch size={22} />
+      {/* Seamless Mobile Top Header (Rendered ONLY on Home Page '/') */}
+      {location.pathname === '/' && (
+        <nav className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md px-4 border-b border-slate-100/70">
+          <div className="flex items-center justify-between h-14">
+            {/* Solid Brand Logo Zivo */}
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
+              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-primary-50 ring-2 ring-primary-100">
+                <img src="/Zlogo.png" alt="Zivo" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-2xl font-black tracking-tight text-slate-900 font-sans">
+                Zivo
+              </span>
             </Link>
 
-            <button
-              type="button"
-              className="relative p-2 rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer"
-              aria-label={text.messages}
-              onClick={() => setIsChatOpen(true)}
-            >
-              <AiOutlineMessage size={22} />
-              {unreadMessageCount > 0 && (
-                <span className="absolute right-0 top-0 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
-                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                </span>
-              )}
-            </button>
+            {/* Right Utilities (Notifications & Chat with real unread count) */}
+            <div className="flex items-center gap-3">
+              {/* Notifications Link (Bell Icon) */}
+              <Link
+                to="/notifications"
+                aria-label="Thông báo"
+                className="relative p-1 text-slate-900 hover:scale-105 transition cursor-pointer"
+              >
+                <AiOutlineBell size={26} strokeWidth={1.5} />
+              </Link>
 
-            <button
-              type="button"
-              className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer"
-              aria-label={text.openMenu}
-              onClick={() => setIsMobileMenuOpen(true)}
-            >
-              <AiOutlineMenu size={24} />
-            </button>
+              {/* Messenger / Chat Button with Real Unread Count */}
+              <button
+                type="button"
+                className="relative p-1 text-slate-900 hover:scale-105 cursor-pointer transition"
+                aria-label={text.messages}
+                onClick={() => setIsChatOpen(true)}
+              >
+                <AiOutlineMessage size={26} strokeWidth={1.5} />
+                {unreadMessageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       <ChatConversationsPanel isOpen={isChatOpen} onClose={closeChatPanel} />
+      <NotificationsPanel isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200">
-        <div className="flex items-center justify-around h-14">
-          {navLinks.map(({ path, icon: Icon, activeIcon: ActiveIcon, labelKey }) => {
-            const active = isActive(path)
-            const label = text[labelKey] || labelKey
-            const isNotificationLink = path === '/notifications'
-            const isFriendLink = path === '/friends'
-
-            return (
-              <Link
-                key={path}
-                to={path}
-                title={label}
-                className="flex flex-col items-center justify-center flex-1 h-full gap-0.5 cursor-pointer"
-              >
-                <span className="relative inline-flex">
-                  {active ? <ActiveIcon size={24} className="text-primary-600" /> : <Icon size={24} className="text-gray-500" />}
-                  {isNotificationLink && unreadCount > 0 && (
-                    <span className="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                  {isFriendLink && incomingRequestCount > 0 && (
-                    <span className="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white">
-                      {incomingRequestCount > 9 ? '9+' : incomingRequestCount}
-                    </span>
-                  )}
-                </span>
-              </Link>
-            )
-          })}
-          <Link to={profilePath} className="flex flex-col items-center justify-center flex-1 h-full cursor-pointer">
-            <div className={isProfileActive ? 'ring-2 ring-primary-600 rounded-full' : ''}>
-              <Avatar src={user?.avatar} name={displayName} size="sm" />
+      {/* Floating Mobile Bottom Navigation Bar */}
+      <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_14px_40px_-6px_rgba(0,0,0,0.18)] rounded-full h-15 px-4 flex items-center justify-between">
+        {/* 1. Home Link */}
+        <Link
+          to="/"
+          title={text.home}
+          className="flex flex-col items-center justify-center w-11 h-11 rounded-full transition cursor-pointer"
+        >
+          {isActive('/') ? (
+            <div className="flex flex-col items-center">
+              <AiFillHome size={26} className="text-slate-900" />
+              <span className="w-1 h-1 rounded-full bg-slate-900 mt-0.5" />
             </div>
-          </Link>
-        </div>
+          ) : (
+            <AiOutlineHome size={26} className="text-slate-500 hover:text-slate-900 transition-colors" />
+          )}
+        </Link>
+
+        {/* 2. Search Link */}
+        <Link
+          to="/search"
+          title="Tìm kiếm"
+          className="flex flex-col items-center justify-center w-11 h-11 rounded-full transition cursor-pointer"
+        >
+          {isActive('/search') ? (
+            <div className="flex flex-col items-center">
+              <AiOutlineSearch size={26} className="text-slate-900 font-extrabold stroke-[2]" />
+              <span className="w-1 h-1 rounded-full bg-slate-900 mt-0.5" />
+            </div>
+          ) : (
+            <AiOutlineSearch size={26} className="text-slate-500 hover:text-slate-900 transition-colors" />
+          )}
+        </Link>
+
+        {/* 3. Center Floating Create Post Button (+) */}
+        <button
+          type="button"
+          onClick={() => setIsCreatePostOpen(true)}
+          title="Tạo bài viết mới"
+          className="relative flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-tr from-slate-900 to-indigo-950 text-white shadow-xl shadow-slate-900/30 -translate-y-3 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer ring-4 ring-white"
+        >
+          <FiPlus size={24} strokeWidth={3} />
+        </button>
+
+        {/* 4. Watch Link */}
+        <Link
+          to="/watch"
+          title={text.watch}
+          className="flex flex-col items-center justify-center w-11 h-11 rounded-full transition cursor-pointer"
+        >
+          {isActive('/watch') ? (
+            <div className="flex flex-col items-center">
+              <MdOndemandVideo size={26} className="text-slate-900" />
+              <span className="w-1 h-1 rounded-full bg-slate-900 mt-0.5" />
+            </div>
+          ) : (
+            <MdOutlineOndemandVideo size={26} className="text-slate-500 hover:text-slate-900 transition-colors" />
+          )}
+        </Link>
+
+        {/* 5. User Profile Link */}
+        <Link
+          to={profilePath}
+          title="Trang cá nhân"
+          className="flex flex-col items-center justify-center w-11 h-11 rounded-full transition cursor-pointer"
+        >
+          <div className={isProfileActive ? 'ring-2 ring-slate-900 ring-offset-1 rounded-full' : ''}>
+            <Avatar src={user?.avatar} name={displayName} size="xs" />
+          </div>
+        </Link>
       </nav>
+
+      {/* Mobile Create Post Modal */}
+      <CreatePostModal
+        isOpen={isCreatePostOpen}
+        onClose={() => setIsCreatePostOpen(false)}
+        onPostSuccess={() => {
+          setIsCreatePostOpen(false)
+          window.dispatchEvent(new Event('posts:refetch'))
+        }}
+      />
 
       <AnimatePresence>
         {isMobileMenuOpen && (

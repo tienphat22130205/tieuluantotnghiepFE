@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 
@@ -20,6 +21,8 @@ const Avatar = ({
   online = false,
   className = '',
 }) => {
+  const [imgError, setImgError] = useState(false)
+
   const sizes = {
     xs: 'w-6 h-6 text-xs',
     sm: 'w-8 h-8 text-sm',
@@ -41,19 +44,20 @@ const Avatar = ({
 
   const avatarContent = (
     <div className="relative inline-block">
-      {avatarSrc ? (
+      {avatarSrc && !imgError ? (
         <img
           src={avatarSrc}
           alt={name}
+          onError={() => setImgError(true)}
           className={`${sizes[size]} rounded-full object-cover border-2 border-white shadow-sm ${className}`}
         />
       ) : (
         <div
           className={`
             ${sizes[size]} rounded-full
-            bg-primary-100 text-primary-600
+            bg-blue-100 text-blue-700
             flex items-center justify-center
-            font-semibold border-2 border-white shadow-sm
+            font-bold border-2 border-white shadow-sm
             ${className}
           `}
         >

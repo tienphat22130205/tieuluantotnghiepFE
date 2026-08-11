@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
+import { timeAgo } from '@/utils/formatDate'
 
 /**
  * PostCardBody – Caption, hashtags, AI badge bài viết.
@@ -10,6 +11,9 @@ const PostCardBody = ({ post }) => {
   const postUserId = author.id || author._id
   const profilePath = postUserId ? `/profile/${postUserId}` : '#'
   const content = post?.caption || post?.content || ''
+  const createdAt = post?.createdAt || post?.created_at
+  const handleName = author.username ? `@${author.username}` : (author.full_name || 'Người dùng')
+
   const sharedPostId = post?.sharedPost?._id || post?.sharedPost?.id || null
   const sharedPostPath = sharedPostId ? `/post/${sharedPostId}` : null
   const sharedPostUserName = post?.sharedPost?.user?.username || post?.sharedPost?.user?.full_name || 'Người dùng'
@@ -20,14 +24,22 @@ const PostCardBody = ({ post }) => {
   const hasSharedPreview = Boolean(sharedPostId || sharedPostCaption || sharedPostImage)
 
   return (
-    <div className="px-4 pb-3">
+    <div className="px-4 pt-1.5 pb-4 space-y-1">
+      {/* Timestamp */}
+      {createdAt && (
+        <p className="text-xs font-semibold text-slate-400">
+          {timeAgo(createdAt)}
+        </p>
+      )}
+
+      {/* Caption Content */}
       {content && (
-        <p className="text-sm text-gray-800 leading-relaxed">
+        <p className="text-sm text-slate-900 leading-relaxed font-normal">
           <Link
             to={profilePath}
-            className="font-semibold mr-1.5 hover:text-primary-600"
+            className="font-bold mr-1 text-slate-900 hover:text-primary-600"
           >
-            {author.username || author.full_name || 'Người dùng'}
+            {handleName}
           </Link>
           {content}
         </p>

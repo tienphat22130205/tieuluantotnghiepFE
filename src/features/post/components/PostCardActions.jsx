@@ -2,26 +2,27 @@ import {
   AiFillLike,
   AiOutlineHeart,
   AiFillHeart,
-  AiOutlineComment,
+  AiOutlineMessage,
   AiOutlineShareAlt,
+  AiOutlineSmile,
+  AiOutlineSend,
 } from 'react-icons/ai'
 import { BsBookmark, BsBookmarkFill } from 'react-icons/bs'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 
-/**
- * PostCardActions – Nút tương tác: Like, Comment, Share, Save.
- * Props: likesCount, commentsCount, isLiked, saved, onLike, onSave, onCommentClick, onShareClick
- */
 const PostCardActions = ({
-  likesCount,
-  commentsCount,
-  isLiked,
-  saved,
+  post,
+  likesCount = 0,
+  commentsCount = 0,
+  isLiked = false,
+  saved = false,
   onLike,
   onSave,
   onCommentClick,
   onShareClick,
+  onEmojiClick,
+  isOverlay = false,
 }) => {
   const [heartBursts, setHeartBursts] = useState([])
 
@@ -46,32 +47,50 @@ const PostCardActions = ({
     }
   }
 
+  const formattedLikes = useMemo(() => {
+    if (!likesCount || likesCount <= 0) return '0 Liked'
+    if (likesCount >= 1000) return `${(likesCount / 1000).toFixed(1)}k Liked`
+    return `${likesCount} Liked`
+  }, [likesCount])
+
+  // Extract real liked user avatars if populated in post.likes or post.likedUsers
+  const realLikerAvatars = useMemo(() => {
+    const rawLikes = post?.likes || post?.likedUsers || []
+    if (!Array.isArray(rawLikes)) return []
+
+    return rawLikes
+      .filter((item) => item && typeof item === 'object' && (item.avatar || item.profile_pic))
+      .slice(0, 3)
+      .map((u) => u.avatar || u.profile_pic)
+  }, [post?.likes, post?.likedUsers])
+
   return (
-    <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-      <div className="flex items-center gap-4">
-        {/* Like */}
+    <div className="flex items-center gap-2 md:gap-3 px-1 py-0.5">
+      {/* Left Action Buttons (Heart, Comment, Share, Emoji) */}
+      <div className="flex items-center gap-2.5 md:gap-3.5">
+        {/* Like Heart Button */}
         <motion.button
           onClick={handleLikeClick}
-          className={`flex items-center gap-1.5 rounded-full px-2 py-1 transition-colors ${
-            isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+          className={`p-1 transition-colors cursor-pointer ${
+            isLiked ? 'text-red-500' : 'text-slate-800 hover:text-red-500'
           } relative`}
           whileTap={{ scale: 0.88 }}
           animate={isLiked ? { scale: [1, 1.2, 1] } : { scale: 1 }}
           transition={{ duration: 0.28 }}
+          title="Thích"
         >
           <motion.span
             animate={isLiked ? { rotate: [0, -14, 14, 0] } : { rotate: 0 }}
             transition={{ duration: 0.35 }}
           >
-            {isLiked ? <AiFillHeart size={22} /> : <AiOutlineHeart size={22} />}
+            {isLiked ? <AiFillHeart size={24} className="text-red-500" /> : <AiOutlineHeart size={24} />}
           </motion.span>
-          <span className="text-sm font-medium">{likesCount}</span>
 
           <AnimatePresence>
             {heartBursts.map((burstId) => (
               <motion.div
                 key={burstId}
-                className="absolute left-3 bottom-3 pointer-events-none"
+                className="absolute left-2 bottom-2 pointer-events-none"
                 initial={{ opacity: 1 }}
                 animate={{ opacity: 0 }}
                 exit={{ opacity: 0 }}
@@ -89,7 +108,7 @@ const PostCardActions = ({
                     }}
                     transition={{ duration: 0.65, ease: 'easeOut', delay: index * 0.04 }}
                   >
-                    <AiFillLike size={14} />
+                    <AiFillHeart size={14} />
                   </motion.span>
                 ))}
               </motion.div>
@@ -97,33 +116,49 @@ const PostCardActions = ({
           </AnimatePresence>
         </motion.button>
 
-        {/* Comment */}
+        {/* Comment Button */}
         <button
+          type="button"
           onClick={onCommentClick}
-          className="flex items-center gap-1.5 rounded-full px-2 py-1 text-gray-500 transition-colors hover:text-primary-600"
+          className="p-1 text-slate-800 hover:text-primary-600 transition-colors cursor-pointer flex items-center gap-1"
+          title="Bình luận"
         >
-          <AiOutlineComment size={22} />
-          <span className="text-sm font-medium">{commentsCount}</span>
+          <AiOutlineMessage size={23} />
+          {commentsCount > 0 && <span className="text-xs font-semibold text-slate-700">{commentsCount}</span>}
         </button>
 
-        {/* Share */}
+        {/* Share Button */}
         <button
+          type="button"
           onClick={onShareClick}
-          className="rounded-full px-2 py-1 text-gray-500 transition-colors hover:text-primary-600"
+          className="p-1 text-slate-800 hover:text-primary-600 transition-colors cursor-pointer"
+          title="Chia sẻ"
         >
-          <AiOutlineShareAlt size={22} />
+          <AiOutlineSend size={21} className="-rotate-12" />
         </button>
       </div>
 
-      {/* Bookmark / Save */}
-      <button
-        onClick={onSave}
-        className={`rounded-full p-1 transition-colors ${
-          saved ? 'text-primary-600' : 'text-gray-500 hover:text-primary-600'
-        }`}
-      >
-        {saved ? <BsBookmarkFill size={20} /> : <BsBookmark size={20} />}
-      </button>
+      {/* Likers Stack & Count Badge (for text-only posts) */}
+      {!post?.images?.length && !post?.image_url && likesCount > 0 && (
+        <div
+          className="flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-slate-50 cursor-pointer"
+          onClick={onCommentClick}
+        >
+          {realLikerAvatars.length > 0 && (
+            <div className="flex -space-x-1.5 overflow-hidden">
+              {realLikerAvatars.map((src, i) => (
+                <img
+                  key={i}
+                  className="inline-block h-5 w-5 rounded-full ring-2 ring-white object-cover"
+                  src={src}
+                  alt={`Liker ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
+          <span className="text-[11px] font-bold text-slate-800">{formattedLikes}</span>
+        </div>
+      )}
     </div>
   )
 }

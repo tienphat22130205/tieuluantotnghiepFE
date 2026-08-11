@@ -79,8 +79,10 @@ const resolveNotificationAction = (item, notificationId) => {
 
 export const normalizeNotification = (item) => {
   const id = item?._id || item?.id
-  const actor = item?.actor || item?.fromUser || item?.sender || null
-  const actorName = actor?.full_name || actor?.fullName || actor?.username || 'Ai đó'
+  const actor = item?.actor || item?.fromUser || item?.sender || item?.user || item?.author || null
+  const actorName = actor?.full_name || actor?.fullName || actor?.name || actor?.username || item?.senderName || item?.actorName || 'Ai đó'
+  const avatar = actor?.avatar || actor?.avatarUrl || actor?.profilePicture || actor?.profile_picture || item?.avatar || item?.senderAvatar || null
+
   const action = resolveNotificationAction(item, id)
   const type = item?.type || 'system'
   const isRead = Boolean(item?.isRead || item?.read || item?.readAt)
@@ -97,5 +99,10 @@ export const normalizeNotification = (item) => {
     isUnread: !isRead,
     isDeleted,
     actor,
+    sender: {
+      ...actor,
+      fullName: actorName,
+      avatar,
+    },
   }
 }

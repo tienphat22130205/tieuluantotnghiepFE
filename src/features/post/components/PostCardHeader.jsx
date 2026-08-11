@@ -10,7 +10,7 @@ import { normalizePostLocation } from '@/utils/postLocation'
  * PostCardHeader – Header bài viết (Avatar, tên, thời gian, menu).
  * Props: user (object), createdAt (string), visibility (string), canManage, onEdit, onDelete
  */
-const PostCardHeader = ({ user, createdAt, visibility, location, canManage = false, onEdit, onDelete, group }) => {
+const PostCardHeader = ({ user, createdAt, visibility, location, canManage = false, onEdit, onDelete, group, isOverlay = false }) => {
   const userId = user?.id || user?._id
   const profilePath = userId ? `/profile/${userId}` : '#'
   const displayName = user?.full_name || user?.fullName || user?.username || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
@@ -38,7 +38,7 @@ const PostCardHeader = ({ user, createdAt, visibility, location, canManage = fal
   }, [showMenu])
 
   return (
-    <div className="flex items-center justify-between px-5 py-3.5">
+    <div className={`flex items-center justify-between ${isOverlay ? 'px-4 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent text-white' : 'px-5 py-3.5'}`}>
       <div className="flex items-center gap-3">
         {group ? (
           <div className="relative w-10 h-10 flex-shrink-0">
@@ -47,7 +47,7 @@ const PostCardHeader = ({ user, createdAt, visibility, location, canManage = fal
               name={group.name || 'Nhóm'}
               size="md"
               to={`/groups/${group._id || group.id || group}`}
-              className="!rounded-xl border border-slate-200"
+              className="!rounded-xl border border-white/20"
             />
             <div className="absolute -bottom-1 -right-1 z-10">
               <Avatar
@@ -60,54 +60,50 @@ const PostCardHeader = ({ user, createdAt, visibility, location, canManage = fal
             </div>
           </div>
         ) : (
-          <Avatar
-            src={user?.avatar}
-            name={displayName}
-            size="md"
-            to={profilePath}
-          />
+          <div className={isOverlay ? 'ring-2 ring-white/40 rounded-full' : ''}>
+            <Avatar
+              src={user?.avatar}
+              name={displayName}
+              size="md"
+              to={profilePath}
+            />
+          </div>
         )}
         <div>
           {group ? (
             <>
               <Link
                 to={`/groups/${group._id || group.id || group}`}
-                className="font-bold text-gray-900 hover:text-primary-600 hover:underline text-sm block leading-tight"
+                className={`font-bold hover:underline text-sm block leading-tight ${isOverlay ? 'text-white drop-shadow-sm' : 'text-gray-900 hover:text-primary-600'}`}
               >
                 {group.name || 'Nhóm'}
               </Link>
-              <div className="text-xs text-slate-500 mt-0.5 leading-tight">
+              <div className={`text-xs mt-0.5 leading-tight ${isOverlay ? 'text-white/80' : 'text-slate-500'}`}>
                 <Link
                   to={profilePath}
-                  className="font-semibold text-gray-700 hover:text-primary-600 transition-colors"
+                  className={`font-semibold transition-colors ${isOverlay ? 'text-white/90 hover:text-white' : 'text-gray-700 hover:text-primary-600'}`}
                 >
                   {displayName}
                 </Link>
-                <span className="text-slate-400">
-                  {' '}· {timeAgo(createdAt)} | {visibilityLabel}
+                <span className={isOverlay ? 'text-white/70' : 'text-slate-400'}>
+                  {' '}· {timeAgo(createdAt)}
                 </span>
-                {normalizedLocation?.label && (
-                  <span className="ml-1 inline-flex items-center gap-1 text-slate-400">
-                    | <FiMapPin size={11} />
-                    <span className="max-w-[220px] truncate align-middle">{normalizedLocation.label}</span>
-                  </span>
-                )}
               </div>
             </>
           ) : (
             <>
               <Link
                 to={profilePath}
-                className="font-semibold text-gray-900 hover:text-primary-600 transition-colors text-sm"
+                className={`font-bold transition-colors text-sm ${isOverlay ? 'text-white drop-shadow-sm hover:text-white/90' : 'text-gray-900 hover:text-primary-600'}`}
               >
                 {displayName}
               </Link>
-              <div className="text-xs text-slate-400">
-                <span>{timeAgo(createdAt)} | {visibilityLabel}</span>
+              <div className={`text-xs ${isOverlay ? 'text-white/80 drop-shadow-xs' : 'text-slate-400'}`}>
+                <span>{timeAgo(createdAt)}</span>
                 {normalizedLocation?.label && (
-                  <span className="ml-1 inline-flex items-center gap-1 text-slate-500">
+                  <span className="ml-1 inline-flex items-center gap-1">
                     | <FiMapPin size={11} />
-                    <span className="max-w-[220px] truncate align-middle">{normalizedLocation.label}</span>
+                    <span className="max-w-[200px] truncate align-middle">{normalizedLocation.label}</span>
                   </span>
                 )}
               </div>
@@ -122,7 +118,7 @@ const PostCardHeader = ({ user, createdAt, visibility, location, canManage = fal
           <button
             type="button"
             onClick={() => setShowMenu((prev) => !prev)}
-            className="rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+            className={`rounded-full p-1.5 transition ${isOverlay ? 'bg-white/30 backdrop-blur-md text-white hover:bg-white/50' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
           >
             <HiOutlineDotsHorizontal size={20} />
           </button>

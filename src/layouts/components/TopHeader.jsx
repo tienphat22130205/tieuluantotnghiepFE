@@ -15,6 +15,7 @@ import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
 import friendService from '@/features/user/services/friendService'
 import { extractItems } from '@/utils/friendship'
 import ChatConversationsPanel from '@/features/chat/components/ChatConversationsPanel'
+import { NotificationsPanel } from '@/features/notification'
 
 const TopHeader = ({ onOpenSettings }) => {
   const { user } = useAuth()
@@ -28,6 +29,7 @@ const TopHeader = ({ onOpenSettings }) => {
 
   const [searchKeyword, setSearchKeyword] = useState('')
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [incomingRequestCount, setIncomingRequestCount] = useState(0)
 
   const profileUserId = user?.id || user?._id
@@ -77,18 +79,20 @@ const TopHeader = ({ onOpenSettings }) => {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 border-b border-slate-200/80 backdrop-blur-md px-3 md:px-5 flex items-center justify-between">
+      <header className="hidden md:flex fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 border-b border-slate-200/80 backdrop-blur-md px-3 md:px-5 items-center justify-between">
         {/* Left Section: Logo & Inline Search Bar */}
         <div className="flex items-center gap-3 md:gap-5 flex-1 max-w-xl">
-          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div className="h-9 w-9 overflow-hidden rounded-full bg-slate-100 ring-2 ring-primary-500/20 transition group-hover:scale-105">
-              <img src="/Zlogo.png" alt="Zivo" className="h-full w-full object-cover" />
+          <Link to="/" className="flex items-center gap-2 shrink-0 group">
+            <div className="h-9 w-9 overflow-hidden rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-600 p-0.5 shadow-md shadow-primary-500/20 transition group-hover:scale-105">
+              <img src="/Zlogo.png" alt="Zivo" className="h-full w-full object-cover rounded-[14px]" />
             </div>
-            <span className="text-lg font-black tracking-tight text-slate-900 hidden sm:inline">Zivo</span>
+            <span className="text-xl md:text-2xl font-black tracking-tight bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent drop-shadow-xs">
+              Zivo
+            </span>
           </Link>
 
           {/* Search Input Bar */}
-          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-sm">
+          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-sm hidden sm:block">
             <input
               type="text"
               value={searchKeyword}
@@ -131,11 +135,12 @@ const TopHeader = ({ onOpenSettings }) => {
             )}
           </button>
 
-          {/* Notifications Link Button */}
-          <Link
-            to="/notifications"
+          {/* Notifications Button (Opens Slide-over Panel) */}
+          <button
+            type="button"
+            onClick={() => setIsNotificationOpen((prev) => !prev)}
             title="Thông báo"
-            className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition"
+            className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition cursor-pointer"
           >
             <AiOutlineBell size={21} />
             {unreadCount > 0 && (
@@ -143,7 +148,7 @@ const TopHeader = ({ onOpenSettings }) => {
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
-          </Link>
+          </button>
 
           {/* Settings Button */}
           <Link
@@ -170,6 +175,9 @@ const TopHeader = ({ onOpenSettings }) => {
 
       {/* Chat Conversations Drawer Panel */}
       <ChatConversationsPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+
+      {/* Notifications Drawer Panel */}
+      <NotificationsPanel isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
     </>
   )
 }
