@@ -84,12 +84,14 @@ const MainLayout = () => {
     toast.error(message, { autoClose: 3000 })
   }
 
+  const isHomePage = location.pathname === '/'
+  const mainPaddingTopClass = isHomePage ? 'pt-14 md:pt-20' : 'pt-2 md:pt-20'
 
   return (
-    <div className="min-h-screen bg-[#f4f7fb]">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-primary-500 selection:text-white">
       <Navbar />
 
-      <main className="pt-20 pb-16 md:pb-6 md:pl-72">
+      <main className={`${mainPaddingTopClass} pb-16 md:pb-6 md:pl-72`}>
         <div className={`mx-auto w-full px-3 md:px-6 ${containerMaxWidthClass}`}>
           <div className={`grid grid-cols-1 gap-6 ${rightColumnClass}`}>
             <section className="min-w-0">

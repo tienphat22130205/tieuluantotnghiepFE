@@ -240,9 +240,9 @@ const StoriesBar = () => {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 mb-4 relative group/bar select-none">
-      {/* Header title */}
-      <div className="flex items-center justify-between mb-3 px-1">
+    <div className="bg-white rounded-3xl md:rounded-2xl p-0.5 md:p-4 shadow-none md:shadow-sm border-0 md:border md:border-slate-200/80 mb-1 md:mb-4 relative group/bar select-none">
+      {/* Desktop Header title */}
+      <div className="hidden md:flex items-center justify-between mb-3 px-1">
         <h3 className="text-sm font-bold text-slate-800 tracking-tight">Tin ngắn (Stories)</h3>
         <span className="text-xs text-slate-400 font-medium">Vuốt để xem</span>
       </div>
@@ -269,16 +269,72 @@ const StoriesBar = () => {
         </button>
       )}
 
-      {/* Stories list container */}
+      {/* MOBILE VIEW: Circular Avatar Stories (md:hidden) */}
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto py-0.5 px-0.5 scrollbar-none scroll-smooth"
+        className="md:hidden flex items-center gap-4 overflow-x-auto py-2 px-1.5 scrollbar-none scroll-smooth"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {/* Your Loop / Create Story Circle */}
+        <div
+          onClick={() => setIsCreateOpen(true)}
+          className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group/circle"
+        >
+          <div className="relative w-[72px] h-[72px] rounded-full p-0.5 border-2 border-slate-200 group-hover/circle:border-primary-500 transition-colors">
+            <img
+              src={user?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=User'}
+              alt={displayName}
+              className="w-full h-full rounded-full object-cover"
+            />
+            <div className="absolute bottom-0 right-0 w-5.5 h-5.5 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-white shadow-sm">
+              <FiPlus size={13} strokeWidth={3} />
+            </div>
+          </div>
+          <span className="text-[12px] font-bold text-slate-900 text-center max-w-[76px] truncate tracking-tight">Your Loop</span>
+        </div>
+
+        {/* Friend Stories Circles with Gradient Rings */}
+        {userStoryGroups.map((group, index) => {
+          const hasNew = hasUnviewedStory(group, user?.id || user?._id)
+          const username = group.user.username || group.user.fullName?.split(' ')[0] || 'user'
+
+          return (
+            <div
+              key={group.userId}
+              onClick={() => setViewerIndex(index)}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group/circle"
+            >
+              <div className={`w-[72px] h-[72px] rounded-full p-[2.5px] ${
+                hasNew
+                  ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600'
+                  : 'bg-slate-200'
+              }`}>
+                <div className="w-full h-full rounded-full p-[2px] bg-white">
+                  <img
+                    src={group.user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${username}`}
+                    alt={group.user.fullName}
+                    className="w-full h-full rounded-full object-cover group-hover/circle:scale-105 transition-transform"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+              <span className="text-[12px] font-semibold text-slate-800 text-center max-w-[76px] truncate tracking-tight">
+                {username}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* DESKTOP VIEW: Original Rectangular Card Stories (hidden md:flex) */}
+      <div
+        className="hidden md:flex gap-3 overflow-x-auto py-0.5 px-0.5 scrollbar-none scroll-smooth"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {/* Create Story Card */}
         <div
           onClick={() => setIsCreateOpen(true)}
-          className="relative w-[110px] sm:w-[120px] h-[185px] flex-shrink-0 rounded-xl overflow-hidden border border-slate-200/90 bg-slate-50 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card"
+          className="relative w-[120px] h-[185px] flex-shrink-0 rounded-xl overflow-hidden border border-slate-200/90 bg-slate-50 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card"
         >
           <div className="h-[125px] overflow-hidden bg-slate-100">
             {user?.avatar ? (
@@ -301,7 +357,7 @@ const StoriesBar = () => {
           </div>
         </div>
 
-        {/* Friend Stories */}
+        {/* Friend Stories Cards */}
         {userStoryGroups.map((group, index) => {
           const hasNew = hasUnviewedStory(group, user?.id || user?._id)
           const latestStory = group.latestStory
@@ -309,15 +365,11 @@ const StoriesBar = () => {
           return (
             <div
               key={group.userId}
-              onClick={() => {
-                setViewerIndex(index)
-              }}
-              className="relative w-[110px] sm:w-[120px] h-[185px] flex-shrink-0 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card border border-slate-200/80"
+              onClick={() => setViewerIndex(index)}
+              className="relative w-[120px] h-[185px] flex-shrink-0 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card border border-slate-200/80"
             >
-              {/* Dark gradient overlay for text readability */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/20 z-10" />
 
-              {/* Story Background */}
               <div className="w-full h-full bg-slate-900">
                 {latestStory.bgColor ? (
                   <div
@@ -334,8 +386,7 @@ const StoriesBar = () => {
                 ) : latestStory.mediaType === 'video' ? (
                   <video
                     src={resolveMediaUrl(latestStory.mediaUrl)}
-                    className={`w-full h-full object-${latestStory.objectFit || 'cover'} group-hover/card:scale-105 transition-transform duration-500`}
-                    style={{ filter: latestStory.imageFilter && latestStory.imageFilter !== 'none' ? latestStory.imageFilter : undefined }}
+                    className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
                     muted
                     playsInline
                   />
@@ -343,14 +394,12 @@ const StoriesBar = () => {
                   <img
                     src={resolveMediaUrl(latestStory.mediaUrl)}
                     alt={group.user.fullName}
-                    className={`w-full h-full object-${latestStory.objectFit || 'cover'} group-hover/card:scale-105 transition-transform duration-500`}
-                    style={{ filter: latestStory.imageFilter && latestStory.imageFilter !== 'none' ? latestStory.imageFilter : undefined }}
+                    className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
                 )}
               </div>
 
-              {/* Author Avatar with blue or gray ring */}
               <div className="absolute top-2.5 left-2.5 z-20">
                 <div className={`rounded-full ring-[2.5px] ${
                   hasNew ? 'ring-primary-500 animate-pulse' : 'ring-white/80'
@@ -364,7 +413,6 @@ const StoriesBar = () => {
                 </div>
               </div>
 
-              {/* User Name Label at bottom */}
               <div className="absolute bottom-2 left-2 right-2 z-20">
                 <span className="text-[11px] font-semibold text-white block truncate drop-shadow-md">
                   {group.user.fullName}

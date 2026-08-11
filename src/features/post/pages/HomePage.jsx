@@ -13,8 +13,16 @@ const HomePage = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   return (
-    <div className="space-y-4">
-      <QuickPostBar onOpen={() => setIsCreateOpen(true)} />
+    <div className="space-y-3 md:space-y-4">
+      {/* MOBILE: Circular StoriesBar on top of Home Feed (md:hidden) */}
+      <div className="md:hidden">
+        <StoriesBar />
+      </div>
+
+      {/* DESKTOP: Quick Post Bar (hidden md:block) */}
+      <div className="hidden md:block">
+        <QuickPostBar onOpen={() => setIsCreateOpen(true)} />
+      </div>
 
       <main className="space-y-4">
         <PostList
