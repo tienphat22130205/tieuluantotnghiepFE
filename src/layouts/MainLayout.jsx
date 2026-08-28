@@ -34,7 +34,6 @@ const MainLayout = () => {
     || (location.pathname.startsWith('/post/') && location.pathname.endsWith('/edit'))
     || location.pathname === '/search'
     || location.pathname === '/notifications'
-    || location.pathname === '/watch'
     || location.pathname === '/groups'
   ) {
     containerMaxWidthClass = 'max-w-5xl' // 1024px for single-column/compact layouts
@@ -84,14 +83,11 @@ const MainLayout = () => {
     toast.error(message, { autoClose: 3000 })
   }
 
-  const isHomePage = location.pathname === '/'
-  const mainPaddingTopClass = isHomePage ? 'pt-14 md:pt-20' : 'pt-2 md:pt-20'
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-primary-500 selection:text-white">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased selection:bg-primary-500 selection:text-white transition-colors duration-200">
       <Navbar />
 
-      <main className={`${mainPaddingTopClass} pb-16 md:pb-6 md:pl-72`}>
+      <main className="pt-16 md:pt-20 pb-24 md:pb-8 md:pl-72">
         <div className={`mx-auto w-full px-3 md:px-6 ${containerMaxWidthClass}`}>
           <div className={`grid grid-cols-1 gap-6 ${rightColumnClass}`}>
             <section className="min-w-0">

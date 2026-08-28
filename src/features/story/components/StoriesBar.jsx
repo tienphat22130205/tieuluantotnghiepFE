@@ -3,6 +3,7 @@ import { HiChevronLeft, HiChevronRight } from 'react-icons/hi'
 import { FiPlus } from 'react-icons/fi'
 import { Avatar } from '@/components/ui'
 import { useAuth } from '@/features/auth'
+import { usePreferences } from '@/context/PreferencesContext'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 import storyService from '../services/storyService'
 import CreateStoryModal from './CreateStoryModal'
@@ -11,6 +12,7 @@ import { getSocket } from '@/services/socketClient'
 
 const StoriesBar = () => {
   const { user, token } = useAuth()
+  const { t } = usePreferences()
   const [stories, setStories] = useState([])
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [viewerIndex, setViewerIndex] = useState(null) // null if not viewing
@@ -240,11 +242,11 @@ const StoriesBar = () => {
   }
 
   return (
-    <div className="bg-white rounded-3xl md:rounded-2xl p-0.5 md:p-4 shadow-none md:shadow-sm border-0 md:border md:border-slate-200/80 mb-1 md:mb-4 relative group/bar select-none">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl md:rounded-2xl p-0.5 md:p-4 shadow-none md:shadow-sm border-0 md:border md:border-slate-200/80 dark:md:border-slate-800 mb-1 md:mb-4 relative group/bar select-none transition-colors">
       {/* Desktop Header title */}
       <div className="hidden md:flex items-center justify-between mb-3 px-1">
-        <h3 className="text-sm font-bold text-slate-800 tracking-tight">Tin ngắn (Stories)</h3>
-        <span className="text-xs text-slate-400 font-medium">Vuốt để xem</span>
+        <h3 className="text-sm font-bold text-slate-800 dark:text-white tracking-tight">{t('sidebar.stories')}</h3>
+        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{t('sidebar.swipeToView')}</span>
       </div>
 
       {/* Scroll left button */}
@@ -252,7 +254,7 @@ const StoriesBar = () => {
         <button
           type="button"
           onClick={() => scroll('left')}
-          className="absolute left-6 top-[60%] -translate-y-1/2 z-30 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:bg-white hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+          className="absolute left-6 top-[60%] -translate-y-1/2 z-30 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
         >
           <HiChevronLeft size={22} />
         </button>
@@ -263,7 +265,7 @@ const StoriesBar = () => {
         <button
           type="button"
           onClick={() => scroll('right')}
-          className="absolute right-6 top-[60%] -translate-y-1/2 z-30 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:bg-white hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
+          className="absolute right-6 top-[60%] -translate-y-1/2 z-30 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer"
         >
           <HiChevronRight size={22} />
         </button>
@@ -280,17 +282,17 @@ const StoriesBar = () => {
           onClick={() => setIsCreateOpen(true)}
           className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group/circle"
         >
-          <div className="relative w-[72px] h-[72px] rounded-full p-0.5 border-2 border-slate-200 group-hover/circle:border-primary-500 transition-colors">
+          <div className="relative w-[72px] h-[72px] rounded-full p-0.5 border-2 border-slate-200 dark:border-slate-700 group-hover/circle:border-primary-500 transition-colors">
             <img
               src={user?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=User'}
               alt={displayName}
               className="w-full h-full rounded-full object-cover"
             />
-            <div className="absolute bottom-0 right-0 w-5.5 h-5.5 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-white shadow-sm">
+            <div className="absolute bottom-0 right-0 w-5.5 h-5.5 rounded-full bg-blue-600 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white shadow-sm">
               <FiPlus size={13} strokeWidth={3} />
             </div>
           </div>
-          <span className="text-[12px] font-bold text-slate-900 text-center max-w-[76px] truncate tracking-tight">Your Loop</span>
+          <span className="text-[12px] font-bold text-slate-900 dark:text-slate-200 text-center max-w-[76px] truncate tracking-tight">{t('sidebar.createStory')}</span>
         </div>
 
         {/* Friend Stories Circles with Gradient Rings */}
@@ -307,9 +309,9 @@ const StoriesBar = () => {
               <div className={`w-[72px] h-[72px] rounded-full p-[2.5px] ${
                 hasNew
                   ? 'bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600'
-                  : 'bg-slate-200'
+                  : 'bg-slate-200 dark:bg-slate-700'
               }`}>
-                <div className="w-full h-full rounded-full p-[2px] bg-white">
+                <div className="w-full h-full rounded-full p-[2px] bg-white dark:bg-slate-900">
                   <img
                     src={group.user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${username}`}
                     alt={group.user.fullName}
@@ -318,7 +320,7 @@ const StoriesBar = () => {
                   />
                 </div>
               </div>
-              <span className="text-[12px] font-semibold text-slate-800 text-center max-w-[76px] truncate tracking-tight">
+              <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 text-center max-w-[76px] truncate tracking-tight">
                 {username}
               </span>
             </div>
@@ -334,9 +336,9 @@ const StoriesBar = () => {
         {/* Create Story Card */}
         <div
           onClick={() => setIsCreateOpen(true)}
-          className="relative w-[120px] h-[185px] flex-shrink-0 rounded-xl overflow-hidden border border-slate-200/90 bg-slate-50 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card"
+          className="relative w-[120px] h-[185px] flex-shrink-0 rounded-xl overflow-hidden border border-slate-200/90 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group/card"
         >
-          <div className="h-[125px] overflow-hidden bg-slate-100">
+          <div className="h-[125px] overflow-hidden bg-slate-100 dark:bg-slate-800">
             {user?.avatar ? (
               <img
                 src={user.avatar}
@@ -344,16 +346,16 @@ const StoriesBar = () => {
                 className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
               />
             ) : (
-              <div className="w-full h-full bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-2xl">
+              <div className="w-full h-full bg-primary-50 dark:bg-primary-950/50 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-2xl">
                 {displayName.charAt(0)}
               </div>
             )}
           </div>
-          <div className="absolute top-[110px] left-1/2 -translate-x-1/2 z-20 w-8 h-8 rounded-full bg-primary-600 border-2 border-white flex items-center justify-center text-white shadow-md group-hover/card:scale-110 transition-transform duration-200">
+          <div className="absolute top-[110px] left-1/2 -translate-x-1/2 z-20 w-8 h-8 rounded-full bg-primary-600 border-2 border-white dark:border-slate-800 flex items-center justify-center text-white shadow-md group-hover/card:scale-110 transition-transform duration-200">
             <FiPlus size={18} strokeWidth={3} />
           </div>
-          <div className="h-[60px] pt-4 px-1.5 pb-2 text-center bg-white">
-            <span className="text-[12px] font-semibold text-slate-800 block truncate">Tạo tin</span>
+          <div className="h-[60px] pt-4 px-1.5 pb-2 text-center bg-white dark:bg-slate-900">
+            <span className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 block truncate">{t('sidebar.createStory')}</span>
           </div>
         </div>
 

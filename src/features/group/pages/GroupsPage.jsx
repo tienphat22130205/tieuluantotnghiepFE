@@ -11,9 +11,11 @@ import {
 import { searchGroups, fetchMyGroups, createGroup } from '../store/groupSlice'
 import GroupCard from '../components/GroupCard'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const GroupsPage = () => {
   const dispatch = useDispatch()
+  const { t } = usePreferences()
   const { groups, myGroups, isLoading } = useSelector((state) => state.group)
 
   const [activeTab, setActiveTab] = useState('discover') // 'joined' | 'discover'
@@ -101,15 +103,15 @@ const GroupsPage = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <header className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-primary-50 text-primary-600">
+            <div className="p-3 rounded-xl bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400">
               <AiOutlineUsergroupAdd size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">Nhóm</h1>
-              <p className="text-sm text-slate-500 font-normal">Kết nối và giao lưu với những người có chung sở thích.</p>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">{t('groups.title')}</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-normal">{t('groups.subtitle')}</p>
             </div>
           </div>
 
@@ -119,7 +121,7 @@ const GroupsPage = () => {
             className="flex items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-primary-500/10 hover:bg-primary-700 transition cursor-pointer"
           >
             <AiOutlinePlus size={16} />
-            Tạo nhóm mới
+            {t('groups.createNew')}
           </button>
         </div>
       </header>
@@ -129,25 +131,25 @@ const GroupsPage = () => {
         {/* Left column - List */}
         <div className="space-y-4">
           {/* Filters & search */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
-            <div className="flex bg-slate-100 p-1 rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs transition-colors">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
               <button
                 type="button"
                 onClick={() => setActiveTab('discover')}
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
-                  activeTab === 'discover' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                  activeTab === 'discover' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Khám phá nhóm
+                {t('groups.discoverTab')}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('joined')}
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
-                  activeTab === 'joined' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                  activeTab === 'joined' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Nhóm của bạn
+                {t('groups.myGroupsTab')}
               </button>
             </div>
 
@@ -156,10 +158,10 @@ const GroupsPage = () => {
                 type="text"
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                placeholder="Tìm kiếm nhóm..."
-                className="w-full sm:w-60 rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 py-2 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
+                placeholder={t('groups.searchPlaceholder')}
+                className="w-full sm:w-60 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-9 pr-4 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-primary-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-primary-500/20"
               />
-              <AiOutlineSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <AiOutlineSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={14} />
             </div>
           </div>
 
@@ -169,10 +171,10 @@ const GroupsPage = () => {
               <LoadingSpinner size="lg" />
             </div>
           ) : displayList.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 shadow-xs">
-              <AiOutlineUsergroupAdd size={48} className="mx-auto text-slate-300 mb-3" />
-              <h3 className="font-bold text-slate-900 text-sm">Không tìm thấy nhóm</h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center text-slate-500 dark:text-slate-400 shadow-xs">
+              <AiOutlineUsergroupAdd size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Không tìm thấy nhóm</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
                 Không tìm thấy kết quả nào hoặc danh sách trống. Hãy tạo nhóm mới hoặc tìm kiếm với từ khóa khác!
               </p>
             </div>
@@ -187,12 +189,12 @@ const GroupsPage = () => {
 
         {/* Right column - Rules */}
         <aside className="space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-            <h3 className="font-bold text-slate-900 text-sm">Quy tắc nhóm</h3>
-            <ul className="mt-3 space-y-2.5 text-xs text-slate-600 list-decimal pl-4 font-normal">
-              <li>Tôn trọng quyền riêng tư và ý kiến của các thành viên khác.</li>
-              <li>Không gửi thư rác, quảng cáo tự do không được phép.</li>
-              <li>Giữ cho môi trường giao lưu văn minh và có ích.</li>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm transition-colors">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">{t('groups.rulesTitle')}</h3>
+            <ul className="mt-3 space-y-2.5 text-xs text-slate-600 dark:text-slate-400 list-none pl-0 font-normal">
+              <li>{t('groups.rule1')}</li>
+              <li>{t('groups.rule2')}</li>
+              <li>{t('groups.rule3')}</li>
             </ul>
           </div>
         </aside>

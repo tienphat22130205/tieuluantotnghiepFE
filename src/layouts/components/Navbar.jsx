@@ -37,71 +37,7 @@ import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
 import { NotificationsPanel } from '@/features/notification'
 
 import TopHeader from './TopHeader'
-
-const TRANSLATIONS = {
-  vi: {
-    home: 'Trang chủ',
-    watch: 'Watch',
-    groups: 'Nhóm',
-    notifications: 'Thông báo',
-    friends: 'Bạn bè',
-    create: 'Đăng bài',
-    admin: 'Quản trị',
-    messages: 'Tin nhắn',
-    logout: 'Đăng xuất',
-    quickPost: 'Đăng',
-    menu: 'Menu',
-    close: 'Đóng',
-    viewProfile: 'Xem trang cá nhân của bạn',
-    settingsPrivacy: 'Cài đặt và quyền riêng tư',
-    language: 'Ngôn ngữ',
-    darkMode: 'Chế độ tối',
-    openMenu: 'Mở menu',
-    unknownUser: 'Người dùng',
-  },
-  en: {
-    home: 'Home',
-    watch: 'Watch',
-    groups: 'Groups',
-    notifications: 'Notifications',
-    friends: 'Friends',
-    create: 'Create',
-    admin: 'Admin',
-    messages: 'Messages',
-    logout: 'Log out',
-    quickPost: 'Post',
-    menu: 'Menu',
-    close: 'Close',
-    viewProfile: 'View your profile',
-    settingsPrivacy: 'Settings & privacy',
-    language: 'Language',
-    darkMode: 'Dark mode',
-    openMenu: 'Open menu',
-    unknownUser: 'User',
-  },
-}
-
-const getStoredPreferences = (storageKey) => {
-  if (!storageKey) {
-    return { language: 'vi', isDarkMode: false }
-  }
-
-  try {
-    const rawValue = localStorage.getItem(storageKey)
-    if (!rawValue) {
-      return { language: 'vi', isDarkMode: false }
-    }
-
-    const parsed = JSON.parse(rawValue)
-
-    return {
-      language: parsed?.language === 'en' ? 'en' : 'vi',
-      isDarkMode: Boolean(parsed?.isDarkMode),
-    }
-  } catch {
-    return { language: 'vi', isDarkMode: false }
-  }
-}
+import { usePreferences } from '@/context/PreferencesContext'
 
 const Navbar = () => {
   const { user, role, handleLogout } = useAuth()
@@ -117,18 +53,13 @@ const Navbar = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [incomingRequestCount, setIncomingRequestCount] = useState(0)
 
+  const { isDarkMode, setIsDarkMode, language, setLanguage, t, translations: text } = usePreferences()
+
   const profileUserId = user?.id || user?._id
-  const preferenceStorageKey = profileUserId ? `ui-preferences:${profileUserId}` : null
-  const initialPrefs = getStoredPreferences(preferenceStorageKey)
-
-  const [language, setLanguage] = useState(initialPrefs.language)
-  const [isDarkMode, setIsDarkMode] = useState(initialPrefs.isDarkMode)
-
   const isActive = (path) => location.pathname === path
   const isProfileActive = location.pathname.startsWith('/profile')
   const profilePath = profileUserId ? `/profile/${profileUserId}` : '/'
   const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
-  const text = TRANSLATIONS[language] || TRANSLATIONS.vi
 
   const closeChatPanel = () => setIsChatOpen(false)
   const closeMobileMenu = () => setIsMobileMenuOpen(false)
@@ -152,23 +83,6 @@ const Navbar = () => {
     window.addEventListener('chat:open', handleOpenChat)
     return () => window.removeEventListener('chat:open', handleOpenChat)
   }, [])
-
-  useEffect(() => {
-    document.documentElement.lang = language
-    document.documentElement.classList.toggle('dark', isDarkMode)
-  }, [language, isDarkMode])
-
-  useEffect(() => {
-    if (!preferenceStorageKey) return
-
-    localStorage.setItem(
-      preferenceStorageKey,
-      JSON.stringify({
-        language,
-        isDarkMode,
-      })
-    )
-  }, [preferenceStorageKey, language, isDarkMode])
 
   useEffect(() => {
     const loadIncomingRequestCount = async () => {
@@ -220,17 +134,17 @@ const Navbar = () => {
     <>
       <TopHeader onOpenSettings={() => setIsMobileMenuOpen(true)} />
 
-      <nav className="hidden md:flex fixed left-0 top-14 bottom-0 z-40 w-72 border-r border-slate-200 bg-white/95 backdrop-blur-sm overflow-y-auto">
+      <nav className="hidden md:flex fixed left-0 top-14 bottom-0 z-40 w-72 border-r border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm overflow-y-auto transition-colors">
         <div className="flex h-full w-full flex-col px-3 py-4 space-y-5">
           {/* Section 1: MENU CHÍNH */}
           <div>
-            <p className="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-              Menu chính
+            <p className="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+              {t('nav.mainMenu')}
             </p>
             <div className="space-y-1">
               {navLinks.map(({ path, icon: Icon, activeIcon: ActiveIcon, labelKey }) => {
                 const active = isActive(path)
-                const label = text[labelKey] || labelKey
+                const label = t(`nav.${labelKey}`) || labelKey
                 const isNotificationLink = path === '/notifications'
                 const isFriendLink = path === '/friends'
 
@@ -241,10 +155,10 @@ const Navbar = () => {
                       type="button"
                       onClick={() => setIsNotificationOpen((prev) => !prev)}
                       title={label}
-                      className="group flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
+                      className="group flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
                     >
                       <span className="relative inline-flex">
-                        <Icon size={20} className="text-slate-500" />
+                        <Icon size={20} className="text-slate-500 dark:text-slate-400" />
                         {unreadCount > 0 && (
                           <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
                             {unreadCount > 99 ? '99+' : unreadCount}
@@ -263,12 +177,12 @@ const Navbar = () => {
                     title={label}
                     className={`group flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
                       active
-                        ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-600 rounded-l-none'
-                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                        ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400 font-bold border-l-4 border-primary-600 rounded-l-none'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <span className="relative inline-flex">
-                      {active ? <ActiveIcon size={20} className="text-primary-600" /> : <Icon size={20} className="text-slate-500" />}
+                      {active ? <ActiveIcon size={20} className="text-primary-600 dark:text-primary-400" /> : <Icon size={20} className="text-slate-500 dark:text-slate-400" />}
                       {isFriendLink && incomingRequestCount > 0 && (
                         <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white">
                           {incomingRequestCount > 99 ? '99+' : incomingRequestCount}
@@ -284,148 +198,172 @@ const Navbar = () => {
 
           {/* Section 2: LỐI TẮT CỦA BẠN */}
           <div>
-            <p className="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-              Lối tắt của bạn
+            <p className="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+              {t('nav.yourShortcuts')}
             </p>
             <div className="space-y-1">
               <Link
                 to={profilePath}
                 className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
                   isProfileActive
-                    ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-600 rounded-l-none'
-                    : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400 font-bold border-l-4 border-primary-600 rounded-l-none'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Avatar src={user?.avatar} name={displayName} size="xs" />
-                <span className="truncate">{displayName || text.unknownUser}</span>
+                <span className="truncate">{displayName || t('nav.unknownUser')}</span>
               </Link>
 
               <button
                 type="button"
                 onClick={() => setIsChatOpen((prev) => !prev)}
-                className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+                className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer"
               >
                 <span className="relative inline-flex">
-                  <AiOutlineMessage size={20} className="text-slate-500" />
+                  <AiOutlineMessage size={20} className="text-slate-500 dark:text-slate-400" />
                   {unreadMessageCount > 0 && (
                     <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
                       {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
                     </span>
                   )}
                 </span>
-                <span>{text.messages}</span>
+                <span>{t('nav.messages')}</span>
               </button>
             </div>
           </div>
 
           {/* Section 3: CÀI ĐẶT & TÀI KHOẢN */}
-          <div className="mt-auto pt-3 border-t border-slate-200 space-y-1">
-            <p className="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-              Tài khoản & Cài đặt
+          <div className="mt-auto pt-3 border-t border-slate-200 dark:border-slate-800 space-y-1">
+            <p className="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+              {t('nav.accountAndSettings')}
             </p>
             <Link
               to="/settings"
               className={`flex items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
                 isActive('/settings')
-                  ? 'bg-primary-50 text-primary-700 font-bold border-l-4 border-primary-600 rounded-l-none'
-                  : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400 font-bold border-l-4 border-primary-600 rounded-l-none'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <AiOutlineSetting size={20} className={isActive('/settings') ? 'text-primary-600' : 'text-slate-500'} />
-              <span>{text.settingsPrivacy}</span>
+              <AiOutlineSetting size={20} className={isActive('/settings') ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-400'} />
+              <span>{t('nav.settingsPrivacy')}</span>
             </Link>
 
             <button
               type="button"
               onClick={handleLogout}
-              title={text.logout}
-              className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+              title={t('nav.logout')}
+              className="flex w-full items-center gap-3.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
             >
               <AiOutlineLogout size={20} />
-              <span>{text.logout}</span>
+              <span>{t('nav.logout')}</span>
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Seamless Mobile Top Header (Rendered ONLY on Home Page '/') */}
-      {location.pathname === '/' && (
-        <nav className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md px-4 border-b border-slate-100/70">
-          <div className="flex items-center justify-between h-14">
-            {/* Solid Brand Logo Zivo */}
-            <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
-              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-primary-50 ring-2 ring-primary-100">
-                <img src="/Zlogo.png" alt="Zivo" className="w-full h-full object-cover" />
-              </div>
-              <span className="text-2xl font-black tracking-tight text-slate-900 font-sans">
-                Zivo
-              </span>
-            </Link>
-
-            {/* Right Utilities (Notifications & Chat with real unread count) */}
-            <div className="flex items-center gap-3">
-              {/* Notifications Link (Bell Icon) */}
-              <Link
-                to="/notifications"
-                aria-label="Thông báo"
-                className="relative p-1 text-slate-900 hover:scale-105 transition cursor-pointer"
-              >
-                <AiOutlineBell size={26} strokeWidth={1.5} />
-              </Link>
-
-              {/* Messenger / Chat Button with Real Unread Count */}
-              <button
-                type="button"
-                className="relative p-1 text-slate-900 hover:scale-105 cursor-pointer transition"
-                aria-label={text.messages}
-                onClick={() => setIsChatOpen(true)}
-              >
-                <AiOutlineMessage size={26} strokeWidth={1.5} />
-                {unreadMessageCount > 0 && (
-                  <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
-                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                  </span>
-                )}
-              </button>
-            </div>
+      {/* Seamless Mobile Top Header (Rendered ON MOBILE) */}
+      <nav className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200/80 dark:border-slate-800 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between transition-colors">
+        {/* Solid Brand Logo Zivo */}
+        <Link to="/" className="flex items-center gap-2 shrink-0 group">
+          <div className="h-9 w-9 overflow-hidden rounded-2xl bg-primary-600 p-0.5 shadow-md shadow-primary-500/20 transition group-hover:scale-105">
+            <img src="/Zlogo.png" alt="Zivo" className="h-full w-full object-cover rounded-[14px]" />
           </div>
-        </nav>
-      )}
+          <span className="text-xl font-black tracking-tight text-primary-600">
+            Zivo
+          </span>
+        </Link>
+
+        {/* Right Utilities (Search, Notifications, Chat, and Menu Avatar) */}
+        <div className="flex items-center gap-1.5">
+          {/* Search Button */}
+          <Link
+            to="/search"
+            aria-label="Tìm kiếm"
+            className="relative p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition cursor-pointer"
+          >
+            <AiOutlineSearch size={21} />
+          </Link>
+
+          {/* Notifications Button */}
+          <button
+            type="button"
+            aria-label="Thông báo"
+            onClick={() => setIsNotificationOpen(true)}
+            className="relative p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition cursor-pointer"
+          >
+            <AiOutlineBell size={21} />
+            {unreadCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Messenger / Chat Button with Real Unread Count */}
+          <button
+            type="button"
+            className="relative p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition cursor-pointer"
+            aria-label={t('nav.messages')}
+            onClick={() => setIsChatOpen(true)}
+          >
+            <AiOutlineMessage size={21} />
+            {unreadMessageCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm">
+                {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+              </span>
+            )}
+          </button>
+
+          {/* Mobile Menu / Settings Drawer Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            aria-label={t('nav.menu')}
+            className="p-1 ml-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+          >
+            <Avatar src={user?.avatar} name={displayName} size="xs" />
+          </button>
+        </div>
+      </nav>
 
       <ChatConversationsPanel isOpen={isChatOpen} onClose={closeChatPanel} />
       <NotificationsPanel isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
 
       {/* Floating Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-[0_14px_40px_-6px_rgba(0,0,0,0.18)] rounded-full h-15 px-4 flex items-center justify-between">
+      <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-[0_14px_40px_-6px_rgba(0,0,0,0.25)] rounded-full h-15 px-4 flex items-center justify-between transition-colors">
         {/* 1. Home Link */}
         <Link
           to="/"
-          title={text.home}
+          title={t('nav.home')}
           className="flex flex-col items-center justify-center w-11 h-11 rounded-full transition cursor-pointer"
         >
           {isActive('/') ? (
             <div className="flex flex-col items-center">
-              <AiFillHome size={26} className="text-slate-900" />
-              <span className="w-1 h-1 rounded-full bg-slate-900 mt-0.5" />
+              <AiFillHome size={26} className="text-primary-600 dark:text-primary-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary-600 dark:bg-primary-400 mt-0.5" />
             </div>
           ) : (
-            <AiOutlineHome size={26} className="text-slate-500 hover:text-slate-900 transition-colors" />
+            <AiOutlineHome size={26} className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" />
           )}
         </Link>
 
-        {/* 2. Search Link */}
+        {/* 2. Friends Link */}
         <Link
-          to="/search"
-          title="Tìm kiếm"
-          className="flex flex-col items-center justify-center w-11 h-11 rounded-full transition cursor-pointer"
+          to="/friends"
+          title={t('nav.friends')}
+          className="flex flex-col items-center justify-center w-11 h-11 rounded-full transition cursor-pointer relative"
         >
-          {isActive('/search') ? (
+          {isActive('/friends') ? (
             <div className="flex flex-col items-center">
-              <AiOutlineSearch size={26} className="text-slate-900 font-extrabold stroke-[2]" />
-              <span className="w-1 h-1 rounded-full bg-slate-900 mt-0.5" />
+              <FaUserFriends size={24} className="text-primary-600 dark:text-primary-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary-600 dark:bg-primary-400 mt-0.5" />
             </div>
           ) : (
-            <AiOutlineSearch size={26} className="text-slate-500 hover:text-slate-900 transition-colors" />
+            <FaUserFriends size={24} className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" />
+          )}
+          {incomingRequestCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
           )}
         </Link>
 
@@ -433,8 +371,8 @@ const Navbar = () => {
         <button
           type="button"
           onClick={() => setIsCreatePostOpen(true)}
-          title="Tạo bài viết mới"
-          className="relative flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-tr from-slate-900 to-indigo-950 text-white shadow-xl shadow-slate-900/30 -translate-y-3 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer ring-4 ring-white"
+          title={t('home.createPost')}
+          className="relative flex items-center justify-center w-12 h-12 rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-xl shadow-primary-600/30 -translate-y-3 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer ring-4 ring-white dark:ring-slate-900"
         >
           <FiPlus size={24} strokeWidth={3} />
         </button>
@@ -442,29 +380,30 @@ const Navbar = () => {
         {/* 4. Watch Link */}
         <Link
           to="/watch"
-          title={text.watch}
+          title={t('nav.watch')}
           className="flex flex-col items-center justify-center w-11 h-11 rounded-full transition cursor-pointer"
         >
           {isActive('/watch') ? (
             <div className="flex flex-col items-center">
-              <MdOndemandVideo size={26} className="text-slate-900" />
-              <span className="w-1 h-1 rounded-full bg-slate-900 mt-0.5" />
+              <MdOndemandVideo size={26} className="text-primary-600 dark:text-primary-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary-600 dark:bg-primary-400 mt-0.5" />
             </div>
           ) : (
-            <MdOutlineOndemandVideo size={26} className="text-slate-500 hover:text-slate-900 transition-colors" />
+            <MdOutlineOndemandVideo size={26} className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" />
           )}
         </Link>
 
-        {/* 5. User Profile Link */}
-        <Link
-          to={profilePath}
-          title="Trang cá nhân"
+        {/* 5. Mobile Menu Button (Opens Drawer with Settings, Profile, Groups, Dark Mode, etc.) */}
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen(true)}
+          title={t('nav.menu')}
           className="flex flex-col items-center justify-center w-11 h-11 rounded-full transition cursor-pointer"
         >
-          <div className={isProfileActive ? 'ring-2 ring-slate-900 ring-offset-1 rounded-full' : ''}>
+          <div className={isMobileMenuOpen || isActive('/settings') || isProfileActive ? 'ring-2 ring-primary-600 dark:ring-primary-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 rounded-full' : ''}>
             <Avatar src={user?.avatar} name={displayName} size="xs" />
           </div>
-        </Link>
+        </button>
       </nav>
 
       {/* Mobile Create Post Modal */}
@@ -477,13 +416,14 @@ const Navbar = () => {
         }}
       />
 
+      {/* Mobile Menu Drawer */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <div className="md:hidden fixed inset-0 z-[70]">
             <Motion.button
               type="button"
-              className="absolute inset-0 bg-black/35"
-              aria-label={text.close}
+              className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+              aria-label={t('nav.close')}
               onClick={closeMobileMenu}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -496,89 +436,192 @@ const Navbar = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32, mass: 0.9 }}
-              className="absolute right-0 top-0 h-full w-[66.6667vw] max-w-[430px] min-w-[260px] bg-gray-100 shadow-2xl border-l border-gray-200 flex flex-col"
+              className="absolute right-0 top-0 h-full w-[85vw] max-w-[380px] min-w-[280px] bg-slate-50 dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col transition-colors overflow-hidden"
             >
-              <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 bg-gray-100">
-                <h2 className="text-2xl font-bold text-gray-900">{text.menu}</h2>
-                <button type="button" className="p-2 rounded-full text-gray-700 hover:bg-gray-200" aria-label={text.close} onClick={closeMobileMenu}>
-                  <AiOutlineClose size={22} />
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+                <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{t('nav.menu')}</h2>
+                <button
+                  type="button"
+                  className="p-2 rounded-full text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                  aria-label={t('nav.close')}
+                  onClick={closeMobileMenu}
+                >
+                  <AiOutlineClose size={20} />
                 </button>
               </div>
 
-              <div className="p-3 border-b border-gray-200 bg-white">
-                <Link to={profilePath} onClick={closeMobileMenu} className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-gray-100">
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Profile Card */}
+                <Link
+                  to={profilePath}
+                  onClick={closeMobileMenu}
+                  className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-xs hover:shadow-md transition group"
+                >
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar src={user?.avatar} name={displayName} size="md" />
                     <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{displayName || text.unknownUser}</p>
-                      <p className="text-sm text-gray-500 truncate">{text.viewProfile}</p>
+                      <p className="font-bold text-slate-900 dark:text-white truncate">{displayName || t('nav.unknownUser')}</p>
+                      <p className="text-xs text-primary-600 dark:text-primary-400 font-medium truncate">{t('nav.viewProfile')}</p>
                     </div>
                   </div>
-                  <AiOutlineRight size={18} className="text-gray-400 shrink-0" />
+                  <AiOutlineRight size={16} className="text-slate-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition shrink-0" />
                 </Link>
-              </div>
 
-              <div className="flex-1 overflow-y-auto p-3 space-y-4">
-                <section className="bg-gray-100 rounded-xl border border-gray-200">
-                  <button
-                    type="button"
-                    className="w-full px-3 py-3 flex items-center justify-between text-left"
-                    onClick={() => setIsSettingsOpen((prev) => !prev)}
-                  >
-                    <span className="font-semibold text-gray-800 flex items-center gap-2">
-                      <AiOutlineSetting size={20} />
-                      {text.settingsPrivacy}
+                {/* Main Shortcuts Section */}
+                <div className="space-y-1.5">
+                  <p className="px-1 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+                    {t('nav.yourShortcuts')}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Settings & Privacy Shortcut */}
+                    <Link
+                      to="/settings"
+                      onClick={closeMobileMenu}
+                      className={`col-span-2 flex items-center justify-between p-3.5 rounded-2xl border transition shadow-xs ${
+                        isActive('/settings')
+                          ? 'bg-primary-50 dark:bg-primary-950/50 border-primary-300 dark:border-primary-800 text-primary-700 dark:text-primary-400'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 hover:border-primary-500'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400">
+                          <AiOutlineSetting size={20} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold leading-tight">{t('nav.settingsPrivacy')}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Tùy chỉnh giao diện, bảo mật</p>
+                        </div>
+                      </div>
+                      <AiOutlineRight size={16} className="text-slate-400 shrink-0" />
+                    </Link>
+
+                    {/* Friends Shortcut */}
+                    <Link
+                      to="/friends"
+                      onClick={closeMobileMenu}
+                      className="flex flex-col p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 hover:border-primary-500 transition shadow-xs"
+                    >
+                      <FaUserFriends size={22} className="text-blue-500 mb-2" />
+                      <span className="text-xs font-bold">{t('nav.friends')}</span>
+                    </Link>
+
+                    {/* Groups Shortcut */}
+                    <Link
+                      to="/groups"
+                      onClick={closeMobileMenu}
+                      className="flex flex-col p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 hover:border-primary-500 transition shadow-xs"
+                    >
+                      <HiOutlineUserGroup size={24} className="text-emerald-500 mb-2" />
+                      <span className="text-xs font-bold">{t('nav.groups')}</span>
+                    </Link>
+
+                    {/* Watch Shortcut */}
+                    <Link
+                      to="/watch"
+                      onClick={closeMobileMenu}
+                      className="flex flex-col p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 hover:border-primary-500 transition shadow-xs"
+                    >
+                      <MdOutlineOndemandVideo size={24} className="text-red-500 mb-2" />
+                      <span className="text-xs font-bold">{t('nav.watch')}</span>
+                    </Link>
+
+                    {/* Notifications Shortcut */}
+                    <Link
+                      to="/notifications"
+                      onClick={closeMobileMenu}
+                      className="flex flex-col p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 hover:border-primary-500 transition shadow-xs"
+                    >
+                      <AiOutlineBell size={24} className="text-amber-500 mb-2" />
+                      <span className="text-xs font-bold">{t('nav.notifications')}</span>
+                    </Link>
+
+                    {/* Admin Dashboard if applicable */}
+                    {canAccessAdminDashboard(role) && (
+                      <Link
+                        to="/admin"
+                        onClick={closeMobileMenu}
+                        className="col-span-2 flex items-center gap-3 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-300 font-bold text-xs"
+                      >
+                        <AiOutlineDashboard size={20} className="text-amber-600 dark:text-amber-400" />
+                        <span>{t('nav.admin')}</span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick Preferences Box */}
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-xs space-y-3.5">
+                  <p className="text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+                    Cài đặt nhanh
+                  </p>
+
+                  {/* Dark mode toggle */}
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                      <AiOutlineBulb size={18} className="text-primary-600 dark:text-primary-400" />
+                      {t('settings.darkMode')}
                     </span>
-                    <AiOutlineRight size={16} className={`text-gray-500 transition-transform ${isSettingsOpen ? 'rotate-90' : ''}`} />
-                  </button>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isDarkMode}
+                      onClick={() => setIsDarkMode((prev) => !prev)}
+                      className={`relative h-6 w-11 rounded-full transition-colors cursor-pointer ${
+                        isDarkMode ? 'bg-primary-600' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          isDarkMode ? 'translate-x-5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
 
-                  {isSettingsOpen && (
-                    <div className="px-3 pb-3 space-y-2">
-                      <div className="rounded-xl bg-white border border-gray-200 px-3 py-2.5 flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2 text-gray-800">
-                          <AiOutlineGlobal size={18} className="text-gray-500" />
-                          {text.language}
-                        </span>
-                        <select
-                          value={language}
-                          onChange={(event) => setLanguage(event.target.value)}
-                          className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700"
-                        >
-                          <option value="vi">vi</option>
-                          <option value="en">en</option>
-                        </select>
-                      </div>
-
-                      <div className="rounded-xl bg-white border border-gray-200 px-3 py-2.5 flex items-center justify-between gap-3">
-                        <span className="flex items-center gap-2 text-gray-800">
-                          <AiOutlineBulb size={18} className="text-gray-500" />
-                          {text.darkMode}
-                        </span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={isDarkMode}
-                          onClick={() => setIsDarkMode((prev) => !prev)}
-                          className={`relative h-6 w-11 rounded-full transition-colors ${isDarkMode ? 'bg-primary-600' : 'bg-gray-300'}`}
-                        >
-                          <span
-                            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                              isDarkMode ? 'translate-x-5' : 'translate-x-0.5'
-                            }`}
-                          />
-                        </button>
-                      </div>
+                  {/* Language switch buttons */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                    <span className="flex items-center gap-2.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                      <AiOutlineGlobal size={18} className="text-primary-600 dark:text-primary-400" />
+                      {t('settings.language')}
+                    </span>
+                    <div className="flex bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setLanguage('vi')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
+                          language === 'vi'
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                            : 'text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        🇻🇳 VI
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLanguage('en')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${
+                          language === 'en'
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                            : 'text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        🇬🇧 EN
+                      </button>
                     </div>
-                  )}
-                </section>
+                  </div>
+                </div>
 
+                {/* Logout Button */}
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full rounded-xl bg-white border border-red-200 px-3 py-3 flex items-center gap-2 text-red-600 font-medium hover:bg-red-50"
+                  className="w-full rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 p-3.5 flex items-center justify-center gap-2 text-red-600 dark:text-red-400 font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/50 transition cursor-pointer"
                 >
                   <AiOutlineLogout size={18} />
-                  {text.logout}
+                  {t('nav.logout')}
                 </button>
               </div>
             </Motion.aside>

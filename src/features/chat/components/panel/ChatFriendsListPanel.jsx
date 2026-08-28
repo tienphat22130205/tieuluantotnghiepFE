@@ -2,6 +2,7 @@ import { AiOutlineSearch, AiOutlineClose, AiOutlineExpand } from 'react-icons/ai
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Avatar } from '@/components/ui'
+import { usePreferences } from '@/context/PreferencesContext'
 import formatLastSeenText from '@/utils/formatLastSeenText'
 
 const formatMessageAge = (value) => {
@@ -10,13 +11,13 @@ const formatMessageAge = (value) => {
   if (!Number.isFinite(date.getTime())) return ''
 
   const diffMinutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000))
-  if (diffMinutes < 60) return `${diffMinutes} phút`
+  if (diffMinutes < 60) return `${diffMinutes}m`
 
   const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours < 24) return `${diffHours} giờ`
+  if (diffHours < 24) return `${diffHours}h`
 
   const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays} ngày`
+  return `${diffDays}d`
 }
 
 const ChatFriendsListPanel = ({
@@ -32,6 +33,7 @@ const ChatFriendsListPanel = ({
 }) => {
   const navigate = useNavigate()
   const { user } = useSelector((state) => state.auth)
+  const { t } = usePreferences()
 
   const handleExpand = () => {
     onClose?.()
@@ -40,46 +42,47 @@ const ChatFriendsListPanel = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[60] flex flex-col bg-white transition-transform duration-300 ease-out md:inset-y-0 md:left-auto md:right-0 md:h-screen md:w-[360px] md:border-l md:border-gray-200 md:shadow-2xl ${
+      className={`fixed inset-0 z-[60] flex flex-col bg-white dark:bg-slate-900 transition-transform duration-300 ease-out md:inset-y-0 md:left-auto md:right-0 md:h-screen md:w-[360px] md:border-l md:border-slate-200 dark:md:border-slate-800 md:shadow-2xl ${
         isOpen && !selectedConversation ? 'translate-x-0' : 'translate-x-full pointer-events-none'
       }`}
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <h3 className="text-base font-semibold text-gray-900">Đoạn chat</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('chat.title')}</h3>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={handleExpand}
-            title="Mở rộng trang chat"
-            className="hidden md:inline-flex p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            title={t('chat.expand')}
+            className="hidden md:inline-flex p-1.5 rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             <AiOutlineExpand size={16} />
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            title={t('nav.close')}
+            className="p-1.5 rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             <AiOutlineClose size={16} />
           </button>
         </div>
       </div>
 
-      <div className="px-3 py-2 border-b border-gray-100">
-        <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2">
-          <AiOutlineSearch size={16} className="text-gray-400" />
+      <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2">
+          <AiOutlineSearch size={16} className="text-slate-400 dark:text-slate-500" />
           <input
             value={searchKeyword}
             onChange={(e) => onChangeSearch(e.target.value)}
-            placeholder="Tìm kiếm"
-            className="w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+            placeholder={t('friends.searchPlaceholder')}
+            className="w-full text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 bg-transparent focus:outline-none"
           />
         </div>
       </div>
 
       {/* Horizontal Friends List */}
       {!isLoading && unfilteredSortedFriends.length > 0 && (
-        <div className="flex items-center gap-4 px-4 py-4 overflow-x-auto border-b border-gray-100 bg-white shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex items-center gap-4 px-4 py-4 overflow-x-auto border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {/* Create Story Placeholder */}
           <div className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group">
             <div className="relative">
@@ -88,16 +91,16 @@ const ChatFriendsListPanel = ({
                 name={user?.full_name}
                 size="lg"
                 online={false}
-                className="ring-2 ring-slate-100 group-hover:scale-105 transition"
+                className="ring-2 ring-slate-100 dark:ring-slate-800 group-hover:scale-105 transition"
               />
-              <div className="absolute bottom-0 right-0 bg-primary-600 border border-white rounded-full p-0.5 flex items-center justify-center text-white">
+              <div className="absolute bottom-0 right-0 bg-primary-600 border border-white dark:border-slate-900 rounded-full p-0.5 flex items-center justify-center text-white">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
               </div>
             </div>
-            <span className="text-xs text-slate-500 font-medium max-w-[64px] text-center truncate mt-0.5">
-              Tạo tin
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium max-w-[64px] text-center truncate mt-0.5">
+              {t('sidebar.createStory')}
             </span>
           </div>
 
