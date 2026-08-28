@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
   const [rememberMe, setRememberMe] = useState(false)
@@ -30,22 +31,31 @@ const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
         />
       </div>
 
-      {/* Toggle Switch */}
-      <div className="flex items-center space-x-3 pt-1">
-        <button
-          type="button"
-          onClick={() => setRememberMe(!rememberMe)}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            rememberMe ? 'bg-primary-600' : 'bg-slate-200'
-          }`}
-        >
-          <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-              rememberMe ? 'translate-x-5' : 'translate-x-0'
+      {/* Toggle Switch & Forgot Password */}
+      <div className="flex items-center justify-between pt-1">
+        <div className="flex items-center space-x-3">
+          <button
+            type="button"
+            onClick={() => setRememberMe(!rememberMe)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              rememberMe ? 'bg-primary-600' : 'bg-slate-200'
             }`}
-          />
-        </button>
-        <span className="text-sm font-medium text-slate-600">Ghi nhớ đăng nhập</span>
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                rememberMe ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          <span className="text-sm font-medium text-slate-600">Ghi nhớ đăng nhập</span>
+        </div>
+
+        <Link
+          to="/forgot-password"
+          className="text-xs font-bold text-primary-600 hover:text-primary-700 hover:underline transition"
+        >
+          Quên mật khẩu?
+        </Link>
       </div>
 
       <button

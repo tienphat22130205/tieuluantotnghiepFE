@@ -10,6 +10,7 @@ import {
 import { FaUserFriends } from 'react-icons/fa'
 import { Avatar } from '@/components/ui'
 import { useAuth } from '@/features/auth'
+import { usePreferences } from '@/context/PreferencesContext'
 import useNotifications from '@/features/notification/hooks/useNotifications'
 import { usePresenceStore } from '@/features/chat/store/usePresenceStore'
 import friendService from '@/features/user/services/friendService'
@@ -19,6 +20,7 @@ import { NotificationsPanel } from '@/features/notification'
 
 const TopHeader = ({ onOpenSettings }) => {
   const { user } = useAuth()
+  const { t } = usePreferences()
   const navigate = useNavigate()
   const location = useLocation()
   const { unreadCount } = useNotifications({ fetchList: false, fetchUnreadCount: true })
@@ -79,14 +81,14 @@ const TopHeader = ({ onOpenSettings }) => {
 
   return (
     <>
-      <header className="hidden md:flex fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 border-b border-slate-200/80 backdrop-blur-md px-3 md:px-5 items-center justify-between">
+      <header className="hidden md:flex fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200/80 dark:border-slate-800 backdrop-blur-md px-3 md:px-5 items-center justify-between transition-colors">
         {/* Left Section: Logo & Inline Search Bar */}
         <div className="flex items-center gap-3 md:gap-5 flex-1 max-w-xl">
           <Link to="/" className="flex items-center gap-2 shrink-0 group">
-            <div className="h-9 w-9 overflow-hidden rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-600 p-0.5 shadow-md shadow-primary-500/20 transition group-hover:scale-105">
+            <div className="h-9 w-9 overflow-hidden rounded-2xl bg-primary-600 p-0.5 shadow-md shadow-primary-500/20 transition group-hover:scale-105">
               <img src="/Zlogo.png" alt="Zivo" className="h-full w-full object-cover rounded-[14px]" />
             </div>
-            <span className="text-xl md:text-2xl font-black tracking-tight bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent drop-shadow-xs">
+            <span className="text-xl md:text-2xl font-black tracking-tight text-primary-600">
               Zivo
             </span>
           </Link>
@@ -97,10 +99,10 @@ const TopHeader = ({ onOpenSettings }) => {
               type="text"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="Tìm kiếm trên Zivo..."
-              className="w-full h-9 pl-9 pr-4 text-xs md:text-sm bg-slate-100/90 border border-transparent rounded-full text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
+              placeholder={t('searchPlaceholder')}
+              className="w-full h-9 pl-9 pr-4 text-xs md:text-sm bg-slate-100/90 dark:bg-slate-800 border border-transparent dark:border-slate-700 rounded-full text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
             />
-            <AiOutlineSearch size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <AiOutlineSearch size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" />
           </form>
         </div>
 
@@ -109,8 +111,8 @@ const TopHeader = ({ onOpenSettings }) => {
           {/* Friends Link Button */}
           <Link
             to="/friends"
-            title="Bạn bè"
-            className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition"
+            title={t('friends')}
+            className="relative p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition"
           >
             <FaUserFriends size={20} />
             {incomingRequestCount > 0 && (
@@ -124,8 +126,8 @@ const TopHeader = ({ onOpenSettings }) => {
           <button
             type="button"
             onClick={() => setIsChatOpen((prev) => !prev)}
-            title="Tin nhắn"
-            className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition"
+            title={t('messages')}
+            className="relative p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition"
           >
             <AiOutlineMessage size={21} />
             {unreadMessageCount > 0 && (
@@ -139,8 +141,8 @@ const TopHeader = ({ onOpenSettings }) => {
           <button
             type="button"
             onClick={() => setIsNotificationOpen((prev) => !prev)}
-            title="Thông báo"
-            className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition cursor-pointer"
+            title={t('notifications')}
+            className="relative p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition cursor-pointer"
           >
             <AiOutlineBell size={21} />
             {unreadCount > 0 && (
@@ -153,8 +155,8 @@ const TopHeader = ({ onOpenSettings }) => {
           {/* Settings Button */}
           <Link
             to="/settings"
-            title="Cài đặt & Quyền riêng tư"
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition"
+            title={t('settingsPrivacy')}
+            className="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition"
           >
             <AiOutlineSetting size={21} />
           </Link>
@@ -162,11 +164,11 @@ const TopHeader = ({ onOpenSettings }) => {
           {/* User Profile Badge (Avatar + Name) */}
           <Link
             to={profilePath}
-            title="Trang cá nhân"
-            className="ml-1 md:ml-2 flex items-center gap-2 py-1 px-2.5 rounded-full bg-slate-100/80 hover:bg-slate-200/80 border border-slate-200/60 transition group"
+            title={t('viewProfile')}
+            className="ml-1 md:ml-2 flex items-center gap-2 py-1 px-2.5 rounded-full bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700 transition group"
           >
             <Avatar src={user?.avatar} name={displayName} size="xs" />
-            <span className="text-xs md:text-sm font-semibold text-slate-800 group-hover:text-primary-600 max-w-[110px] truncate hidden md:inline">
+            <span className="text-xs md:text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-primary-600 max-w-[110px] truncate hidden md:inline">
               {displayName}
             </span>
           </Link>

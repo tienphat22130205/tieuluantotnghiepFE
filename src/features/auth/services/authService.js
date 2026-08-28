@@ -67,6 +67,23 @@ const authService = {
   // Cập nhật thông tin cá nhân
   updateProfile: (data) => api.put('/profile/me', data),
 
+  // Quên mật khẩu - gửi link reset về email
+  forgotPassword: async (email) => {
+    const response = await api.post('/auth/forgot-password', { email: email?.trim() })
+    return unwrapResponse(response)
+  },
+
+  // Đặt lại mật khẩu mới với token
+  resetPassword: async ({ token, email, newPassword, confirmPassword }) => {
+    const response = await api.post('/auth/reset-password', {
+      token,
+      email: email?.trim(),
+      newPassword,
+      confirmPassword,
+    })
+    return unwrapResponse(response)
+  },
+
   // Đổi mật khẩu
   changePassword: (data) => api.put('/auth/change-password', data),
 

@@ -10,6 +10,7 @@ import {
 } from 'react-icons/ai'
 import { toast } from 'react-toastify'
 import { Avatar } from '@/components/ui'
+import { usePreferences } from '@/context/PreferencesContext'
 import useNotifications from '../hooks/useNotifications'
 
 const formatTimeAgo = (isoString) => {
@@ -28,6 +29,7 @@ const formatTimeAgo = (isoString) => {
 }
 
 const NotificationsPanel = ({ isOpen, onClose }) => {
+  const { t } = usePreferences()
   const [filterTab, setFilterTab] = useState('all') // 'all' | 'following'
   const navigate = useNavigate()
   const {
@@ -78,17 +80,17 @@ const NotificationsPanel = ({ isOpen, onClose }) => {
 
       {/* Slide-over Panel from Right */}
       <aside
-        className={`fixed inset-y-0 right-0 z-[60] w-full sm:w-[420px] bg-white shadow-2xl border-l border-slate-200/80 flex flex-col transition-transform duration-300 ease-out select-none ${
+        className={`fixed inset-y-0 right-0 z-[60] w-full sm:w-[420px] bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200/80 dark:border-slate-800 flex flex-col transition-transform duration-300 ease-out select-none ${
           isOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'
         }`}
       >
         {/* Panel Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
           <div className="flex items-center gap-2">
-            <AiOutlineBell size={22} className="text-blue-600" />
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">Thông báo</h2>
+            <AiOutlineBell size={22} className="text-primary-600 dark:text-primary-400" />
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">{t('notifications.title')}</h2>
             {unreadCount > 0 && (
-              <span className="ml-1 px-2 py-0.5 text-xs font-bold bg-blue-100 text-blue-600 rounded-full">
+              <span className="ml-1 px-2 py-0.5 text-xs font-bold bg-primary-100 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 rounded-full">
                 {unreadCount}
               </span>
             )}
@@ -100,8 +102,8 @@ const NotificationsPanel = ({ isOpen, onClose }) => {
                 type="button"
                 onClick={markAllAsRead}
                 disabled={isUpdating}
-                title="Đánh dấu tất cả đã đọc"
-                className="p-1.5 rounded-full text-slate-500 hover:text-blue-600 hover:bg-slate-100 transition cursor-pointer"
+                title={t('notifications.markAllAsRead')}
+                className="p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <AiOutlineCheckCircle size={18} />
               </button>
@@ -109,8 +111,8 @@ const NotificationsPanel = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              title="Đóng"
-              className="p-1.5 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+              title={t('nav.close')}
+              className="p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <AiOutlineClose size={18} />
             </button>
@@ -118,29 +120,29 @@ const NotificationsPanel = ({ isOpen, onClose }) => {
         </div>
 
         {/* Filter Tabs & Quick Actions */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/60">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 transition-colors">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setFilterTab('all')}
               className={`rounded-full px-4 py-1.5 text-xs font-bold transition cursor-pointer ${
                 filterTab === 'all'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
               }`}
             >
-              Tất cả
+              {t('notifications.all')}
             </button>
             <button
               type="button"
               onClick={() => setFilterTab('following')}
               className={`rounded-full px-4 py-1.5 text-xs font-bold transition cursor-pointer ${
                 filterTab === 'following'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
               }`}
             >
-              Đang theo dõi
+              {t('notifications.following')}
             </button>
           </div>
 
@@ -149,15 +151,15 @@ const NotificationsPanel = ({ isOpen, onClose }) => {
               type="button"
               onClick={handleDeleteAllNotifications}
               disabled={isUpdating}
-              className="text-[11px] font-semibold text-red-600 hover:underline cursor-pointer"
+              className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
             >
-              Xóa tất cả
+              {t('notifications.deleteAll')}
             </button>
           )}
         </div>
 
         {/* Notification Items Scroll Area */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 divide-y divide-slate-100">
+        <div className="flex-1 overflow-y-auto px-4 py-2 divide-y divide-slate-100 dark:divide-slate-800">
           {isLoading && (
             <div className="py-16 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
               <AiOutlineLoading3Quarters size={18} className="animate-spin text-blue-600" />

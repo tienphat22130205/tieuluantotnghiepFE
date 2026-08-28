@@ -60,14 +60,13 @@ const PostCardHeader = ({ user, createdAt, visibility, location, canManage = fal
             </div>
           </div>
         ) : (
-          <div className={isOverlay ? 'ring-2 ring-white/40 rounded-full' : ''}>
-            <Avatar
-              src={user?.avatar}
-              name={displayName}
-              size="md"
-              to={profilePath}
-            />
-          </div>
+          <Avatar
+            src={user?.avatar}
+            name={displayName}
+            size="md"
+            to={profilePath}
+            className={isOverlay ? 'ring-2 ring-white/40' : ''}
+          />
         )}
         <div>
           {group ? (

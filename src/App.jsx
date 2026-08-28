@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { ToastContainer } from 'react-toastify'
 import { MotionConfig } from 'framer-motion'
 import 'react-toastify/dist/ReactToastify.css'
+import { PreferencesProvider } from '@/context/PreferencesContext'
 
 // Layouts – loaded eagerly (small, always needed)
 import MainLayout from '@/layouts/MainLayout'
@@ -28,6 +29,8 @@ const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'))
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'))
 const SupportRequestPage = lazy(() => import('@/features/auth/pages/SupportRequestPage'))
 const VerifyEmailPage = lazy(() => import('@/features/auth/pages/VerifyEmailPage'))
+const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'))
 
 // Post pages
 const HomePage = lazy(() => import('@/features/post/pages/HomePage'))
@@ -156,7 +159,8 @@ const App = () => {
         ease: 'easeOut',
       }}
     >
-      <BrowserRouter>
+      <PreferencesProvider>
+        <BrowserRouter>
         <ToastContainer
             position={isMobile ? "top-center" : "top-right"}
             autoClose={isMobile ? 2500 : 4000}
@@ -181,6 +185,8 @@ const App = () => {
           >
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/support-request" element={<SupportRequestPage />} />
           </Route>
 
@@ -264,7 +270,8 @@ const App = () => {
           </Suspense>
 
           <CallModal />
-      </BrowserRouter>
+        </BrowserRouter>
+      </PreferencesProvider>
     </MotionConfig>
   )
 }

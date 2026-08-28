@@ -77,6 +77,11 @@ const useUserSearchPage = () => {
   const [totalItems, setTotalItems] = useState(0)
   const [recentSearches, setRecentSearches] = useState([])
 
+  // AI Search states
+  const [aiOverview, setAiOverview] = useState('')
+  const [keyInsights, setKeyInsights] = useState([])
+  const [suggestedKeywords, setSuggestedKeywords] = useState([])
+
   const query = (searchParams.get('q') || '').trim()
   const page = Math.max(1, Number(searchParams.get('page') || 1) || 1)
   const tab = searchParams.get('tab') || 'users'
@@ -89,6 +94,9 @@ const useUserSearchPage = () => {
     if (query.length < 2) {
       setUsers([])
       setPosts([])
+      setAiOverview('')
+      setKeyInsights([])
+      setSuggestedKeywords([])
       setError('')
       setTotalPages(1)
       setTotalItems(0)
@@ -117,7 +125,7 @@ const useUserSearchPage = () => {
           setTotalPages(pagination.totalPages)
           setTotalItems(pagination.totalItems)
         } else {
-          const response = await postService.searchPosts(query, page, SEARCH_LIMIT)
+          const response = await postService.searchPosts(query, page, SEARCH_LIMIT, { ai: true })
           if (!isMounted) return
 
           const rawPosts = response?.data?.items || response?.items || []
@@ -128,6 +136,9 @@ const useUserSearchPage = () => {
           const pagination = normalizePagination(response, page, SEARCH_LIMIT, normalizedPosts.length)
 
           setPosts(normalizedPosts)
+          setAiOverview(response?.data?.aiOverview || response?.aiOverview || '')
+          setKeyInsights(response?.data?.keyInsights || response?.keyInsights || [])
+          setSuggestedKeywords(response?.data?.suggestedKeywords || response?.suggestedKeywords || [])
           setTotalPages(pagination.totalPages)
           setTotalItems(pagination.totalItems)
         }
@@ -141,6 +152,9 @@ const useUserSearchPage = () => {
         if (!isMounted) return
         setUsers([])
         setPosts([])
+        setAiOverview('')
+        setKeyInsights([])
+        setSuggestedKeywords([])
         setTotalPages(1)
         setTotalItems(0)
         setError(searchError?.message || (tab === 'users' ? 'Không thể tìm kiếm tài khoản' : 'Không thể tìm kiếm bài viết'))
@@ -190,6 +204,9 @@ const useUserSearchPage = () => {
     tab,
     users,
     posts,
+    aiOverview,
+    keyInsights,
+    suggestedKeywords,
     isLoading,
     error,
     totalPages,

@@ -11,6 +11,7 @@ import FriendsSection from '../components/friends/FriendsSection'
 import FriendRow from '../components/friends/FriendRow'
 import FriendRequestCard from '../components/friends/FriendRequestCard'
 import SuggestionCard from '../components/friends/SuggestionCard'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const normalizeUsersFromResponse = (response) => {
   const items = extractItems(response)
@@ -26,6 +27,7 @@ const normalizeUsersFromResponse = (response) => {
 }
 
 const FriendsPage = () => {
+  const { t } = usePreferences()
   const [activeMenu, setActiveMenu] = useState('home')
   const [friendSearchQuery, setFriendSearchQuery] = useState('')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -106,10 +108,10 @@ const FriendsPage = () => {
   const renderMenuContent = () => (
     <>
       <div className="flex items-center justify-between mb-4 px-1">
-        <h1 className="text-xl font-bold text-slate-900">Bạn bè</h1>
+        <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('friends.title')}</h1>
         <button
           type="button"
-          className="lg:hidden p-1.5 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
+          className="lg:hidden p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 transition-colors"
           onClick={() => setIsMenuOpen(false)}
         >
           <AiOutlineClose size={18} />
@@ -119,6 +121,7 @@ const FriendsPage = () => {
         {FRIEND_MENU_ITEMS.map((item) => {
           const Icon = item.icon
           const active = activeMenu === item.key
+          const itemLabel = t(`friends.${item.key}`) || item.label
 
           return (
             <button
@@ -130,13 +133,13 @@ const FriendsPage = () => {
               }}
               className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition ${
                 active
-                  ? 'bg-primary-50 text-primary-700 font-medium'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400 font-medium'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <span className="flex items-center gap-3">
                 <Icon size={18} />
-                <span className="text-sm font-semibold">{item.label}</span>
+                <span className="text-sm font-semibold">{itemLabel}</span>
               </span>
               <AiOutlineRight size={14} className={active ? 'text-primary-500' : 'text-slate-400'} />
             </button>
@@ -162,7 +165,7 @@ const FriendsPage = () => {
 
       {/* Mobile Drawer (Slides out from the right) */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-[280px] bg-white p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:hidden border-l border-slate-100 ${
+        className={`fixed top-0 right-0 z-50 h-full w-[280px] bg-white dark:bg-slate-900 p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:hidden border-l border-slate-100 dark:border-slate-800 ${
           isMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -171,14 +174,14 @@ const FriendsPage = () => {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:block rounded-2xl border border-slate-100 bg-white p-4 shadow-sm lg:sticky lg:top-20 lg:h-fit">
+        <aside className="hidden lg:block rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm lg:sticky lg:top-20 lg:h-fit transition-colors">
           {renderMenuContent()}
         </aside>
 
         <main className="space-y-6">
           {/* Mobile Header with Menu Button */}
-          <div className="flex items-center justify-between lg:hidden mb-1 bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm">
-            <h1 className="text-xl font-bold text-slate-900">Bạn bè</h1>
+          <div className="flex items-center justify-between lg:hidden mb-1 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('friends.title')}</h1>
             <Button
               variant="outline"
               size="sm"
@@ -191,7 +194,7 @@ const FriendsPage = () => {
           </div>
 
           {/* Global Friends Search input */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-2 transition-colors">
             <div className="relative flex-1">
               <AiOutlineSearch
                 size={18}
@@ -213,8 +216,8 @@ const FriendsPage = () => {
                     performUserSearch()
                   }
                 }}
-                placeholder="Tìm kiếm"
-                className="w-full rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
+                placeholder={t('friends.searchPlaceholder')}
+                className="w-full rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-9 pr-4 py-2 text-sm text-slate-800 dark:text-slate-200 outline-none transition placeholder:text-slate-400 focus:border-primary-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-primary-500/20"
               />
             </div>
             <Button
@@ -222,7 +225,7 @@ const FriendsPage = () => {
               disabled={isSearching || searchQuery.trim().length < 2}
               className="rounded-full px-5 py-2 font-semibold shrink-0"
             >
-              Tìm kiếm
+              {t('friends.searchBtn')}
             </Button>
           </div>
 
@@ -265,7 +268,7 @@ const FriendsPage = () => {
                   if (rel.type === 'friend') {
                     actionButton = (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-250">Bạn bè</span>
+                        <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-250">{t('friends.allFriends')}</span>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -273,7 +276,7 @@ const FriendsPage = () => {
                           onClick={() => handleUnfriend(userId)}
                           isLoading={actingFriendId === String(userId)}
                         >
-                          Hủy kết bạn
+                          {t('friends.unfriend')}
                         </Button>
                       </div>
                     )
@@ -286,7 +289,7 @@ const FriendsPage = () => {
                           onClick={() => handleRespondRequest(rel.requestId, 'accepted')}
                           isLoading={actingRequestId === rel.requestId}
                         >
-                          Chấp nhận
+                          {t('friends.accept')}
                         </Button>
                         <Button
                           variant="ghost"
@@ -295,7 +298,7 @@ const FriendsPage = () => {
                           onClick={() => handleRespondRequest(rel.requestId, 'declined')}
                           disabled={actingRequestId === rel.requestId}
                         >
-                          Từ chối
+                          {t('friends.decline')}
                         </Button>
                       </div>
                     )
@@ -310,7 +313,7 @@ const FriendsPage = () => {
                           onClick={() => handleCancelSentRequest(rel.requestId)}
                           isLoading={actingRequestId === rel.requestId}
                         >
-                          Hủy yêu cầu
+                          {t('friends.cancelRequest')}
                         </Button>
                       </div>
                     )
@@ -322,7 +325,7 @@ const FriendsPage = () => {
                         onClick={() => handleSendRequest(userId, user)}
                         isLoading={actingSuggestionId === String(userId)}
                       >
-                        Thêm bạn bè
+                        {t('friends.addFriend')}
                       </Button>
                     )
                   }
@@ -342,14 +345,14 @@ const FriendsPage = () => {
               {activeMenu === 'home' && (
                 <>
                   <FriendsSection
-                    title="Lời mời kết bạn"
-                    subtitle={FRIENDS_PAGE_TEXT.incomingCount(incomingRequests.length)}
-                    actionText={incomingRequests.length > 0 ? 'Xem tất cả' : ''}
+                    title={t('friends.requests')}
+                    subtitle={`${incomingRequests.length} ${t('friends.pendingRequestsCount')}`}
+                    actionText={incomingRequests.length > 0 ? t('friends.seeAll') : ''}
                     onActionClick={() => setActiveMenu('requests')}
                   >
                     {homeRequests.length === 0 ? (
-                      <p className="rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-500">
-                        {FRIENDS_PAGE_TEXT.noIncoming}
+                      <p className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 px-4 py-6 text-center text-sm text-slate-500">
+                        {t('friends.noRequests')}
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -367,14 +370,14 @@ const FriendsPage = () => {
                   </FriendsSection>
 
                   <FriendsSection
-                    title="Những người bạn có thể biết"
-                    subtitle={`Có ${suggestions.length} gợi ý cho bạn`}
-                    actionText={suggestions.length > 0 ? 'Xem tất cả' : ''}
+                    title={t('friends.peopleYouMayKnow')}
+                    subtitle={`${suggestions.length} ${t('friends.suggestionsCount')}`}
+                    actionText={suggestions.length > 0 ? t('friends.seeAll') : ''}
                     onActionClick={() => setActiveMenu('suggestions')}
                   >
                     {homeSuggestions.length === 0 ? (
-                      <p className="rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-500">
-                        Hiện chưa có gợi ý phù hợp.
+                      <p className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 px-4 py-6 text-center text-sm text-slate-500">
+                        {t('friends.noSuggestions')}
                       </p>
                     ) : (
                       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">

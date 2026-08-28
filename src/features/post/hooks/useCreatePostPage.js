@@ -689,8 +689,9 @@ const useCreatePostPage = ({ postId, isEditMode, onSuccess } = {}) => {
       } else {
         navigate('/')
       }
-    } catch {
-      toast.error(isEditMode ? 'Cap nhat bai viet that bai!' : 'Dang bai that bai! Vui long thu lai.')
+    } catch (err) {
+      const errorMessage = typeof err === 'string' ? err : (err?.message || (isEditMode ? 'Cập nhật bài viết thất bại!' : 'Đăng bài thất bại! Vui lòng thử lại.'))
+      toast.error(errorMessage, { autoClose: 4000 })
     } finally {
       setIsPosting(false)
     }

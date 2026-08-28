@@ -8,6 +8,7 @@ import {
 } from 'react-icons/ai'
 import { FiPhone, FiVideo } from 'react-icons/fi'
 import { Avatar } from '@/components/ui'
+import { usePreferences } from '@/context/PreferencesContext'
 import friendService from '@/features/user/services/friendService'
 import userService from '@/features/user/services/userService'
 import { extractItems } from '@/utils/friendship'
@@ -39,6 +40,7 @@ const RightSidebar = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const makeCall = useCallStore((state) => state.makeCall)
+  const { t } = usePreferences()
 
   const [friendRequests, setFriendRequests] = useState([])
   const [friends, setFriends] = useState([])
@@ -179,23 +181,23 @@ const RightSidebar = () => {
 
       {/* 2. Friend Requests (conditional) */}
       {friendRequests.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center justify-between">
-            <span>Lời mời kết bạn</span>
-            <span className="rounded-full bg-primary-50 px-2 py-0.5 text-xs text-primary-600 font-extrabold">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm transition-colors">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center justify-between">
+            <span>{t('sidebar.friendRequests')}</span>
+            <span className="rounded-full bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 text-xs text-primary-600 dark:text-primary-400 font-extrabold">
               {friendRequests.length}
             </span>
           </p>
           <div className="mt-3 space-y-2.5">
             {friendRequests.map((req) => (
-              <div key={req._id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 p-2 border border-slate-100">
+              <div key={req._id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-2 border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2 min-w-0">
                   <Avatar src={req.user.avatar} name={req.user.full_name} size="sm" to={`/profile/${req.user._id}`} />
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-slate-900">
+                    <p className="truncate text-xs font-bold text-slate-900 dark:text-white">
                       {req.user.full_name}
                     </p>
-                    <p className="truncate text-[10px] text-slate-400">
+                    <p className="truncate text-[10px] text-slate-400 dark:text-slate-500">
                       @{req.user.username || 'user'}
                     </p>
                   </div>
@@ -206,7 +208,7 @@ const RightSidebar = () => {
                     onClick={() => handleRespondRequest(req._id, 'accepted')}
                     disabled={actingRequestId === req._id}
                     className="rounded-full bg-primary-600 p-1.5 text-white hover:bg-primary-700 disabled:opacity-50 transition cursor-pointer"
-                    title="Chấp nhận"
+                    title={t('sidebar.accept')}
                   >
                     <AiOutlineCheck size={12} />
                   </button>
@@ -214,8 +216,8 @@ const RightSidebar = () => {
                     type="button"
                     onClick={() => handleRespondRequest(req._id, 'declined')}
                     disabled={actingRequestId === req._id}
-                    className="rounded-full bg-slate-200 p-1.5 text-slate-700 hover:bg-slate-300 disabled:opacity-50 transition cursor-pointer"
-                    title="Từ chối"
+                    className="rounded-full bg-slate-200 dark:bg-slate-700 p-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50 transition cursor-pointer"
+                    title={t('sidebar.decline')}
                   >
                     <AiOutlineClose size={12} />
                   </button>
@@ -227,39 +229,39 @@ const RightSidebar = () => {
       )}
 
       {/* 3. Grouped Chat Contacts List */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm transition-colors">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-            Trò chuyện / Liên hệ
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+            {t('sidebar.contacts')}
           </h3>
-          <span className="text-[11px] font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
-            {onlineFriends.length} Trực tuyến
+          <span className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded-full">
+            {onlineFriends.length} {t('sidebar.onlineCount')}
           </span>
         </div>
 
         {isLoadingFriends && friends.length === 0 ? (
-          <div className="py-4 text-center text-xs text-slate-400">
+          <div className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">
             Đang tải danh sách...
           </div>
         ) : friends.length === 0 ? (
-          <div className="rounded-xl bg-slate-50 p-3 text-center text-xs text-slate-500">
-            <p className="font-medium">Chưa có bạn bè</p>
-            <p className="mt-1 text-[10px] text-slate-400">Hãy kết nối thêm bạn bè để trò chuyện!</p>
+          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3 text-center text-xs text-slate-500 dark:text-slate-400">
+            <p className="font-medium">{t('sidebar.noFriends')}</p>
+            <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">{t('sidebar.noFriendsSub')}</p>
           </div>
         ) : (
           <div className="max-h-[360px] overflow-y-auto pr-1 space-y-4 custom-scrollbar">
             {/* ONLINE SECTION */}
             {onlineFriends.length > 0 && (
               <div>
-                <p className="text-[10px] font-extrabold text-emerald-600 tracking-wider uppercase mb-1.5 flex items-center gap-1.5">
+                <p className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase mb-1.5 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Đang hoạt động ({onlineFriends.length})
+                  {t('sidebar.activeNow')} ({onlineFriends.length})
                 </p>
                 <div className="space-y-1">
                   {onlineFriends.map((friend) => (
                     <div
                       key={friend._id}
-                      className="flex items-center justify-between gap-2 rounded-xl p-2 transition hover:bg-slate-100 group"
+                      className="flex items-center justify-between gap-2 rounded-xl p-2 transition hover:bg-slate-100 dark:hover:bg-slate-800 group"
                     >
                       <button
                         type="button"
@@ -272,7 +274,7 @@ const RightSidebar = () => {
                           size="sm"
                           online={true}
                         />
-                        <span className="truncate text-xs font-semibold text-slate-800 group-hover:text-primary-600 transition">
+                        <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition">
                           {friend.full_name}
                         </span>
                       </button>
@@ -283,7 +285,7 @@ const RightSidebar = () => {
                           type="button"
                           onClick={() => makeCall(friend._id, false)}
                           title="Gọi thoại"
-                          className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-white rounded-full shadow-xs transition cursor-pointer"
+                          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-white dark:hover:bg-slate-700 rounded-full shadow-xs transition cursor-pointer"
                         >
                           <FiPhone size={14} />
                         </button>
@@ -291,7 +293,7 @@ const RightSidebar = () => {
                           type="button"
                           onClick={() => makeCall(friend._id, true)}
                           title="Gọi Video"
-                          className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-white rounded-full shadow-xs transition cursor-pointer"
+                          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-white dark:hover:bg-slate-700 rounded-full shadow-xs transition cursor-pointer"
                         >
                           <FiVideo size={14} />
                         </button>
@@ -305,15 +307,15 @@ const RightSidebar = () => {
             {/* OFFLINE SECTION */}
             {offlineFriends.length > 0 && (
               <div>
-                <p className="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase mb-1.5 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-slate-300" />
-                  Ngoại tuyến ({offlineFriends.length})
+                <p className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider uppercase mb-1.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                  {t('sidebar.offline')} ({offlineFriends.length})
                 </p>
                 <div className="space-y-1">
                   {offlineFriends.map((friend) => (
                     <div
                       key={friend._id}
-                      className="flex items-center justify-between gap-2 rounded-xl p-2 transition hover:bg-slate-100 group"
+                      className="flex items-center justify-between gap-2 rounded-xl p-2 transition hover:bg-slate-100 dark:hover:bg-slate-800 group"
                     >
                       <button
                         type="button"
@@ -322,12 +324,12 @@ const RightSidebar = () => {
                       >
                         <Avatar
                           src={friend.avatar}
-                          name={friend.full_name || 'Người dùng'}
+                          name={friend.full_name}
                           size="sm"
                           online={false}
                         />
-                        <span className="truncate text-xs font-semibold text-slate-800 group-hover:text-primary-600 transition">
-                          {friend.full_name || 'Người dùng'}
+                        <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition">
+                          {friend.full_name}
                         </span>
                       </button>
 
@@ -337,7 +339,7 @@ const RightSidebar = () => {
                           type="button"
                           onClick={() => makeCall(friend._id, false)}
                           title="Gọi thoại"
-                          className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-white rounded-full shadow-xs transition cursor-pointer"
+                          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-white dark:hover:bg-slate-700 rounded-full shadow-xs transition cursor-pointer"
                         >
                           <FiPhone size={14} />
                         </button>
@@ -345,7 +347,7 @@ const RightSidebar = () => {
                           type="button"
                           onClick={() => makeCall(friend._id, true)}
                           title="Gọi Video"
-                          className="p-1.5 text-slate-500 hover:text-primary-600 hover:bg-white rounded-full shadow-xs transition cursor-pointer"
+                          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-white dark:hover:bg-slate-700 rounded-full shadow-xs transition cursor-pointer"
                         >
                           <FiVideo size={14} />
                         </button>
