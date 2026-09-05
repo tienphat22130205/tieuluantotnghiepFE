@@ -273,7 +273,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostSuccess }) => {
 
               {/* User row + visibility */}
               <div className="px-4 pt-4 flex items-center gap-3">
-                <Avatar src={user?.avatar} name={displayName} size="md" to={`/profile/${user?.id || user?._id}`} />
+                <Avatar src={user?.avatar} name={displayName} size="md" to={`/profile/${user?.username ? String(user.username).replace(/^@/, '') : (user?.id || user?._id)}`} />
                 <div className="flex flex-col gap-1">
                   <span className="font-bold text-slate-900 text-sm leading-none">{displayName}</span>
                   <div className="relative">

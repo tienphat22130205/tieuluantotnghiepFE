@@ -166,6 +166,7 @@ const listAdminUsers = async ({ page = 1, limit = 20, status = 'all', q = '' } =
 
   return {
     users,
+    stats: response?.data?.stats || response?.stats || null,
     pagination: normalizePagination(response, page, limit),
   }
 }

@@ -59,7 +59,8 @@ const resolveNotificationAction = (item, notificationId) => {
   }
 
   const type = String(item?.type || '').toLowerCase()
-  const actorId = item?.actor?._id || item?.actor?.id || item?.fromUser?._id || item?.fromUser?.id || item?.sender?._id || item?.sender?.id || item?.actorId || null
+  const actor = item?.actor || item?.fromUser || item?.sender || item?.user || null
+  const actorIdentifier = actor?.username ? String(actor.username).replace(/^@/, '') : (actor?._id || actor?.id || item?.actorId || null)
   const postId = resolveNotificationPostId(item, notificationId)
 
   if (postId) {
@@ -70,8 +71,8 @@ const resolveNotificationAction = (item, notificationId) => {
     return { label: 'Xem bạn bè', path: '/friends' }
   }
 
-  if (actorId) {
-    return { label: 'Xem hồ sơ', path: `/profile/${actorId}` }
+  if (actorIdentifier) {
+    return { label: 'Xem hồ sơ', path: `/profile/${actorIdentifier}` }
   }
 
   return { label: 'Xem chi tiết', path: '/notifications' }

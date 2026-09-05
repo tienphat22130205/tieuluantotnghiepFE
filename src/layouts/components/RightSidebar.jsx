@@ -192,7 +192,12 @@ const RightSidebar = () => {
             {friendRequests.map((req) => (
               <div key={req._id} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-2 border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Avatar src={req.user.avatar} name={req.user.full_name} size="sm" to={`/profile/${req.user._id}`} />
+                  <Avatar
+                    src={req.user.avatar}
+                    name={req.user.full_name}
+                    size="sm"
+                    to={`/profile/${req.user.username || req.user._id}`}
+                  />
                   <div className="min-w-0">
                     <p className="truncate text-xs font-bold text-slate-900 dark:text-white">
                       {req.user.full_name}

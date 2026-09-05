@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Avatar, Button, ConfirmModal } from '@/components/ui'
 import { AiOutlineSend } from 'react-icons/ai'
 import { timeAgo } from '@/utils/formatDate'
+import { getProfilePath } from '@/utils/profileData'
 
 /**
  * CommentSection – Phần bình luận (danh sách + form nhập).
@@ -54,9 +56,12 @@ const CommentSection = ({
 
       const nestedRaw = raw.user && typeof raw.user === 'object' ? raw.user : null
       const name = resolveName(raw) || resolveName(nestedRaw)
+      const username = raw.username || nestedRaw?.username || (matchesCurrent ? currentUser?.username : null)
+
       if (!name || name === 'user' || name === 'Người dùng') {
          if (matchesCurrent && currentUser) return { 
             id, 
+            username: currentUser.username || username || null,
             name: resolveName(currentUser) || 'Người dùng',
             avatar: currentUser.avatar || raw.avatar || nestedRaw?.avatar 
          }
@@ -64,6 +69,7 @@ const CommentSection = ({
       
       return {
         id,
+        username: username || null,
         name: name || 'Người dùng',
         avatar: raw.avatar || raw.profile_pic || nestedRaw?.avatar || nestedRaw?.profile_pic || null
       }
@@ -73,15 +79,18 @@ const CommentSection = ({
     if (strId && currentUserId && currentUser && String(strId) === String(currentUserId)) {
       return {
         id: strId,
+        username: currentUser.username || null,
         name: resolveName(currentUser) || 'Bạn',
         avatar: currentUser.avatar
       }
     }
 
     const commentLevelName = c.full_name || c.fullName || c.username || c.userName || c.authorName
+    const commentLevelUsername = c.username || c.userName || null
     if (typeof commentLevelName === 'string' && commentLevelName.trim()) {
       return {
         id: strId || c._id || 'unknown',
+        username: commentLevelUsername || null,
         name: commentLevelName.trim(),
         avatar: c.avatar || c.user_avatar || c.authorAvatar || null,
       }
@@ -89,6 +98,7 @@ const CommentSection = ({
     
     return {
       id: strId || c._id || 'unknown',
+      username: null,
       name: 'Người dùng',
       avatar: null
     }
@@ -141,13 +151,17 @@ const CommentSection = ({
                     src={commentUser.avatar}
                     name={commentUser.name}
                     size="sm"
+                    to={getProfilePath(commentUser)}
                   />
                   <div className="flex-1 bg-gray-50 rounded-2xl px-3 py-2.5">
                     <div className="flex items-center gap-2 justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-900">
+                        <Link
+                          to={getProfilePath(commentUser)}
+                          className="text-sm font-semibold text-gray-900 hover:underline"
+                        >
                           {commentUser.name}
-                        </span>
+                        </Link>
                         <span className="text-xs text-gray-400">
                           {timeAgo(comment.created_at || comment.createdAt)}
                         </span>
@@ -198,13 +212,17 @@ const CommentSection = ({
                         src={replyUser.avatar}
                         name={replyUser.name}
                         size="xs"
+                        to={getProfilePath(replyUser)}
                       />
                       <div className="flex-1 bg-slate-50/70 border border-slate-100/50 rounded-2xl px-3 py-2">
                         <div className="flex items-center gap-2 justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-gray-900">
+                            <Link
+                              to={getProfilePath(replyUser)}
+                              className="text-sm font-semibold text-gray-900 hover:underline"
+                            >
                               {replyUser.name}
-                            </span>
+                            </Link>
                             <span className="text-xs text-gray-400">
                               {timeAgo(reply.created_at || reply.createdAt)}
                             </span>

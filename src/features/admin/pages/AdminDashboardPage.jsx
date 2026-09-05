@@ -21,10 +21,12 @@ import { COLORS } from '@/theme/colors'
 import adminUsersService from '../services/adminUsersService'
 import adminModerationService from '../services/adminModerationService'
 import { isAdminUser, isModeratorUser } from '@/utils/auth'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const AdminDashboardPage = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { t } = usePreferences()
   const { user, role } = useSelector((state) => state.auth)
   const isAdmin = isAdminUser(user, role)
   const isModerator = isModeratorUser(user, role)
@@ -217,46 +219,20 @@ const AdminDashboardPage = () => {
       setPostsError('')
 
       try {
-        if (isAdmin) {
-          try {
-            const response = await adminModerationService.listManagedPosts({
-              page: postsPagination.page,
-              limit: postsPagination.limit,
-              sortBy: postsFilters.sortBy,
-              search: postsFilters.search,
-              filterDeleted: postsFilters.filterDeleted,
-            })
+        const response = await adminModerationService.listManagedPosts({
+          page: postsPagination.page,
+          limit: postsPagination.limit,
+          sortBy: postsFilters.sortBy,
+          search: postsFilters.search,
+          filterDeleted: postsFilters.filterDeleted,
+        })
 
-            if (!isMounted) return
-            setPosts(response.posts)
-            setPostsPagination((prev) => ({
-              ...prev,
-              ...response.pagination,
-            }))
-          } catch (managedPostsError) {
-            console.warn('Managed posts endpoint failed, falling back to recent posts:', managedPostsError)
-            // Fallback to recent posts if managed posts endpoint fails
-            const recentPosts = await adminModerationService.listRecentPosts()
-            if (!isMounted) return
-            setPosts(recentPosts)
-            setPostsPagination((prev) => ({
-              ...prev,
-              page: 1,
-              totalItems: recentPosts.length,
-              totalPages: 1,
-            }))
-          }
-        } else {
-          const recentPosts = await adminModerationService.listRecentPosts()
-          if (!isMounted) return
-          setPosts(recentPosts)
-          setPostsPagination((prev) => ({
-            ...prev,
-            page: 1,
-            totalItems: recentPosts.length,
-            totalPages: 1,
-          }))
-        }
+        if (!isMounted) return
+        setPosts(response.posts)
+        setPostsPagination((prev) => ({
+          ...prev,
+          ...response.pagination,
+        }))
       } catch (error) {
         if (!isMounted) return
         setPosts([])
@@ -275,7 +251,6 @@ const AdminDashboardPage = () => {
     }
   }, [
     activeSection,
-    isAdmin,
     postsPagination.page,
     postsPagination.limit,
     postsFilters.sortBy,
@@ -293,52 +268,18 @@ const AdminDashboardPage = () => {
       setCommentsError('')
 
       try {
-        try {
-          const response = await adminModerationService.listManagedComments({
-            page: commentsPagination.page,
-            limit: commentsPagination.limit,
-            search: commentsFilters.search,
-          })
+        const response = await adminModerationService.listManagedComments({
+          page: commentsPagination.page,
+          limit: commentsPagination.limit,
+          search: commentsFilters.search,
+        })
 
-          if (!isMounted) return
-          setComments(response.comments)
-          setCommentsPagination((prev) => ({
-            ...prev,
-            ...response.pagination,
-          }))
-        } catch (managedError) {
-          console.warn('Managed comments endpoint failed, attempting fallback for moderator:', managedError)
-          if (isModerator) {
-            try {
-              if (!isMounted) return
-              // Try a fallback endpoint (listRecentComments) if available
-              if (typeof adminModerationService.listRecentComments === 'function') {
-                const recent = await adminModerationService.listRecentComments({
-                  page: commentsPagination.page,
-                  limit: commentsPagination.limit,
-                  search: commentsFilters.search,
-                })
-                const items = Array.isArray(recent) ? recent : recent.comments || []
-                const pagination = Array.isArray(recent)
-                  ? { page: 1, totalItems: items.length, totalPages: 1 }
-                  : recent.pagination || { page: 1, totalItems: items.length, totalPages: 1 }
-                setComments(items)
-                setCommentsPagination((prev) => ({ ...prev, ...pagination }))
-              } else {
-                // No fallback available — show empty with message
-                setComments([])
-                setCommentsError('Không có dữ liệu bình luận khả dụng.')
-              }
-            } catch (fallbackErr) {
-              console.warn('Fallback recent comments failed:', fallbackErr)
-              if (!isMounted) return
-              setComments([])
-              setCommentsError('Không thể tải bình luận cho moderator.')
-            }
-          } else {
-            throw managedError
-          }
-        }
+        if (!isMounted) return
+        setComments(response.comments)
+        setCommentsPagination((prev) => ({
+          ...prev,
+          ...response.pagination,
+        }))
       } catch (error) {
         if (!isMounted) return
         setComments([])
@@ -358,7 +299,7 @@ const AdminDashboardPage = () => {
   }, [activeSection, commentsPagination.limit, commentsPagination.page, commentsFilters.search])
 
   useEffect(() => {
-    if (!isAdmin) return
+    if (!isAdmin && !isModerator) return
 
     let isMounted = true
 
@@ -376,27 +317,27 @@ const AdminDashboardPage = () => {
           limit: trendingFilters.limit,
         }
 
-        const [overviewData, usersResponse, pendingRequests, approvedRequests, rejectedRequests, statsData, trendingData] = await Promise.all([
+        const [overviewData, usersResponse, pendingRequests, approvedRequests, rejectedRequests, trendingData] = await Promise.all([
           adminModerationService.getPostStatistics(statsQuery),
-          adminUsersService.listAdminUsers({ page: 1, limit: 200, status: 'all', q: '' }),
-          adminUsersService.listAdminUnbanRequests({ status: 'pending', page: 1, limit: 20 }),
-          adminUsersService.listAdminUnbanRequests({ status: 'approved', page: 1, limit: 20 }),
-          adminUsersService.listAdminUnbanRequests({ status: 'rejected', page: 1, limit: 20 }),
-          adminModerationService.getPostStatistics(statsQuery),
+          adminUsersService.listAdminUsers({ page: 1, limit: 1, status: 'all', q: '' }),
+          adminUsersService.listAdminUnbanRequests({ status: 'pending', page: 1, limit: 1 }),
+          adminUsersService.listAdminUnbanRequests({ status: 'approved', page: 1, limit: 1 }),
+          adminUsersService.listAdminUnbanRequests({ status: 'rejected', page: 1, limit: 1 }),
           adminModerationService.getTrendingPosts(trendingQuery),
         ])
 
         if (!isMounted) return
         setOverview(overviewData)
+        setStats(overviewData)
+        const userStatsData = usersResponse.stats || {}
         setUserStats({
-          totalUsers: usersResponse.users.length,
-          activeUsers: usersResponse.users.filter((item) => item.status === 'active').length,
-          lockedUsers: usersResponse.users.filter((item) => item.status === 'locked').length,
-          pendingUnbanRequests: pendingRequests.pagination?.totalItems ?? pendingRequests.requests.length,
-          approvedUnbanRequests: approvedRequests.pagination?.totalItems ?? approvedRequests.requests.length,
-          rejectedUnbanRequests: rejectedRequests.pagination?.totalItems ?? rejectedRequests.requests.length,
+          totalUsers: userStatsData.totalUsers ?? usersResponse.pagination?.totalItems ?? 0,
+          activeUsers: userStatsData.activeUsers ?? 0,
+          lockedUsers: userStatsData.bannedUsers ?? 0,
+          pendingUnbanRequests: pendingRequests.pagination?.totalItems ?? 0,
+          approvedUnbanRequests: approvedRequests.pagination?.totalItems ?? 0,
+          rejectedUnbanRequests: rejectedRequests.pagination?.totalItems ?? 0,
         })
-        setStats(statsData)
         setTrendingPosts(trendingData)
       } catch (error) {
         if (!isMounted) return
@@ -424,7 +365,7 @@ const AdminDashboardPage = () => {
     return () => {
       isMounted = false
     }
-  }, [isAdmin, statsFilters.timeRange, statsFilters.topLimit, trendingFilters.hoursBack, trendingFilters.limit])
+  }, [isAdmin, isModerator, statsFilters.timeRange, statsFilters.topLimit, trendingFilters.hoursBack, trendingFilters.limit])
 
   const handleSelectSection = (section) => {
     if (isSectionLockedForModerator(section)) return
@@ -861,7 +802,7 @@ const AdminDashboardPage = () => {
       isLoading={isStatsLoading}
       error={statsError}
       onRefresh={async () => {
-        if (!isAdmin) return
+        if (!isAdmin && !isModerator) return
         setIsStatsLoading(true)
         setStatsError('')
         try {
@@ -875,20 +816,22 @@ const AdminDashboardPage = () => {
           }
           const [overviewData, usersResponse, pendingRequests, approvedRequests, rejectedRequests, trendingData] = await Promise.all([
             adminModerationService.getPostStatistics(statsQuery),
-            adminUsersService.listAdminUsers({ page: 1, limit: 200, status: 'all', q: '' }),
-            adminUsersService.listAdminUnbanRequests({ status: 'pending', page: 1, limit: 20 }),
-            adminUsersService.listAdminUnbanRequests({ status: 'approved', page: 1, limit: 20 }),
-            adminUsersService.listAdminUnbanRequests({ status: 'rejected', page: 1, limit: 20 }),
+            adminUsersService.listAdminUsers({ page: 1, limit: 1, status: 'all', q: '' }),
+            adminUsersService.listAdminUnbanRequests({ status: 'pending', page: 1, limit: 1 }),
+            adminUsersService.listAdminUnbanRequests({ status: 'approved', page: 1, limit: 1 }),
+            adminUsersService.listAdminUnbanRequests({ status: 'rejected', page: 1, limit: 1 }),
             adminModerationService.getTrendingPosts(trendingQuery),
           ])
           setOverview(overviewData)
+          setStats(overviewData)
+          const userStatsData = usersResponse.stats || {}
           setUserStats({
-            totalUsers: usersResponse.users.length,
-            activeUsers: usersResponse.users.filter((item) => item.status === 'active').length,
-            lockedUsers: usersResponse.users.filter((item) => item.status === 'locked').length,
-            pendingUnbanRequests: pendingRequests.pagination?.totalItems ?? pendingRequests.requests.length,
-            approvedUnbanRequests: approvedRequests.pagination?.totalItems ?? approvedRequests.requests.length,
-            rejectedUnbanRequests: rejectedRequests.pagination?.totalItems ?? rejectedRequests.requests.length,
+            totalUsers: userStatsData.totalUsers ?? usersResponse.pagination?.totalItems ?? 0,
+            activeUsers: userStatsData.activeUsers ?? 0,
+            lockedUsers: userStatsData.bannedUsers ?? 0,
+            pendingUnbanRequests: pendingRequests.pagination?.totalItems ?? 0,
+            approvedUnbanRequests: approvedRequests.pagination?.totalItems ?? 0,
+            rejectedUnbanRequests: rejectedRequests.pagination?.totalItems ?? 0,
           })
           setTrendingPosts(trendingData)
         } catch (error) {
@@ -901,21 +844,13 @@ const AdminDashboardPage = () => {
   ) : activeSection === 'users' ? usersPanel : activePanel
   const showLockedOverlay = isSectionLockedForModerator(activeSection)
   const lockedMessageBySection = {
-    users: 'Vai trò kiểm duyệt viên không có quyền quản lý người dùng.',
-    unbanRequests: 'Vai trò kiểm duyệt viên không có quyền duyệt yêu cầu mở khóa.',
-    stats: 'Vai trò kiểm duyệt viên không có quyền xem thống kê tài liệu.',
+    users: t('admin.moderatorLockedUsers') || 'Vai trò kiểm duyệt viên không có quyền quản lý người dùng.',
+    unbanRequests: t('admin.moderatorLockedUnban') || 'Vai trò kiểm duyệt viên không có quyền duyệt yêu cầu mở khóa.',
+    stats: t('admin.moderatorLockedStats') || 'Vai trò kiểm duyệt viên không có quyền xem thống kê tài liệu.',
   }
 
   return (
-    <div
-      className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#ffffff_0%,_#f5f6fa_55%)] font-sans lg:grid"
-      style={{
-        gridTemplateColumns: isDesktopCollapsed ? '88px 1fr' : '300px 1fr',
-        transition: 'grid-template-columns 320ms ease',
-        color: COLORS.text,
-        backgroundColor: COLORS.background,
-      }}
-    >
+    <div className="min-h-screen font-sans flex flex-col lg:flex-row bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
       <AdminSidebar
         activeSection={activeSection}
         menuItems={adminMenuItems}
@@ -926,7 +861,7 @@ const AdminDashboardPage = () => {
         lockedSectionIds={isModerator ? moderatorLockedSectionIds : []}
       />
 
-      <main className="flex flex-col gap-4 p-3 sm:p-4 lg:p-5">
+      <main className="flex-1 min-w-0 flex flex-col gap-4 p-3 sm:p-4 lg:p-5 overflow-x-hidden">
         <AdminTopbar
           activeSection={activeSection}
           user={user}
@@ -934,13 +869,20 @@ const AdminDashboardPage = () => {
           onToggleMenu={handleToggleMenu}
           isDesktopCollapsed={isDesktopCollapsed}
         />
-        <AdminSummaryCards users={users} posts={posts} comments={comments} documents={[]} />
+        <AdminSummaryCards
+          users={users}
+          posts={posts}
+          comments={comments}
+          documents={[]}
+          userStats={userStats}
+          overview={overview}
+        />
         <div className="relative">
           {panelBySection}
           {showLockedOverlay && !isAdmin && activeSection !== 'dashboard' && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-black/55 px-5 text-center">
               <div className="rounded-xl border border-white/30 bg-slate-900/80 px-4 py-3 text-sm text-white shadow-lg backdrop-blur-sm">
-                <p className="font-semibold">🔒 Khu vực bị khóa</p>
+                <p className="font-semibold">🔒 {t('admin.moderatorLockedArea') || 'Khu vực bị khóa'}</p>
                 <p className="mt-1 text-slate-100">{lockedMessageBySection[activeSection]}</p>
               </div>
             </div>

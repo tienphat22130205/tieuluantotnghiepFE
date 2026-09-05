@@ -1,9 +1,13 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
-const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
-  const [rememberMe, setRememberMe] = useState(false)
-
+const LoginForm = ({
+  form,
+  onChange,
+  onSubmit,
+  isLoading,
+  rememberMe = true,
+  onToggleRememberMe,
+}) => {
   return (
     <form className="space-y-4" onSubmit={onSubmit}>
       <div>
@@ -33,12 +37,14 @@ const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
 
       {/* Toggle Switch & Forgot Password */}
       <div className="flex items-center justify-between pt-1">
-        <div className="flex items-center space-x-3">
+        <label className="flex items-center space-x-3 cursor-pointer select-none">
           <button
             type="button"
-            onClick={() => setRememberMe(!rememberMe)}
+            role="switch"
+            aria-checked={rememberMe}
+            onClick={onToggleRememberMe}
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              rememberMe ? 'bg-primary-600' : 'bg-slate-200'
+              rememberMe ? 'bg-primary-600' : 'bg-slate-300'
             }`}
           >
             <span
@@ -47,8 +53,10 @@ const LoginForm = ({ form, onChange, onSubmit, isLoading }) => {
               }`}
             />
           </button>
-          <span className="text-sm font-medium text-slate-600">Ghi nhớ đăng nhập</span>
-        </div>
+          <span className="text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">
+            Ghi nhớ đăng nhập
+          </span>
+        </label>
 
         <Link
           to="/forgot-password"

@@ -8,7 +8,11 @@ import {
   removeStoredAuthUser,
   setAuthToken,
   setStoredAuthUser,
+  setRememberedEmail,
+  removeRememberedEmail,
+  setRememberMeFlag,
 } from '@/utils/authStorage'
+import { setCookie, removeCookie } from '@/utils/cookieUtils'
 import { getRoleValue } from '@/utils/auth'
 
 migrateLegacyAuthStorage()
@@ -161,14 +165,31 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const data = await authService.login(credentials)
+      const { rememberMe = true, ...loginPayload } = credentials
+      const data = await authService.login(loginPayload)
 
       if (!data?.token || !data?.user) {
         return rejectWithValue('Đăng nhập thất bại: dữ liệu trả về không hợp lệ')
       }
 
-      setAuthToken(data.token)
-      setStoredAuthUser(data.user)
+      setAuthToken(data.token, rememberMe)
+      setStoredAuthUser(data.user, rememberMe)
+
+      const cookieDays = rememberMe ? 7 : null
+      const userId = data.user._id || data.user.id || ''
+      setCookie('token', data.token, cookieDays)
+      if (userId) {
+        setCookie('userId', userId, cookieDays)
+      }
+
+      if (rememberMe) {
+        setRememberedEmail(loginPayload.email)
+        setRememberMeFlag(true)
+      } else {
+        removeRememberedEmail()
+        setRememberMeFlag(false)
+      }
+
       return data
     } catch (err) {
       return rejectWithValue(getErrorMessage(err, 'Đăng nhập thất bại'))
@@ -179,16 +200,30 @@ export const login = createAsyncThunk(
 // Đăng nhập bằng Google (Firebase Auth)
 export const loginWithGoogle = createAsyncThunk(
   'auth/loginWithGoogle',
-  async (idToken, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
+      const idToken = typeof payload === 'string' ? payload : payload?.idToken
+      const rememberMe =
+        typeof payload === 'object' && payload?.rememberMe !== undefined
+          ? payload.rememberMe
+          : true
+
       const data = await authService.googleLogin(idToken)
 
       if (!data?.token || !data?.user) {
         return rejectWithValue('Đăng nhập Google thất bại: dữ liệu trả về không hợp lệ')
       }
 
-      setAuthToken(data.token)
-      setStoredAuthUser(data.user)
+      setAuthToken(data.token, rememberMe)
+      setStoredAuthUser(data.user, rememberMe)
+
+      const cookieDays = rememberMe ? 7 : null
+      const userId = data.user._id || data.user.id || ''
+      setCookie('token', data.token, cookieDays)
+      if (userId) {
+        setCookie('userId', userId, cookieDays)
+      }
+
       return data
     } catch (err) {
       return rejectWithValue(getErrorMessage(err, 'Đăng nhập Google thất bại'))
@@ -241,6 +276,11 @@ const authSlice = createSlice({
       state.error = null
       removeAuthToken()
       removeStoredAuthUser()
+      removeCookie('token')
+      removeCookie('userId')
+      removeCookie('firebase_token')
+      removeCookie('uid')
+      removeCookie('x-user-uid')
     },
     // Xóa lỗi
     clearError: (state) => {

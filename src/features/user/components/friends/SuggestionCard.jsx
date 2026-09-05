@@ -4,13 +4,13 @@ import { getDisplayName } from './friendDisplayName'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 
 const SuggestionCard = ({ user, actingSuggestionId, onAddFriend }) => {
-  const userId = user?._id || user?.id
+  const userIdentifier = user?.username ? String(user.username).replace(/^@/, '') : (user?._id || user?.id)
   const displayName = getDisplayName(user)
   const avatarUrl = resolveMediaUrl(user?.avatar)
 
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition duration-200 flex flex-col h-full">
-      <Link to={userId ? `/profile/${userId}` : '#'} className="block aspect-square w-full bg-slate-50 overflow-hidden relative group">
+      <Link to={userIdentifier ? `/profile/${userIdentifier}` : '#'} className="block aspect-square w-full bg-slate-50 overflow-hidden relative group">
         {avatarUrl ? (
           <img
             src={avatarUrl}
@@ -26,7 +26,7 @@ const SuggestionCard = ({ user, actingSuggestionId, onAddFriend }) => {
 
       <div className="p-3.5 flex flex-col flex-1 justify-between gap-3">
         <div>
-          <Link to={userId ? `/profile/${userId}` : '#'} className="hover:underline block min-w-0">
+          <Link to={userIdentifier ? `/profile/${userIdentifier}` : '#'} className="hover:underline block min-w-0">
             <p className="truncate text-base font-bold text-slate-900">{displayName}</p>
           </Link>
           {user?.username && <p className="truncate text-xs text-slate-500">@{user.username}</p>}

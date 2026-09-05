@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
-import { AiOutlineClose } from 'react-icons/ai'
+import { AiOutlineClose, AiOutlineExclamationCircle } from 'react-icons/ai'
 import { FcGoogle } from 'react-icons/fc'
 import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth'
 import { auth, googleProvider } from '@/services/firebase'
@@ -10,6 +10,7 @@ import { login, checkRole, loginWithGoogle } from '../store/authSlice'
 import LoginForm from '../components/LoginForm'
 import useLockNotice from '../hooks/useLockNotice'
 import { getRedirectPathByRole } from '@/utils/roleRedirect'
+import { getRememberedEmail, getRememberMeFlag } from '@/utils/authStorage'
 
 const LoginPage = () => {
   const dispatch = useDispatch()
@@ -22,7 +23,16 @@ const LoginPage = () => {
     clearNotice,
   } = useLockNotice()
 
-  const [form, setForm] = useState({ email: '', password: '' })
+  const rememberedEmail = getRememberedEmail()
+  const savedRememberMe = getRememberMeFlag()
+
+  const [form, setForm] = useState({
+    email: rememberedEmail || '',
+    password: '',
+  })
+  const [rememberMe, setRememberMe] = useState(
+    Boolean(rememberedEmail) || savedRememberMe
+  )
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
   const handleGoogleSuccessRedirect = async (authData, googleResult) => {
@@ -58,7 +68,7 @@ const LoginPage = () => {
 
         setIsGoogleLoading(true)
         const idToken = await result.user.getIdToken()
-        const authData = await dispatch(loginWithGoogle(idToken)).unwrap()
+        const authData = await dispatch(loginWithGoogle({ idToken, rememberMe })).unwrap()
         await handleGoogleSuccessRedirect(authData, result)
       } catch (err) {
         if (err?.code === 'auth/popup-closed-by-user') return
@@ -78,7 +88,7 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await dispatch(login(form)).unwrap()
+      await dispatch(login({ ...form, rememberMe })).unwrap()
       clearNotice()
       toast.success('Đăng nhập thành công! 🎉', { autoClose: 2000 })
       try {
@@ -110,7 +120,7 @@ const LoginPage = () => {
       const result = await signInWithPopup(auth, googleProvider)
       const idToken = await result.user.getIdToken()
 
-      const authData = await dispatch(loginWithGoogle(idToken)).unwrap()
+      const authData = await dispatch(loginWithGoogle({ idToken, rememberMe })).unwrap()
       await handleGoogleSuccessRedirect(authData, result)
     } catch (err) {
       // User tự đóng popup → không cần báo lỗi
@@ -154,25 +164,29 @@ const LoginPage = () => {
 
       {loginNotice && (
         <div
-          className={`mb-4 rounded-xl border px-3 py-2.5 text-sm ${
+          role="alert"
+          className={`mb-5 rounded-xl border px-3.5 py-3 text-sm shadow-sm transition-all duration-200 ${
             isLockedNotice
-              ? 'border-rose-300 bg-rose-50 text-rose-700'
-              : 'border-amber-300 bg-amber-50 text-amber-700'
+              ? 'border-rose-300 bg-rose-50 text-rose-800'
+              : 'border-red-200 bg-red-50 text-red-700'
           }`}
         >
           <div className="flex items-start justify-between gap-3">
-            <p>
-              {isLockedNotice ? 'Tài khoản đang bị khóa: ' : ''}
-              {loginNotice}
-            </p>
+            <div className="flex items-start gap-2.5">
+              <AiOutlineExclamationCircle className="mt-0.5 shrink-0 text-base" />
+              <p className="font-medium leading-relaxed">
+                {isLockedNotice ? <strong className="font-semibold">Tài khoản bị khóa: </strong> : null}
+                {loginNotice}
+              </p>
+            </div>
             <button
               type="button"
               onClick={clearNotice}
-              className="mt-0.5 rounded p-0.5 opacity-70 transition hover:opacity-100"
+              className="mt-0.5 rounded-lg p-1 opacity-70 transition hover:bg-black/5 hover:opacity-100 focus:outline-none"
               aria-label="Đóng thông báo"
               title="Đóng thông báo"
             >
-              <AiOutlineClose size={14} />
+              <AiOutlineClose size={15} />
             </button>
           </div>
         </div>
@@ -183,6 +197,8 @@ const LoginPage = () => {
         onChange={handleChange}
         onSubmit={handleSubmit}
         isLoading={isLoading}
+        rememberMe={rememberMe}
+        onToggleRememberMe={() => setRememberMe((prev) => !prev)}
       />
 
       <div className="relative my-6 flex items-center justify-center">

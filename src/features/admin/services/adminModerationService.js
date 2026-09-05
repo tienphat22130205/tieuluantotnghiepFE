@@ -41,6 +41,22 @@ const normalizePagination = (payload, fallbackPage = 1, fallbackLimit = 20) => {
   }
 }
 
+const resolveAuthorName = (author, fallbackItem = {}) => {
+  if (!author) return fallbackItem?.authorName || 'Người dùng'
+  if (typeof author === 'string') {
+    return fallbackItem?.authorName || 'Người dùng'
+  }
+  const firstLast = `${author?.firstName || author?.first_name || ''} ${author?.lastName || author?.last_name || ''}`.trim()
+  return (
+    firstLast
+    || author?.fullName
+    || author?.full_name
+    || (author?.username ? `@${author.username}` : '')
+    || fallbackItem?.authorName
+    || 'Người dùng'
+  )
+}
+
 const normalizePost = (item) => {
   const id = item?._id || item?.id || item?.postId || item?.post_id
   if (!id) return null
@@ -49,15 +65,11 @@ const normalizePost = (item) => {
   const document = item?.document || item?.file || {}
   const likes = Number(item?.likeCount || item?.likesCount || item?.likes || 0)
   const comments = Number(item?.commentCount || item?.commentsCount || item?.comments?.length || 0)
+  const authorDisplayName = resolveAuthorName(author, item)
 
   return {
     id: String(id),
-    author:
-      author?.full_name
-      || author?.fullName
-      || author?.username
-      || item?.authorName
-      || 'Người dùng',
+    author: authorDisplayName,
     username: author?.username || item?.username || '--',
     content: item?.caption || item?.content || item?.text || '',
     documentTitle: document?.title || item?.documentTitle || item?.fileName || '--',
@@ -76,17 +88,15 @@ const normalizeComment = (postId, postContent, item) => {
   if (!id) return null
 
   const author = item?.user || item?.author || {}
+  const authorDisplayName = resolveAuthorName(author, item)
 
   return {
     id: String(id),
     postId: String(postId),
     postContent: postContent || '--',
-    author:
-      author?.full_name
-      || author?.fullName
-      || author?.username
-      || item?.authorName
-      || 'Người dùng',
+    author: authorDisplayName,
+    username: author?.username || item?.username || '',
+    avatar: author?.avatar || item?.avatar || null,
     content: item?.content || item?.text || '--',
     createdAt: item?.created_at || item?.createdAt || null,
   }

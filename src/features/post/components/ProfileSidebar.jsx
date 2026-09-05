@@ -11,8 +11,8 @@ import { extractItems } from '@/utils/friendship'
  */
 const ProfileSidebar = ({ user }) => {
   const displayName = user?.full_name || user?.fullName || user?.username || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
-  const profileId = user?.id || user?._id
-  const profilePath = profileId ? `/profile/${profileId}` : '/'
+  const profileIdentifier = user?.username ? String(user.username).replace(/^@/, '') : (user?.id || user?._id)
+  const profilePath = profileIdentifier ? `/profile/${profileIdentifier}` : '/'
   const [socialCounts, setSocialCounts] = useState({ following: null, followers: null })
 
   useEffect(() => {

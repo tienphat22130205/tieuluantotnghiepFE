@@ -119,20 +119,37 @@ api.interceptors.response.use(
     const status = error.response?.status
     const responseData = error.response?.data
     const requestUrl = String(error?.config?.url || '').toLowerCase()
-    const isLoginRequest = requestUrl.includes('/auth/login')
+    const isAuthRequest =
+      requestUrl.includes('/auth/login') ||
+      requestUrl.includes('/auth/google-login') ||
+      requestUrl.includes('/auth/register') ||
+      requestUrl.includes('/auth/forgot-password') ||
+      requestUrl.includes('/auth/reset-password') ||
+      requestUrl.includes('/auth/verify-email')
+
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : ''
+    const isAuthPage =
+      currentPath.includes('/login') ||
+      currentPath.includes('/register') ||
+      currentPath.includes('/forgot-password') ||
+      currentPath.includes('/reset-password') ||
+      currentPath.includes('/verify-email')
+
     const forceLogout = Boolean(
       responseData?.forceLogout
       || responseData?.error?.forceLogout
     )
 
-    if (forceLogout && !isLoginRequest) {
+    if (forceLogout && !isAuthRequest) {
       handleForcedLogout(responseData)
     }
 
     if (status === 401) {
       removeAuthToken()
       removeStoredAuthUser()
-      window.location.href = '/login'
+      if (!isAuthRequest && !isAuthPage) {
+        window.location.href = '/login'
+      }
     }
 
     const normalizedError = {

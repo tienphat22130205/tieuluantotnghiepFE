@@ -24,8 +24,8 @@ const PostContent = ({ post, isLiked, onLike, inDetailModal = false }) => {
   )
 
   const postUser = post?.user || post?.author || {}
-  const postUserId = postUser.id || postUser._id || postUser.user_id
-  const profilePath = postUserId ? `/profile/${postUserId}` : '#'
+  const postUserIdentifier = postUser.username ? String(postUser.username).replace(/^@/, '') : (postUser.id || postUser._id || postUser.user_id)
+  const profilePath = postUserIdentifier ? `/profile/${postUserIdentifier}` : '#'
   const displayName =
     postUser.full_name ||
     postUser.fullName ||

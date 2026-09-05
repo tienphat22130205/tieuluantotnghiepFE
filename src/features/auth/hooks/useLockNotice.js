@@ -31,19 +31,16 @@ const readForcedLogoutNotice = () => {
 }
 
 const useLockNotice = () => {
-  const [notice, setNotice] = useState(() => readForcedLogoutNotice())
-  const previousNoticeRef = useRef('')
+  const [notice, setNotice] = useState('')
 
   const isLockedNotice = useMemo(() => isLockedMessage(notice), [notice])
 
-  useEffect(() => {
-    const nextNotice = String(notice || '').trim()
-    const prevNotice = String(previousNoticeRef.current || '').trim()
+  const triggerToast = (msg) => {
+    const text = String(msg || '').trim()
+    if (!text) return
 
-    if (!nextNotice || nextNotice === prevNotice) return
-
-    if (isLockedMessage(nextNotice)) {
-      toast.error(nextNotice, {
+    if (isLockedMessage(text)) {
+      toast.error(text, {
         toastId: LOCKED_NOTICE_TOAST_ID,
         autoClose: false,
         closeOnClick: false,
@@ -52,23 +49,31 @@ const useLockNotice = () => {
         pauseOnFocusLoss: true,
       })
     } else {
-      toast.error(nextNotice, {
+      toast.error(text, {
         autoClose: 5000,
         closeOnClick: true,
+        pauseOnHover: true,
       })
     }
+  }
 
-    previousNoticeRef.current = nextNotice
-  }, [notice])
+  // Check for forced logout / lock notice from previous session on mount
+  useEffect(() => {
+    const initialNotice = readForcedLogoutNotice()
+    if (initialNotice) {
+      setNotice(initialNotice)
+      triggerToast(initialNotice)
+    }
+  }, [])
 
   const showNotice = (message) => {
     const normalized = String(message || '').trim()
     setNotice(normalized)
+    triggerToast(normalized)
   }
 
   const clearNotice = () => {
     setNotice('')
-    previousNoticeRef.current = ''
     toast.dismiss(LOCKED_NOTICE_TOAST_ID)
   }
 

@@ -8,8 +8,8 @@ import { timeAgo } from '@/utils/formatDate'
  */
 const PostCardBody = ({ post }) => {
   const author = post?.user || post?.author || {}
-  const postUserId = author.id || author._id
-  const profilePath = postUserId ? `/profile/${postUserId}` : '#'
+  const postUserIdentifier = author.username ? String(author.username).replace(/^@/, '') : (author.id || author._id)
+  const profilePath = postUserIdentifier ? `/profile/${postUserIdentifier}` : '#'
   const content = post?.caption || post?.content || ''
   const createdAt = post?.createdAt || post?.created_at
   const handleName = author.username ? `@${author.username}` : (author.full_name || 'Người dùng')
