@@ -24,7 +24,7 @@ const QuickPostBar = ({ onOpen }) => {
           src={user?.avatar}
           name={displayName}
           size="md"
-          to={user?.id || user?._id ? `/profile/${user?.id || user?._id}` : '/'}
+          to={user?.username ? `/profile/${String(user.username).replace(/^@/, '')}` : (user?.id || user?._id ? `/profile/${user?.id || user?._id}` : '/')}
         />
         <button
           type="button"

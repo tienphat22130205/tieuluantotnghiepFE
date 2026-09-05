@@ -1,6 +1,5 @@
 import { BarChart3, ClipboardCheck, FileText, Lock, MessageSquareText, Users } from 'lucide-react'
-import { AnimatePresence, motion as Motion } from 'framer-motion'
-import { COLORS } from '@/theme/colors'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const menuIcons = {
   users: Users,
@@ -20,110 +19,93 @@ const AdminSidebar = ({
   isDesktopCollapsed,
   lockedSectionIds = [],
 }) => {
+  const { t } = usePreferences()
+
+  const labelMap = {
+    dashboard: t('admin.dashboard'),
+    users: t('admin.usersManagement'),
+    unbanRequests: t('admin.unbanRequests'),
+    posts: t('admin.postsModeration'),
+    comments: t('admin.commentsManagement'),
+    stats: t('admin.documentStats'),
+  }
+
   return (
     <>
       {isOpen && (
         <button
           type="button"
           aria-label="Đóng menu"
-          className="fixed inset-0 z-30 cursor-pointer lg:hidden"
-          style={{ backgroundColor: COLORS.adminOverlay }}
+          className="fixed inset-0 z-30 cursor-pointer lg:hidden bg-black/40 backdrop-blur-xs transition-opacity"
           onClick={onClose}
         />
       )}
 
-      <Motion.aside
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-        className={`fixed left-0 top-0 z-40 h-screen w-[300px] border-r border-slate-200 bg-slate-50 p-5 transition-all duration-300 ease-out lg:static lg:h-auto lg:w-full lg:translate-x-0 lg:border-b-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+      <aside
+        className={`fixed left-0 top-0 z-40 h-screen border-r border-slate-200 bg-white p-4 lg:sticky lg:top-0 lg:z-20 transition-[width,transform] duration-250 ease-in-out will-change-[width] overflow-y-auto shrink-0 dark:border-slate-800 dark:bg-slate-900 ${
+          isDesktopCollapsed ? 'lg:w-[84px]' : 'lg:w-[280px]'
+        } ${
+          isOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full lg:translate-x-0'
         }`}
-        style={{
-          borderColor: COLORS.border,
-          backgroundColor: COLORS.adminSidebarBg,
-        }}
       >
-        <div className={`mb-5 flex items-center border-b border-slate-200 px-2 py-3 transition-all duration-300 ${isDesktopCollapsed ? 'justify-center gap-0' : 'gap-3'}`}>
-          <img src="/Zlogo.png" alt="Z logo" className="h-13 w-13 rounded-lg object-contain" />
-          <AnimatePresence initial={false}>
-            {!isDesktopCollapsed && (
-              <Motion.div
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-              >
-                <p className="text-base font-bold">Zivo Admin</p>
-                <p className="text-sm">Quản trị mạng xã hội</p>
-              </Motion.div>
-            )}
-          </AnimatePresence>
+        <div
+          className={`mb-5 flex items-center border-b border-slate-200 dark:border-slate-800 pb-4 pt-2 transition-all duration-200 ${
+            isDesktopCollapsed ? 'justify-center gap-0' : 'gap-3 px-2'
+          }`}
+        >
+          <img src="/Zlogo.png" alt="Z logo" className="h-10 w-10 shrink-0 rounded-lg object-contain" />
+          <div
+            className={`overflow-hidden transition-all duration-200 ${
+              isDesktopCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-auto opacity-100'
+            }`}
+          >
+            <p className="text-base font-bold whitespace-nowrap leading-tight text-slate-800 dark:text-white">{t('admin.title')}</p>
+            <p className="text-xs whitespace-nowrap text-slate-500 dark:text-slate-400">{t('admin.subtitle')}</p>
+          </div>
         </div>
 
-        <nav className="grid gap-3" aria-label="Danh sách chức năng admin">
+        <nav className="grid gap-2" aria-label="Danh sách chức năng admin">
           {menuItems.map((item) => {
             const Icon = menuIcons[item.id] || Users
             const isActive = activeSection === item.id
             const isLocked = lockedSectionIds.includes(item.id)
 
+            const stateClasses = isLocked
+              ? 'bg-slate-100/60 text-slate-400 border border-slate-200/60 dark:bg-slate-950/40 dark:text-slate-600 dark:border-slate-800/60 cursor-not-allowed'
+              : isActive
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 font-semibold dark:bg-blue-600 dark:text-white'
+              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+
             return (
-              <Motion.button
+              <button
                 key={item.id}
                 type="button"
                 onClick={() => {
                   if (isLocked) return
                   onSelect(item.id)
                 }}
-                title={item.label}
-                whileHover={undefined}
-                whileTap={isLocked ? undefined : { scale: 0.98 }}
+                title={labelMap[item.id] || item.label}
                 disabled={isLocked}
-                className={`w-full cursor-pointer rounded-xl py-3 text-left text-base font-medium transition-all duration-300 ${
-                  isDesktopCollapsed ? 'flex items-center justify-center px-2' : 'flex items-center gap-4 px-4'
-                }`}
-                style={
-                  isLocked
-                    ? {
-                        backgroundColor: '#0f172a',
-                        border: '1px solid rgba(15, 23, 42, 0.25)',
-                        color: '#cbd5e1',
-                        opacity: 0.72,
-                        cursor: 'not-allowed',
-                      }
-                    : isActive
-                    ? {
-                        background: `linear-gradient(135deg, ${COLORS.adminSidebarActive}, ${COLORS.adminSidebarActiveHover})`,
-                        color: COLORS.surface,
-                        boxShadow: '0 10px 20px rgba(15, 23, 42, 0.2)',
-                      }
-                    : {
-                        backgroundColor: COLORS.surface,
-                        border: `1px solid ${COLORS.border}`,
-                        color: COLORS.adminSidebarText,
-                      }
-                }
+                className={`w-full cursor-pointer rounded-xl py-3 text-left text-sm font-medium transition-all duration-150 ${
+                  isDesktopCollapsed
+                    ? 'flex items-center justify-center px-0'
+                    : 'flex items-center gap-3 px-4'
+                } ${stateClasses}`}
               >
-                <Icon size={20} />
-                <AnimatePresence initial={false}>
-                  {!isDesktopCollapsed && (
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Motion.span
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -6 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="truncate"
-                      >
-                        {item.label}
-                      </Motion.span>
-                      {isLocked && <Lock size={14} aria-label="Bị khóa với kiểm duyệt viên" />}
-                    </div>
-                  )}
-                </AnimatePresence>
-              </Motion.button>
+                <Icon size={20} className="shrink-0" />
+                <div
+                  className={`flex min-w-0 items-center justify-between overflow-hidden transition-all duration-200 ${
+                    isDesktopCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-auto opacity-100 flex-1'
+                  }`}
+                >
+                  <span className="truncate whitespace-nowrap">{labelMap[item.id] || item.label}</span>
+                  {isLocked && <Lock size={14} className="shrink-0 ml-1.5" aria-label="Bị khóa với kiểm duyệt viên" />}
+                </div>
+              </button>
             )
           })}
         </nav>
-      </Motion.aside>
+      </aside>
     </>
   )
 }

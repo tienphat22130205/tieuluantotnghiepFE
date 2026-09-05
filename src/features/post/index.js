@@ -25,6 +25,8 @@ export { default as AIGenerateButton } from './components/AIGenerateButton'
 export { default as PostForm } from './components/PostForm'
 export { default as PostContent } from './components/PostContent'
 export { default as CommentSection } from './components/CommentSection'
+export { default as QuickPostBar } from './components/QuickPostBar'
+export { default as CreatePostModal } from './components/CreatePostModal'
 
 // Services
 export { default as postService } from './services/postService'

@@ -11,8 +11,8 @@ import { normalizePostLocation } from '@/utils/postLocation'
  * Props: user (object), createdAt (string), visibility (string), canManage, onEdit, onDelete
  */
 const PostCardHeader = ({ user, createdAt, visibility, location, canManage = false, onEdit, onDelete, group, isOverlay = false }) => {
-  const userId = user?.id || user?._id
-  const profilePath = userId ? `/profile/${userId}` : '#'
+  const userIdentifier = user?.username ? String(user.username).replace(/^@/, '') : (user?.id || user?._id)
+  const profilePath = userIdentifier ? `/profile/${userIdentifier}` : '#'
   const displayName = user?.full_name || user?.fullName || user?.username || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
   const visibilityLabel = {
     public: 'Công khai',

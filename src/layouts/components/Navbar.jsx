@@ -55,10 +55,10 @@ const Navbar = () => {
 
   const { isDarkMode, setIsDarkMode, language, setLanguage, t, translations: text } = usePreferences()
 
-  const profileUserId = user?.id || user?._id
+  const profileIdentifier = user?.username ? String(user.username).replace(/^@/, '') : (user?.id || user?._id)
   const isActive = (path) => location.pathname === path
   const isProfileActive = location.pathname.startsWith('/profile')
-  const profilePath = profileUserId ? `/profile/${profileUserId}` : '/'
+  const profilePath = profileIdentifier ? `/profile/${profileIdentifier}` : '/'
   const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
 
   const closeChatPanel = () => setIsChatOpen(false)

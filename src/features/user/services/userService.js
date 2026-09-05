@@ -46,6 +46,9 @@ const userService = {
     })
   },
 
+  // Gỡ avatar của user đang đăng nhập
+  deleteMyAvatar: () => api.delete('/profile/me/avatar'),
+
   // Lấy profile user theo ID
   // Ho tro fallback endpoint de tuong thich nhieu backend route khac nhau.
   getProfile: async (userId) => {

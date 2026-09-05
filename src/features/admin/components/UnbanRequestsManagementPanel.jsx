@@ -1,12 +1,7 @@
 import { useMemo, useState } from 'react'
 import { FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi'
 import { COLORS } from '@/theme/colors'
-
-const statusLabelMap = {
-  pending: 'Chờ duyệt',
-  approved: 'Đã duyệt',
-  rejected: 'Đã từ chối',
-}
+import { usePreferences } from '@/context/PreferencesContext'
 
 const statusStyleMap = {
   pending: {
@@ -38,12 +33,12 @@ const statusIcons = {
   rejected: FiXCircle,
 }
 
-const formatDateTime = (value) => {
+const formatDateTime = (value, locale = 'vi') => {
   if (!value) return '--'
   const date = new Date(value)
   if (!Number.isFinite(date.getTime())) return '--'
 
-  return date.toLocaleString('vi-VN', {
+  return date.toLocaleString(locale === 'en' ? 'en-US' : 'vi-VN', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -63,10 +58,17 @@ const UnbanRequestsManagementPanel = ({
   onPageChange,
   onReview,
 }) => {
+  const { t, language } = usePreferences()
   const [noteDrafts, setNoteDrafts] = useState({})
 
   const currentPage = Number(pagination?.page || 1)
   const totalPages = Number(pagination?.totalPages || 1)
+
+  const statusLabelMap = useMemo(() => ({
+    pending: t('admin.tabPending') || 'Chờ duyệt',
+    approved: t('admin.tabApproved') || 'Đã duyệt',
+    rejected: t('admin.tabRejected') || 'Đã từ chối',
+  }), [t])
 
   const statusSummary = useMemo(() => {
     return requests.reduce(
@@ -87,16 +89,18 @@ const UnbanRequestsManagementPanel = ({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-xl font-semibold text-slate-800">Yêu cầu mở khóa tài khoản</h2>
-          <p className="text-xs text-slate-500">
-            Chờ duyệt: {statusSummary.pending} | Đã duyệt: {statusSummary.approved} | Đã từ chối: {statusSummary.rejected}
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-white">
+            {t('admin.unbanRequestsTitle') || 'Yêu cầu mở khóa tài khoản'}
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {t('admin.tabPending') || 'Chờ duyệt'}: {statusSummary.pending} | {t('admin.tabApproved') || 'Đã duyệt'}: {statusSummary.approved} | {t('admin.tabRejected') || 'Đã từ chối'}: {statusSummary.rejected}
           </p>
         </div>
 
-        <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-800">
           {['pending', 'approved', 'rejected'].map((status) => {
             const Icon = statusIcons[status]
             const isActive = statusFilter === status
@@ -107,7 +111,7 @@ const UnbanRequestsManagementPanel = ({
                 key={status}
                 type="button"
                 onClick={() => onStatusFilterChange(status)}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                   isActive ? 'shadow-sm' : ''
                 }`}
                 style={{
@@ -125,111 +129,130 @@ const UnbanRequestsManagementPanel = ({
       </div>
 
       {error && (
-        <p className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+        <p className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">{error}</p>
       )}
 
       <div className="overflow-x-auto">
         <table className="min-w-[1280px] w-full border-collapse">
           <thead>
             <tr>
-              <th className="border-b border-slate-200 px-2 py-2 text-left text-[11px] uppercase tracking-wide text-slate-400">Email</th>
-              <th className="border-b border-slate-200 px-2 py-2 text-left text-[11px] uppercase tracking-wide text-slate-400">Lý do user</th>
-              <th className="border-b border-slate-200 px-2 py-2 text-left text-[11px] uppercase tracking-wide text-slate-400">Trạng thái</th>
-              <th className="border-b border-slate-200 px-2 py-2 text-left text-[11px] uppercase tracking-wide text-slate-400">Ghi chú admin</th>
-              <th className="border-b border-slate-200 px-2 py-2 text-left text-[11px] uppercase tracking-wide text-slate-400">Tạo lúc</th>
-              <th className="border-b border-slate-200 px-2 py-2 text-left text-[11px] uppercase tracking-wide text-slate-400">Xử lý lúc</th>
-              <th className="border-b border-slate-200 px-2 py-2 text-left text-[11px] uppercase tracking-wide text-slate-400">Hành động</th>
+              <th className="border-b border-slate-200 px-3 py-2.5 text-left text-[11px] uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-400">
+                {t('admin.email') || 'Email'}
+              </th>
+              <th className="border-b border-slate-200 px-3 py-2.5 text-left text-[11px] uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-400">
+                {t('admin.userReason') || 'Lý do người dùng'}
+              </th>
+              <th className="border-b border-slate-200 px-3 py-2.5 text-left text-[11px] uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-400">
+                {t('admin.status') || 'Trạng thái'}
+              </th>
+              <th className="border-b border-slate-200 px-3 py-2.5 text-left text-[11px] uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-400">
+                {t('admin.adminNote') || 'Ghi chú admin'}
+              </th>
+              <th className="border-b border-slate-200 px-3 py-2.5 text-left text-[11px] uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-400">
+                {t('admin.createdAt') || 'Tạo lúc'}
+              </th>
+              <th className="border-b border-slate-200 px-3 py-2.5 text-left text-[11px] uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-400">
+                {t('admin.reviewedAt') || 'Xử lý lúc'}
+              </th>
+              <th className="border-b border-slate-200 px-3 py-2.5 text-left text-[11px] uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-400">
+                {t('admin.actions') || 'Hành động'}
+              </th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={7} className="px-2 py-8 text-center text-sm text-slate-500">
-                  Đang tải danh sách yêu cầu mở khóa...
+                <td colSpan={7} className="px-3 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                  {t('admin.loadingData') || 'Đang tải dữ liệu...'}
                 </td>
               </tr>
             )}
 
             {!isLoading && requests.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-2 py-8 text-center text-sm text-slate-500">
-                  Không có yêu cầu mở khóa nào.
+                <td colSpan={7} className="px-3 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                  {t('admin.noUnbanRequests') || 'Không có yêu cầu mở khóa nào.'}
                 </td>
               </tr>
             )}
 
-            {requests.map((request) => {
-              const status = statusLabelMap[request.status] ? request.status : 'pending'
-              const isRowBusy = busyRequestId === request.id
+            {!isLoading && requests.map((req) => {
+              const status = String(req.status || 'pending').toLowerCase()
               const isPending = status === 'pending'
-              const noteValue = noteDrafts[request.id] ?? request.adminNote ?? ''
+              const palette = statusStyleMap[status] || statusStyleMap.pending
+              const noteDraft = noteDrafts[req.id] ?? (req.adminNote || '')
+              const isBusy = busyRequestId === req.id
 
               return (
-                <tr key={request.id}>
-                  <td className="border-b border-slate-100 px-2 py-2 text-sm text-slate-900">{request.email}</td>
-                  <td className="border-b border-slate-100 px-2 py-2 text-sm text-slate-900">{request.reason || '--'}</td>
-                  <td className="border-b border-slate-100 px-2 py-2">
-                    {(() => {
-                      const Icon = statusIcons[status]
-                      const palette = statusStyleMap[status]
-                      return (
-                        <span
-                          className="inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-semibold"
-                          style={{
-                            backgroundColor: palette.chipBg,
-                            color: palette.chipText,
-                            borderColor: palette.chipBorder,
-                          }}
-                        >
-                          <Icon size={12} />
-                          {statusLabelMap[status]}
-                        </span>
-                      )
-                    })()}
+                <tr key={req.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50">
+                  <td className="border-b border-slate-100 px-3 py-2.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:text-slate-100">
+                    {req.email || req.userId?.email || '--'}
                   </td>
-                  <td className="border-b border-slate-100 px-2 py-2">
-                    <textarea
-                      rows={2}
-                      value={noteValue}
-                      onChange={(event) => {
-                        setNoteDrafts((prev) => ({ ...prev, [request.id]: event.target.value }))
+                  <td className="border-b border-slate-100 px-3 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:text-slate-300">
+                    <p className="line-clamp-2 max-w-sm">{req.reason || '--'}</p>
+                  </td>
+                  <td className="border-b border-slate-100 px-3 py-2.5 dark:border-slate-800">
+                    <span
+                      className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                      style={{
+                        backgroundColor: palette.chipBg,
+                        color: palette.chipText,
+                        border: `1px solid ${palette.chipBorder}`,
                       }}
-                      disabled={isRowBusy || !isPending}
-                      placeholder={isPending ? 'Nhập ghi chú khi duyệt/từ chối' : 'Đã xử lý'}
-                      className="w-[260px] rounded-lg border border-slate-300 px-2 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    />
+                    >
+                      {statusLabelMap[status] || status}
+                    </span>
                   </td>
-                  <td className="border-b border-slate-100 px-2 py-2 text-sm">{formatDateTime(request.createdAt)}</td>
-                  <td className="border-b border-slate-100 px-2 py-2 text-sm">{formatDateTime(request.reviewedAt)}</td>
-                  <td className="border-b border-slate-100 px-2 py-2">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        disabled={!isPending || isRowBusy}
-                        onClick={() => handleReview(request.id, 'approve')}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
-                        style={{
-                          backgroundColor: 'rgba(5, 150, 105, 0.12)',
-                          color: COLORS.adminSuccess,
-                        }}
-                      >
-                        <FiCheckCircle size={13} />
-                        {isRowBusy ? 'Đang xử lý...' : 'Duyệt'}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!isPending || isRowBusy}
-                        onClick={() => handleReview(request.id, 'reject')}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
-                        style={{
-                          backgroundColor: 'rgba(220, 38, 38, 0.12)',
-                          color: COLORS.adminDanger,
-                        }}
-                      >
-                        <FiXCircle size={13} />
-                        {isRowBusy ? 'Đang xử lý...' : 'Từ chối'}
-                      </button>
-                    </div>
+                  <td className="border-b border-slate-100 px-3 py-2.5 dark:border-slate-800">
+                    {isPending ? (
+                      <input
+                        type="text"
+                        value={noteDraft}
+                        onChange={(event) =>
+                          setNoteDrafts((prev) => ({
+                            ...prev,
+                            [req.id]: event.target.value,
+                          }))
+                        }
+                        placeholder={t('admin.enterAdminNote') || 'Nhập ghi chú cho quyết định...'}
+                        className="w-full min-w-[220px] rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs outline-none transition focus:border-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
+                        disabled={isBusy}
+                      />
+                    ) : (
+                      <span className="text-xs text-slate-600 dark:text-slate-300">{req.adminNote || '--'}</span>
+                    )}
+                  </td>
+                  <td className="border-b border-slate-100 px-3 py-2.5 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                    {formatDateTime(req.createdAt, language)}
+                  </td>
+                  <td className="border-b border-slate-100 px-3 py-2.5 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                    {formatDateTime(req.reviewedAt, language)}
+                  </td>
+                  <td className="border-b border-slate-100 px-3 py-2.5 dark:border-slate-800">
+                    {isPending ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => handleReview(req.id, 'approved')}
+                          className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+                        >
+                          {isBusy ? (t('admin.processing') || 'Đang xử lý...') : (t('admin.approve') || 'Chấp thuận')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => handleReview(req.id, 'rejected')}
+                          className="rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
+                        >
+                          {isBusy ? (t('admin.processing') || 'Đang xử lý...') : (t('admin.reject') || 'Từ chối')}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+                        {statusLabelMap[status] || status}
+                      </span>
+                    )}
                   </td>
                 </tr>
               )
@@ -243,18 +266,20 @@ const UnbanRequestsManagementPanel = ({
           type="button"
           disabled={currentPage <= 1 || isLoading}
           onClick={() => onPageChange(currentPage - 1)}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
-          Trang trước
+          {t('admin.prevPage') || 'Trang trước'}
         </button>
-        <span className="text-xs font-medium text-slate-600">Trang {currentPage}/{totalPages}</span>
+        <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+          {t('admin.page') || 'Trang'} {currentPage}/{totalPages}
+        </span>
         <button
           type="button"
           disabled={currentPage >= totalPages || isLoading}
           onClick={() => onPageChange(currentPage + 1)}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
-          Trang sau
+          {t('admin.nextPage') || 'Trang sau'}
         </button>
       </div>
     </section>

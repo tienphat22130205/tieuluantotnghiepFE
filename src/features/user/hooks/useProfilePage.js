@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import userService from '../services/userService'
@@ -52,11 +53,15 @@ const useProfilePage = (userId) => {
     lng: '',
   })
 
+  const navigate = useNavigate()
   const currentUserId = getUserId(currentUser)
+  const currentUsername = currentUser?.username ? String(currentUser.username).toLowerCase().replace(/^@/, '') : ''
+  const cleanRouteParam = userId ? String(userId).toLowerCase().replace(/^@/, '') : ''
+
   const isMyProfile = Boolean(
-    currentUserId
-    && userId
-    && String(currentUserId) === String(userId)
+    (currentUserId && userId && String(currentUserId) === String(userId)) ||
+    (currentUsername && cleanRouteParam && currentUsername === cleanRouteParam) ||
+    (profile && currentUserId && String(profile._id || profile.id) === String(currentUserId))
   )
   const hasValidRouteUserId = Boolean(userId && userId !== 'undefined' && userId !== 'null')
 
@@ -172,6 +177,14 @@ const useProfilePage = (userId) => {
         }
 
         setProfile(profileWithFriends)
+
+        // Canonical URL: nếu URL hiện tại là ObjectId hoặc có @ thì đổi sang /profile/:username chuẩn
+        if (normalizedProfile.username) {
+          const canonicalUsername = String(normalizedProfile.username).trim().replace(/^@/, '')
+          if (canonicalUsername && userId !== canonicalUsername) {
+            navigate(`/profile/${canonicalUsername}`, { replace: true })
+          }
+        }
 
         try {
           const postsResponse = await postService.getByUser(profileWithFriends._id)
@@ -469,6 +482,50 @@ const useProfilePage = (userId) => {
     }
   }
 
+  const handleAvatarRemove = async () => {
+    if (!isMyProfile) return
+
+    const previousAvatar = profile?.avatar || null
+
+    setProfile((prev) => (prev ? { ...prev, avatar: null } : prev))
+    setPosts((prev) => prev.map((post) => withProfileIdentity(post, {
+      ...(profile || {}),
+      _id: currentUserId,
+      avatar: null,
+    })))
+
+    setIsUploadingAvatar(true)
+    try {
+      const response = await userService.deleteMyAvatar()
+      const updatedProfile = normalizeProfile(extractProfilePayload(response))
+
+      if (updatedProfile) {
+        setProfile(updatedProfile)
+        setPosts((prev) => prev.map((post) => withProfileIdentity(post, updatedProfile)))
+      } else if (profile?._id) {
+        const refreshedProfileResponse = await userService.getMyProfile()
+        const refreshedProfile = normalizeProfile(extractProfilePayload(refreshedProfileResponse))
+        if (refreshedProfile) {
+          setProfile(refreshedProfile)
+          setPosts((prev) => prev.map((post) => withProfileIdentity(post, refreshedProfile)))
+        }
+      }
+
+      await dispatch(getMe())
+      toast.success('Đã gỡ ảnh đại diện thành công', { autoClose: 2500 })
+    } catch (err) {
+      setProfile((prev) => (prev ? { ...prev, avatar: previousAvatar } : prev))
+      setPosts((prev) => prev.map((post) => withProfileIdentity(post, {
+        ...(profile || {}),
+        _id: currentUserId,
+        avatar: previousAvatar,
+      })))
+      toast.error(err?.response?.data?.message || err?.message || 'Gỡ avatar thất bại', { autoClose: 3000 })
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
+
   const friendCount = useMemo(() => {
     if (!profile) return 0
     if (Array.isArray(profile.friends) && profile.friends.length > 0) return profile.friends.length
@@ -533,6 +590,7 @@ const useProfilePage = (userId) => {
     handleProfileFormChange,
     handleSaveProfile,
     handleAvatarUpload,
+    handleAvatarRemove,
   }
 }
 

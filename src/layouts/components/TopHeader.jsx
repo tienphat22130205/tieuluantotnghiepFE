@@ -34,8 +34,8 @@ const TopHeader = ({ onOpenSettings }) => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [incomingRequestCount, setIncomingRequestCount] = useState(0)
 
-  const profileUserId = user?.id || user?._id
-  const profilePath = profileUserId ? `/profile/${profileUserId}` : '/'
+  const profileIdentifier = user?.username ? String(user.username).replace(/^@/, '') : (user?.id || user?._id)
+  const profilePath = profileIdentifier ? `/profile/${profileIdentifier}` : '/'
   const displayName = user?.full_name || user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
 
   // Sync search keyword from query param

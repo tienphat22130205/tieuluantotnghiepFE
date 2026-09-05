@@ -133,3 +133,26 @@ export const extractPostsPayload = (response) => {
   if (Array.isArray(response?.data?.posts)) return response.data.posts
   return []
 }
+
+/**
+ * Returns canonical profile link using username when available.
+ * e.g. /profile/ngoc_hyn instead of /profile/6a2157b48c7c3df31374232e
+ */
+export const getProfilePath = (userOrIdentifier) => {
+  if (!userOrIdentifier) return '#'
+
+  if (typeof userOrIdentifier === 'string') {
+    const clean = userOrIdentifier.trim().replace(/^@/, '')
+    return clean ? `/profile/${clean}` : '#'
+  }
+
+  const username = userOrIdentifier.username
+  if (username) {
+    const clean = String(username).trim().replace(/^@/, '')
+    if (clean) return `/profile/${clean}`
+  }
+
+  const id = userOrIdentifier._id || userOrIdentifier.id || userOrIdentifier.userId
+  return id ? `/profile/${id}` : '#'
+}
+

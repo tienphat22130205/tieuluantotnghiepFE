@@ -309,12 +309,13 @@ const SearchPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {users.map((item) => {
                 const userId = item?._id || item?.id
+                const userIdentifier = item?.username ? String(item.username).replace(/^@/, '') : userId
                 const displayName = item?.full_name || item?.username || 'Người dùng'
 
                 return (
                   <Link
                     key={userId}
-                    to={userId ? `/profile/${userId}` : '#'}
+                    to={userIdentifier ? `/profile/${userIdentifier}` : '#'}
                     className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 hover:border-primary-400 dark:hover:border-primary-700 hover:shadow-xs transition group"
                   >
                     <div className="flex min-w-0 items-center gap-3">

@@ -163,11 +163,12 @@ const App = () => {
         <BrowserRouter>
         <ToastContainer
             position={isMobile ? "top-center" : "top-right"}
-            autoClose={isMobile ? 2500 : 4000}
+            autoClose={isMobile ? 3500 : 4500}
             hideProgressBar={isMobile}
             newestOnTop={true}
             closeOnClick={true}
             rtl={false}
+            pauseOnHover={true}
             pauseOnFocusLoss={!isMobile}
             draggable={true}
             toastClassName={isMobile ? "mobile-toast" : ""}
