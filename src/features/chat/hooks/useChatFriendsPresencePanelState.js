@@ -19,7 +19,8 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     setMessageInput,
     setSearchKeyword,
     handleClosePanel,
-    handleBackToList,
+    handleMinimize,
+    handleCloseConversation,
     handleSelectFriend,
   } = useChatPanelUiState({ friends, onClose })
 
@@ -132,7 +133,8 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     replyToMessage,
     setReplyToMessage,
     handleClosePanel,
-    handleBackToList,
+    handleMinimize,
+    handleCloseConversation,
     handleSelectFriend,
   }
 }

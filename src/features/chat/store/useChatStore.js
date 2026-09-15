@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import chatService from '../services/chatService'
 import { getSocket } from '@/services/socketClient'
 import { usePresenceStore } from './usePresenceStore'
+import { useChatHeadStore } from './useChatHeadStore'
 import {
   extractConversationsPayload,
   extractConversationPayload,
@@ -150,6 +151,7 @@ export const useChatStore = create((set, get) => ({
       return
     }
 
+    useChatHeadStore.getState().markHeadAsRead(friendId)
     set({ isMessagesLoading: true, selectedConversation: typeof friend === 'object' ? friend : null })
     const socket = getSocket(token)
 
@@ -292,39 +294,45 @@ export const useChatStore = create((set, get) => ({
       const response = await chatService.sendMessage(activeConversationId, content, {
         replyTo: replyToMessage?._id || replyToMessage?.id || null,
       })
-      const normalized = normalizeChatMessage(
-        response?.message || response?.data?.message || response,
-        {
-          fallbackSenderId: currentUserId,
-          forceMine: true,
-        }
-      )
-      if (normalized) {
-        const resolvedReplyTo =
-          normalized.replyTo && typeof normalized.replyTo === 'object' && (normalized.replyTo.content || normalized.replyTo.text)
-            ? normalized.replyTo
-            : optimisticReplyTo
 
-        const finalMsg = {
-          ...normalized,
-          _id: normalized._id || tempId,
-          status: 'sent',
-          replyTo: resolvedReplyTo,
-        }
-        set((state) => ({
-          messages: mergeIncomingMessage(
-            state.messages.filter((m) => String(m._id) !== String(tempId)),
-            finalMsg
-          ),
-        }))
-        get().updateFriendPreview(selectedConversation?._id, finalMsg.content, {
-          incrementUnread: false,
-          resetUnread: true,
-          createdAt: finalMsg.createdAt,
-        })
-        set({ replyToMessage: null })
+      const rawMsgData =
+        (response?.data && typeof response.data === 'object' && (response.data._id || response.data.content))
+          ? response.data
+          : (response?.messageDoc || response?.item || (typeof response === 'object' && !response?.message ? response : null))
+
+      const normalized = normalizeChatMessage(rawMsgData, {
+        fallbackSenderId: currentUserId,
+        forceMine: true,
+      })
+
+      const resolvedReplyTo =
+        normalized?.replyTo && typeof normalized.replyTo === 'object' && (normalized.replyTo.content || normalized.replyTo.text)
+          ? normalized.replyTo
+          : optimisticReplyTo
+
+      const finalMsg = {
+        ...optimistic,
+        ...normalized,
+        _id: normalized?._id || rawMsgData?._id || tempId,
+        content: normalized?.content || content,
+        text: normalized?.content || content,
+        status: 'sent',
+        replyTo: resolvedReplyTo,
       }
+      set((state) => ({
+        messages: mergeIncomingMessage(
+          state.messages.filter((m) => String(m._id) !== String(tempId)),
+          finalMsg
+        ),
+      }))
+      get().updateFriendPreview(selectedConversation?._id, finalMsg.content, {
+        incrementUnread: false,
+        resetUnread: true,
+        createdAt: finalMsg.createdAt,
+      })
+      set({ replyToMessage: null })
     } catch (err) {
+      console.error('Failed to send message:', err)
       set((state) => ({
         messages: state.messages.map((m) =>
           String(m._id) === String(tempId) ? { ...m, status: 'failed' } : m
@@ -403,39 +411,46 @@ export const useChatStore = create((set, get) => ({
         stickerUrl,
         replyTo: replyToMessage?._id || replyToMessage?.id || null,
       })
-      const normalized = normalizeChatMessage(
-        response?.message || response?.data?.message || response,
-        {
-          fallbackSenderId: currentUserId,
-          forceMine: true,
-        }
-      )
-      if (normalized) {
-        const resolvedReplyTo =
-          normalized.replyTo && typeof normalized.replyTo === 'object' && (normalized.replyTo.content || normalized.replyTo.text)
-            ? normalized.replyTo
-            : optimisticReplyTo
 
-        const finalMsg = {
-          ...normalized,
-          _id: normalized._id || tempId,
-          status: 'sent',
-          replyTo: resolvedReplyTo,
-        }
-        set((state) => ({
-          messages: mergeIncomingMessage(
-            state.messages.filter((m) => String(m._id) !== String(tempId)),
-            finalMsg
-          ),
-        }))
-        get().updateFriendPreview(selectedConversation?._id, '[Sticker]', {
-          incrementUnread: false,
-          resetUnread: true,
-          createdAt: finalMsg.createdAt,
-        })
-        set({ replyToMessage: null })
+      const rawMsgData =
+        (response?.data && typeof response.data === 'object' && (response.data._id || response.data.sticker))
+          ? response.data
+          : (response?.messageDoc || response?.item || (typeof response === 'object' && !response?.message ? response : null))
+
+      const normalized = normalizeChatMessage(rawMsgData, {
+        fallbackSenderId: currentUserId,
+        forceMine: true,
+      })
+
+      const resolvedReplyTo =
+        normalized?.replyTo && typeof normalized.replyTo === 'object' && (normalized.replyTo.content || normalized.replyTo.text)
+          ? normalized.replyTo
+          : optimisticReplyTo
+
+      const finalMsg = {
+        ...optimistic,
+        ...normalized,
+        _id: normalized?._id || rawMsgData?._id || tempId,
+        content: '[Sticker]',
+        type: 'sticker',
+        sticker: stickerUrl,
+        status: 'sent',
+        replyTo: resolvedReplyTo,
       }
+      set((state) => ({
+        messages: mergeIncomingMessage(
+          state.messages.filter((m) => String(m._id) !== String(tempId)),
+          finalMsg
+        ),
+      }))
+      get().updateFriendPreview(selectedConversation?._id, '[Sticker]', {
+        incrementUnread: false,
+        resetUnread: true,
+        createdAt: finalMsg.createdAt,
+      })
+      set({ replyToMessage: null })
     } catch (err) {
+      console.error('Failed to send sticker:', err)
       set((state) => ({
         messages: state.messages.map((m) =>
           String(m._id) === String(tempId) ? { ...m, status: 'failed' } : m
@@ -578,6 +593,9 @@ export const useChatStore = create((set, get) => ({
           incrementUnread: !isMine && Boolean(normalized.senderId),
           createdAt: normalized.createdAt,
         })
+        if (!isMine && Boolean(normalized.senderId)) {
+          useChatHeadStore.getState().incrementUnread(friendId)
+        }
       }
     }
 

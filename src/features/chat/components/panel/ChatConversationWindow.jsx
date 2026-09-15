@@ -132,7 +132,7 @@ const ChatConversationWindow = ({
         top: `${viewportOffsetTop}px`,
         bottom: 'auto'
       } : {}}
-      className={`fixed inset-0 z-[70] flex flex-col bg-white transition-all duration-300 ease-out md:inset-auto md:right-4 md:bottom-4 md:h-[460px] md:w-[340px] md:border md:border-gray-200 md:rounded-2xl md:shadow-2xl md:origin-bottom-right ${
+      className={`fixed inset-0 z-[70] flex flex-col bg-white transition-all duration-300 ease-out md:inset-auto md:right-20 md:bottom-5 md:h-[480px] md:w-[340px] md:border md:border-gray-200 md:rounded-2xl md:shadow-2xl md:origin-bottom-right ${
         isOpen && selectedConversation
           ? 'translate-x-0 translate-y-0 opacity-100 scale-100'
           : 'translate-x-10 translate-y-6 opacity-0 scale-95 pointer-events-none'
@@ -143,8 +143,10 @@ const ChatConversationWindow = ({
           <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={onBack}
-                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
+                title="Thu nhỏ thành bong bóng chat"
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
               >
                 <AiOutlineArrowLeft size={18} />
               </button>
@@ -196,6 +198,7 @@ const ChatConversationWindow = ({
               <button
                 type="button"
                 onClick={onClose}
+                title="Đóng cuộc trò chuyện"
                 className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer"
               >
                 <AiOutlineClose size={16} />
