@@ -40,12 +40,19 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
   const selectedFriendId = selectedConversation?._id || selectedConversation?.id || null
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/chat')) {
+      return
+    }
+
     if (selectedFriendId && selectedConversation) {
       openConversation(selectedConversation, token, currentUserId)
-    } else {
-      closeConversation(getSocket(token))
     }
   }, [selectedFriendId, token, currentUserId])
+
+  const handleExplicitCloseConversation = () => {
+    handleCloseConversation()
+    closeConversation(getSocket(token))
+  }
 
   const sendMessage = () => {
     const content = String(messageInput || '').trim()
@@ -134,7 +141,7 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     setReplyToMessage,
     handleClosePanel,
     handleMinimize,
-    handleCloseConversation,
+    handleCloseConversation: handleExplicitCloseConversation,
     handleSelectFriend,
   }
 }

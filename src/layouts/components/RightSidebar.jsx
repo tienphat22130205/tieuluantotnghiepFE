@@ -288,7 +288,7 @@ const RightSidebar = () => {
                       <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
                         <button
                           type="button"
-                          onClick={() => makeCall(friend._id, false)}
+                          onClick={() => makeCall(friend, false)}
                           title="Gọi thoại"
                           className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-white dark:hover:bg-slate-700 rounded-full shadow-xs transition cursor-pointer"
                         >
@@ -296,7 +296,7 @@ const RightSidebar = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => makeCall(friend._id, true)}
+                          onClick={() => makeCall(friend, true)}
                           title="Gọi Video"
                           className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-white dark:hover:bg-slate-700 rounded-full shadow-xs transition cursor-pointer"
                         >
@@ -342,7 +342,7 @@ const RightSidebar = () => {
                       <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
                         <button
                           type="button"
-                          onClick={() => makeCall(friend._id, false)}
+                          onClick={() => makeCall(friend, false)}
                           title="Gọi thoại"
                           className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-white dark:hover:bg-slate-700 rounded-full shadow-xs transition cursor-pointer"
                         >
@@ -350,7 +350,7 @@ const RightSidebar = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => makeCall(friend._id, true)}
+                          onClick={() => makeCall(friend, true)}
                           title="Gọi Video"
                           className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-white dark:hover:bg-slate-700 rounded-full shadow-xs transition cursor-pointer"
                         >

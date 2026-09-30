@@ -114,11 +114,17 @@ export const useChatHeadStore = create(
       // Xóa số lượng chưa đọc khi đã xem
       markHeadAsRead: (friendId) => {
         const targetId = String(friendId)
-        set((state) => ({
-          chatHeads: state.chatHeads.map((h) =>
-            String(h.id) === targetId ? { ...h, unreadCount: 0 } : h
-          ),
-        }))
+        set((state) => {
+          const target = state.chatHeads.find((h) => String(h.id) === targetId)
+          if (!target || !target.unreadCount || target.unreadCount <= 0) {
+            return state
+          }
+          return {
+            chatHeads: state.chatHeads.map((h) =>
+              String(h.id) === targetId ? { ...h, unreadCount: 0 } : h
+            ),
+          }
+        })
       },
     }),
     {

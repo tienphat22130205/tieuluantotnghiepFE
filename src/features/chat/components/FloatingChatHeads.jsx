@@ -22,7 +22,7 @@ const FloatingChatHeads = ({ onOpenNewChat }) => {
   return (
     <aside
       aria-label="Bong bóng trò chuyện"
-      className="fixed bottom-20 md:bottom-5 right-4 md:right-5 z-[65] flex flex-col-reverse items-center gap-3 pointer-events-none select-none"
+      className="hidden md:flex fixed bottom-5 right-5 z-[65] flex-col-reverse items-center gap-3 pointer-events-none select-none"
     >
       {/* 1. Nút soạn tin nhắn mới tròn (icon màu hệ thống) */}
       <button

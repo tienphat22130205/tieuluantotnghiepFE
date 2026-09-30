@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { getSocket } from '@/services/socketClient'
+import { getAuthToken, getStoredAuthUser } from '@/utils/authStorage'
 import { toast } from 'react-toastify'
 import chatService from '../services/chatService'
 import { useChatStore } from './useChatStore'
@@ -241,7 +242,9 @@ export const useCallStore = create((set, get) => ({
       return
     }
 
-    if (socketInstance && get().user?.id === user.id) {
+    const currentUserId = String(get().user?._id || get().user?.id || '')
+    const nextUserId = String(user?._id || user?.id || '')
+    if (socketInstance && currentUserId && currentUserId === nextUserId) {
       return
     }
 
@@ -253,7 +256,8 @@ export const useCallStore = create((set, get) => ({
       const handleIncomingCallAlert = ({ callerId, callerName, callerAvatar, isVideo }) => {
         const { callStatus } = get()
         if (callStatus !== 'idle') {
-          socketInstance.emit('call:busy', { callerId })
+          const activeSocket = socketInstance || getSocket(get().token)
+          activeSocket?.emit('call:busy', { callerId })
           return
         }
 
@@ -281,11 +285,12 @@ export const useCallStore = create((set, get) => ({
         set({ callStatus: 'connected' })
 
         try {
-          const pc = createPeerConnection(calleeId, socketInstance, set)
+          const activeSocket = socketInstance || getSocket(get().token)
+          const pc = createPeerConnection(calleeId, activeSocket, set)
           const offer = await pc.createOffer()
           await pc.setLocalDescription(offer)
 
-          socketInstance.emit('webrtc:offer', {
+          activeSocket?.emit('webrtc:offer', {
             targetUserId: String(calleeId),
             offer,
           })
@@ -300,9 +305,10 @@ export const useCallStore = create((set, get) => ({
       const handleWebRtcOffer = async ({ senderId, offer }) => {
         console.log('[WebRTC] Received offer from:', senderId)
         try {
+          const activeSocket = socketInstance || getSocket(get().token)
           let pc = rtcPeerConnection
           if (!pc) {
-            pc = createPeerConnection(senderId, socketInstance, set)
+            pc = createPeerConnection(senderId, activeSocket, set)
           }
 
           await pc.setRemoteDescription(new RTCSessionDescription(offer))
@@ -311,7 +317,7 @@ export const useCallStore = create((set, get) => ({
           const answer = await pc.createAnswer()
           await pc.setLocalDescription(answer)
 
-          socketInstance.emit('webrtc:answer', {
+          activeSocket?.emit('webrtc:answer', {
             targetUserId: String(senderId),
             answer,
           })
@@ -418,12 +424,32 @@ export const useCallStore = create((set, get) => ({
   },
 
   makeCall: async (targetUser, isVideo) => {
-    if (!socketInstance || !targetUser) return
+    const activeToken = get().token || getAuthToken()
+    let socket = socketInstance || getSocket(activeToken)
+    if (!socket || !targetUser) return
+    socketInstance = socket
 
-    const { user } = get()
-    const targetUserId = targetUser.userId || targetUser.id || targetUser._id
+    let currentUser = get().user
+    if (!currentUser) {
+      try {
+        const stored = getStoredAuthUser()
+        if (stored) currentUser = typeof stored === 'string' ? JSON.parse(stored) : stored
+      } catch (_) {}
+    }
+
+    const targetUserId = typeof targetUser === 'string'
+      ? targetUser
+      : String(targetUser.userId || targetUser.id || targetUser._id || '')
+
+    if (!targetUserId) {
+      console.warn('[makeCall] Missing targetUserId:', targetUser)
+      return
+    }
+
     const displayName = resolveDisplayName(targetUser)
-    const callerName = resolveDisplayName(user)
+    const callerName = resolveDisplayName(currentUser)
+    const callerId = String(currentUser?._id || currentUser?.id || '')
+    const targetAvatar = typeof targetUser === 'object' ? (targetUser.avatar || '') : ''
 
     set({
       isVideoCall: isVideo,
@@ -431,9 +457,9 @@ export const useCallStore = create((set, get) => ({
       isMuted: false,
       isCamOff: false,
       callInfo: {
-        userId: String(targetUserId),
+        userId: targetUserId,
         fullName: displayName,
-        avatar: targetUser.avatar || '',
+        avatar: targetAvatar,
       },
       callStatus: 'ringing_out',
       callDuration: 0,
@@ -450,18 +476,20 @@ export const useCallStore = create((set, get) => ({
     localStreamRef = stream
     set({ localStream: stream })
 
-    socketInstance.emit('call:request', {
-      targetUserId: String(targetUserId),
-      callerId: String(user.id || user._id),
+    socket.emit('call:request', {
+      targetUserId,
+      callerId,
       callerName,
-      callerAvatar: user.avatar || '',
+      callerAvatar: currentUser?.avatar || '',
       isVideo,
     })
   },
 
   answerCall: async () => {
     const { callInfo, isVideoCall } = get()
-    if (!socketInstance || !callInfo) return
+    let socket = socketInstance || getSocket(get().token)
+    if (!socket || !callInfo) return
+    socketInstance = socket
     stopSounds()
 
     const stream = await requestUserMedia(isVideoCall)
@@ -474,16 +502,17 @@ export const useCallStore = create((set, get) => ({
     get().startCallTimer()
     set({ localStream: stream, callStatus: 'connected' })
 
-    socketInstance.emit('call:accept', {
+    socket.emit('call:accept', {
       callerId: String(callInfo.userId),
-      calleeId: String(get().user?.id || get().user?._id),
+      calleeId: String(get().user?._id || get().user?.id),
     })
   },
 
   rejectCall: () => {
     const { callInfo } = get()
-    if (socketInstance && callInfo) {
-      socketInstance.emit('call:reject', {
+    const socket = socketInstance || getSocket(get().token)
+    if (socket && callInfo) {
+      socket.emit('call:reject', {
         callerId: String(callInfo.userId),
         reason: 'declined',
       })
@@ -493,10 +522,11 @@ export const useCallStore = create((set, get) => ({
 
   endCall: () => {
     const { callInfo, user } = get()
-    if (socketInstance && callInfo) {
-      socketInstance.emit('call:end', {
+    const socket = socketInstance || getSocket(get().token)
+    if (socket && callInfo) {
+      socket.emit('call:end', {
         targetUserId: String(callInfo.userId),
-        senderId: String(user?.id || user?._id),
+        senderId: String(user?._id || user?.id || ''),
       })
     }
     get().cleanCallState('ended')
