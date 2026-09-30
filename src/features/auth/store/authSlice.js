@@ -286,6 +286,14 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    // Cập nhật thông tin user trong state & storage
+    updateUser: (state, action) => {
+      state.user = {
+        ...state.user,
+        ...action.payload,
+      }
+      setStoredAuthUser(state.user)
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -399,5 +407,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { logout, clearError } = authSlice.actions
+export const { logout, clearError, updateUser } = authSlice.actions
 export default authSlice.reducer

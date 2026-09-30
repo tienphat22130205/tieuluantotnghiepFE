@@ -132,7 +132,11 @@ const Navbar = () => {
 
   return (
     <>
-      <TopHeader onOpenSettings={() => setIsMobileMenuOpen(true)} />
+      <TopHeader
+        onOpenSettings={() => setIsMobileMenuOpen(true)}
+        onToggleChat={() => setIsChatOpen((prev) => !prev)}
+        onToggleNotifications={() => setIsNotificationOpen((prev) => !prev)}
+      />
 
       <nav className="hidden md:flex fixed left-0 top-14 bottom-0 z-40 w-72 border-r border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm overflow-y-auto transition-colors">
         <div className="flex h-full w-full flex-col px-3 py-4 space-y-5">

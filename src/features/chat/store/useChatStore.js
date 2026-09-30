@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import chatService from '../services/chatService'
 import { getSocket } from '@/services/socketClient'
 import { usePresenceStore } from './usePresenceStore'
+import { useChatHeadStore } from './useChatHeadStore'
 import {
   extractConversationsPayload,
   extractConversationPayload,
@@ -38,47 +39,72 @@ const toDateTimeLabel = (value) => {
 }
 
 const mergeIncomingMessage = (prev, incoming) => {
-  if (!incoming?._id) return [...prev, incoming]
-  const existingIndex = prev.findIndex((item) => String(item._id || item.id) === String(incoming._id))
-  if (existingIndex === -1) {
-    return [...prev, incoming]
-  }
+  if (!incoming?._id && !incoming?.id) return [...prev, incoming]
+  const incomingId = String(incoming._id || incoming.id)
 
-  const existing = prev[existingIndex]
+  const existingIndex = prev.findIndex((item) => String(item._id || item.id) === incomingId)
+  if (existingIndex !== -1) {
+    const existing = prev[existingIndex]
 
-  let mergedReplyTo = incoming.replyTo || existing.replyTo
-  if (existing.replyTo && incoming.replyTo) {
-    const existingContent = existing.replyTo.content || existing.replyTo.text || ''
-    const incomingContent = incoming.replyTo.content || incoming.replyTo.text || ''
-    const existingSender = existing.replyTo.sender
-    const incomingSender = incoming.replyTo.sender
+    let mergedReplyTo = incoming.replyTo || existing.replyTo
+    if (existing.replyTo && incoming.replyTo) {
+      const existingContent = existing.replyTo.content || existing.replyTo.text || ''
+      const incomingContent = incoming.replyTo.content || incoming.replyTo.text || ''
+      const existingSender = existing.replyTo.sender
+      const incomingSender = incoming.replyTo.sender
 
-    mergedReplyTo = {
-      ...existing.replyTo,
-      ...incoming.replyTo,
-      content: incomingContent || existingContent,
-      text: incomingContent || existingContent,
-      sender:
-        incomingSender && (incomingSender.username || incomingSender.full_name || incomingSender._id)
-          ? { ...existingSender, ...incomingSender }
-          : existingSender,
+      mergedReplyTo = {
+        ...existing.replyTo,
+        ...incoming.replyTo,
+        content: incomingContent || existingContent,
+        text: incomingContent || existingContent,
+        sender:
+          incomingSender && (incomingSender.username || incomingSender.full_name || incomingSender._id)
+            ? { ...existingSender, ...incomingSender }
+            : existingSender,
+      }
+    } else if (existing.replyTo && !incoming.replyTo) {
+      mergedReplyTo = existing.replyTo
     }
-  } else if (existing.replyTo && !incoming.replyTo) {
-    mergedReplyTo = existing.replyTo
+
+    const merged = {
+      ...existing,
+      ...incoming,
+      _id: incomingId,
+      isMine: Boolean(existing.isMine || incoming.isMine),
+      status: incoming.status || existing.status || 'sent',
+      replyTo: mergedReplyTo,
+      content: incoming.content || existing.content || '',
+    }
+
+    const next = [...prev]
+    next[existingIndex] = merged
+    return next
   }
 
-  const merged = {
-    ...existing,
-    ...incoming,
-    isMine: Boolean(existing.isMine || incoming.isMine),
-    status: incoming.status || existing.status || 'sent',
-    replyTo: mergedReplyTo,
-    content: incoming.content || existing.content || '',
+  // If this incoming message is from 'me' or has content matching an active pending temp message, replace temp message!
+  if (incoming.isMine || incoming.senderId) {
+    const tempIndex = prev.findIndex(
+      (item) =>
+        String(item._id || '').startsWith('temp-') &&
+        (item.content === incoming.content || (incoming.type === 'sticker' && item.type === 'sticker'))
+    )
+    if (tempIndex !== -1) {
+      const existing = prev[tempIndex]
+      const merged = {
+        ...existing,
+        ...incoming,
+        _id: incomingId,
+        isMine: true,
+        status: 'sent',
+      }
+      const next = [...prev]
+      next[tempIndex] = merged
+      return next
+    }
   }
 
-  const next = [...prev]
-  next[existingIndex] = merged
-  return next
+  return [...prev, incoming]
 }
 
 const createTempMessageId = () => `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -134,11 +160,13 @@ export const useChatStore = create((set, get) => ({
       convoId = friendId
     }
 
-    // If this conversation is ALREADY active, simply sync selectedConversation and stop!
+    // If this conversation is ALREADY active and messages are already present, sync selectedConversation and stop!
     if (
       get().activeConversationId &&
       (String(get().activeConversationId) === String(convoId) ||
-        String(get().activeConversationId) === String(friendId))
+        String(get().activeConversationId) === String(friendId)) &&
+      Array.isArray(get().messages) &&
+      get().messages.length > 0
     ) {
       if (typeof friend === 'object') {
         set({ selectedConversation: friend })
@@ -146,10 +174,10 @@ export const useChatStore = create((set, get) => ({
       return
     }
 
-    if (get().isMessagesLoading) {
-      return
+    const targetHead = useChatHeadStore.getState().chatHeads.find((h) => String(h.id) === friendId)
+    if (targetHead && targetHead.unreadCount > 0) {
+      useChatHeadStore.getState().markHeadAsRead(friendId)
     }
-
     set({ isMessagesLoading: true, selectedConversation: typeof friend === 'object' ? friend : null })
     const socket = getSocket(token)
 
@@ -292,39 +320,55 @@ export const useChatStore = create((set, get) => ({
       const response = await chatService.sendMessage(activeConversationId, content, {
         replyTo: replyToMessage?._id || replyToMessage?.id || null,
       })
-      const normalized = normalizeChatMessage(
-        response?.message || response?.data?.message || response,
-        {
-          fallbackSenderId: currentUserId,
-          forceMine: true,
-        }
-      )
-      if (normalized) {
-        const resolvedReplyTo =
-          normalized.replyTo && typeof normalized.replyTo === 'object' && (normalized.replyTo.content || normalized.replyTo.text)
-            ? normalized.replyTo
-            : optimisticReplyTo
 
-        const finalMsg = {
-          ...normalized,
-          _id: normalized._id || tempId,
-          status: 'sent',
-          replyTo: resolvedReplyTo,
-        }
-        set((state) => ({
-          messages: mergeIncomingMessage(
-            state.messages.filter((m) => String(m._id) !== String(tempId)),
-            finalMsg
-          ),
-        }))
-        get().updateFriendPreview(selectedConversation?._id, finalMsg.content, {
-          incrementUnread: false,
-          resetUnread: true,
-          createdAt: finalMsg.createdAt,
-        })
-        set({ replyToMessage: null })
+      const rawMsgData =
+        response?.data?.message ||
+        response?.messageDoc ||
+        (response?.data && (response.data._id || response.data.content) ? response.data : null) ||
+        (response?._id ? response : null)
+
+      const normalized = normalizeChatMessage(rawMsgData, {
+        fallbackSenderId: currentUserId,
+        forceMine: true,
+      })
+
+      const resolvedReplyTo =
+        normalized?.replyTo && typeof normalized.replyTo === 'object' && (normalized.replyTo.content || normalized.replyTo.text)
+          ? normalized.replyTo
+          : optimisticReplyTo
+
+      const finalId = normalized?._id || rawMsgData?._id || tempId
+
+      const finalMsg = {
+        ...optimistic,
+        ...normalized,
+        _id: finalId,
+        content: normalized?.content || content,
+        text: normalized?.content || content,
+        status: 'sent',
+        replyTo: resolvedReplyTo,
       }
+      set((state) => {
+        const hasTemp = state.messages.some((m) => String(m._id) === String(tempId))
+        if (hasTemp) {
+          return {
+            messages: state.messages.map((m) =>
+              String(m._id) === String(tempId) ? finalMsg : m
+            ),
+          }
+        }
+        return {
+          messages: mergeIncomingMessage(state.messages, finalMsg),
+        }
+      })
+      get().updateFriendPreview(selectedConversation?._id, finalMsg.content, {
+        incrementUnread: false,
+        resetUnread: true,
+        createdAt: finalMsg.createdAt,
+      })
+      set({ replyToMessage: null })
     } catch (err) {
+      console.error('Failed to send message:', err)
       set((state) => ({
         messages: state.messages.map((m) =>
           String(m._id) === String(tempId) ? { ...m, status: 'failed' } : m
@@ -403,39 +447,56 @@ export const useChatStore = create((set, get) => ({
         stickerUrl,
         replyTo: replyToMessage?._id || replyToMessage?.id || null,
       })
-      const normalized = normalizeChatMessage(
-        response?.message || response?.data?.message || response,
-        {
-          fallbackSenderId: currentUserId,
-          forceMine: true,
-        }
-      )
-      if (normalized) {
-        const resolvedReplyTo =
-          normalized.replyTo && typeof normalized.replyTo === 'object' && (normalized.replyTo.content || normalized.replyTo.text)
-            ? normalized.replyTo
-            : optimisticReplyTo
 
-        const finalMsg = {
-          ...normalized,
-          _id: normalized._id || tempId,
-          status: 'sent',
-          replyTo: resolvedReplyTo,
-        }
-        set((state) => ({
-          messages: mergeIncomingMessage(
-            state.messages.filter((m) => String(m._id) !== String(tempId)),
-            finalMsg
-          ),
-        }))
-        get().updateFriendPreview(selectedConversation?._id, '[Sticker]', {
-          incrementUnread: false,
-          resetUnread: true,
-          createdAt: finalMsg.createdAt,
-        })
-        set({ replyToMessage: null })
+      const rawMsgData =
+        response?.data?.message ||
+        response?.messageDoc ||
+        (response?.data && (response.data._id || response.data.sticker) ? response.data : null) ||
+        (response?._id ? response : null)
+
+      const normalized = normalizeChatMessage(rawMsgData, {
+        fallbackSenderId: currentUserId,
+        forceMine: true,
+      })
+
+      const resolvedReplyTo =
+        normalized?.replyTo && typeof normalized.replyTo === 'object' && (normalized.replyTo.content || normalized.replyTo.text)
+          ? normalized.replyTo
+          : optimisticReplyTo
+
+      const finalId = normalized?._id || rawMsgData?._id || tempId
+
+      const finalMsg = {
+        ...optimistic,
+        ...normalized,
+        _id: finalId,
+        content: '[Sticker]',
+        type: 'sticker',
+        sticker: stickerUrl,
+        status: 'sent',
+        replyTo: resolvedReplyTo,
       }
+      set((state) => {
+        const hasTemp = state.messages.some((m) => String(m._id) === String(tempId))
+        if (hasTemp) {
+          return {
+            messages: state.messages.map((m) =>
+              String(m._id) === String(tempId) ? finalMsg : m
+            ),
+          }
+        }
+        return {
+          messages: mergeIncomingMessage(state.messages, finalMsg),
+        }
+      })
+      get().updateFriendPreview(selectedConversation?._id, '[Sticker]', {
+        incrementUnread: false,
+        resetUnread: true,
+        createdAt: finalMsg.createdAt,
+      })
+      set({ replyToMessage: null })
     } catch (err) {
+      console.error('Failed to send sticker:', err)
       set((state) => ({
         messages: state.messages.map((m) =>
           String(m._id) === String(tempId) ? { ...m, status: 'failed' } : m
@@ -554,18 +615,30 @@ export const useChatStore = create((set, get) => ({
       if (!normalized) return
 
       const friendId = friendByConversationId.get(convoId)
+      const effectiveFriendId =
+        friendId ||
+        (normalized.senderId && String(normalized.senderId) !== String(currentUserId)
+          ? String(normalized.senderId)
+          : null)
+
       const isMine = Boolean(
         normalized.isMine ||
           (normalized.senderId && currentUserId && String(normalized.senderId) === String(currentUserId))
       )
 
-      const { activeConversationId } = get()
-      if (String(activeConversationId) === convoId) {
+      const activeConvo = String(get().activeConversationId || '')
+      const selectedFriend = String(get().selectedConversation?._id || get().selectedConversation?.id || '')
+
+      const isChatActive =
+        (activeConvo && (activeConvo === convoId || (effectiveFriendId && activeConvo === effectiveFriendId))) ||
+        (selectedFriend && effectiveFriendId && selectedFriend === effectiveFriendId)
+
+      if (isChatActive) {
         set((state) => ({
           messages: mergeIncomingMessage(state.messages, { ...normalized, isMine }),
         }))
-        if (friendId) {
-          get().updateFriendPreview(friendId, normalized.content, {
+        if (effectiveFriendId) {
+          get().updateFriendPreview(effectiveFriendId, normalized.content, {
             incrementUnread: false,
             createdAt: normalized.createdAt,
           })
@@ -573,11 +646,14 @@ export const useChatStore = create((set, get) => ({
         return
       }
 
-      if (friendId) {
-        get().updateFriendPreview(friendId, normalized.content, {
+      if (effectiveFriendId) {
+        get().updateFriendPreview(effectiveFriendId, normalized.content, {
           incrementUnread: !isMine && Boolean(normalized.senderId),
           createdAt: normalized.createdAt,
         })
+        if (!isMine && Boolean(normalized.senderId)) {
+          useChatHeadStore.getState().incrementUnread(effectiveFriendId)
+        }
       }
     }
 

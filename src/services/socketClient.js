@@ -28,8 +28,11 @@ export const deriveSocketUrl = () => {
 
 const createSocket = (token) => io(deriveSocketUrl(), {
   autoConnect: false,
-  transports: ['websocket'],
+  transports: ['polling', 'websocket'],
   withCredentials: true,
+  reconnection: true,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1000,
   auth: token ? { token } : undefined,
 })
 
