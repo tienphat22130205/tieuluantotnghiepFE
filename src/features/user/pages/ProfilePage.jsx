@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import CoverPhoto from '../components/CoverPhoto'
 import ProfileInfo from '../components/ProfileInfo'
@@ -10,9 +10,11 @@ import PostsTab from '../components/PostsTab'
 import AboutTab from '../components/AboutTab'
 import PhotosTab from '../components/PhotosTab'
 import FriendsTab from '../components/FriendsTab'
+import SavedTab from '../components/SavedTab'
 import EditProfileModal from '../components/EditProfileModal'
 import ProfileSkeleton from '../components/ProfileSkeleton'
 import useProfilePage from '../hooks/useProfilePage'
+import { getSavedPosts, fetchSavedPostsFromApi } from '@/features/post/utils/savedPostsStorage'
 import { PROFILE_PAGE_TEXT } from '@/constants/messages'
 
 /**
@@ -46,6 +48,18 @@ const ProfilePage = () => {
     handleAvatarRemove,
   } = useProfilePage(userId)
 
+  // Dynamic saved count syncing with backend and storage
+  const [savedCount, setSavedCount] = useState(() => (isMyProfile ? getSavedPosts().length : null))
+
+  useEffect(() => {
+    if (!isMyProfile) return
+    const updateCount = () => setSavedCount(getSavedPosts().length)
+    updateCount()
+    fetchSavedPostsFromApi().then(() => updateCount())
+    window.addEventListener('zivo_saved_posts_updated', updateCount)
+    return () => window.removeEventListener('zivo_saved_posts_updated', updateCount)
+  }, [isMyProfile])
+
   // Calculate unique photos count for tabs badge
   const photosCount = useMemo(() => {
     const urls = (displayedPosts || [])
@@ -70,6 +84,8 @@ const ProfilePage = () => {
         return <PhotosTab posts={displayedPosts} />
       case 'friends':
         return <FriendsTab friendCount={friendCount} friends={profile.friends || []} />
+      case 'saved':
+        return isMyProfile ? <SavedTab /> : null
       default:
         return null
     }
@@ -124,6 +140,8 @@ const ProfilePage = () => {
             postsCount={displayedPosts.length}
             photosCount={photosCount}
             friendCount={friendCount}
+            isMyProfile={isMyProfile}
+            savedCount={isMyProfile ? savedCount : null}
           />
         </div>
       </div>

@@ -208,10 +208,13 @@ const postService = {
   generateCaption: (formData) => postService.generateContentUpload(formData),
 
   // Lưu / Bỏ lưu bài viết (Bookmark)
-  toggleSave: (postId) => api.put(`/posts/${postId}/save`),
+  toggleSave: (postId) => api.post(`/posts/${postId}/bookmark`),
 
   // Lấy danh sách bài viết đã lưu
-  getSaved: () => api.get('/posts/saved'),
+  getSaved: (page = 1, limit = 50) => api.get('/posts/bookmarks/my-bookmarks', { params: { page, limit } }),
+
+  // Kiểm tra bài viết đã lưu chưa
+  checkIsSaved: (postId) => api.get(`/posts/${postId}/bookmark`),
 }
 
 export default postService

@@ -9,9 +9,12 @@ import StoryArchiveModal from './StoryArchiveModal'
 import StorySidebar from './StorySidebar'
 import StoryCard from './StoryCard'
 import StoryViewersBottomSheet from './StoryViewersBottomSheet'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0, currentUser, onDeleteStory, onViewStory }) => {
   if (!isOpen || groups.length === 0) return null
+
+  const { t } = usePreferences()
 
   const [currentGroupIndex, setCurrentGroupIndex] = useState(initialGroupIndex)
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
@@ -225,7 +228,7 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
     const storyId = activeStory.id || activeStory._id
     try {
       await storyService.deleteStory(storyId)
-      toast.success('Đã xóa tin thành công!')
+      toast.success(t('story.deleteSuccess'))
       onDeleteStory?.(storyId)
 
       // Advancing to next story or group
@@ -247,7 +250,7 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
         }
       }
     } catch (err) {
-      toast.error(err?.message || 'Xóa tin thất bại!')
+      toast.error(err?.message || t('story.deleteError'))
     }
   }
 
@@ -281,13 +284,13 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
       await chatService.sendMessage(conversationId, content, { storyReply })
       
       if (isReaction) {
-        toast.success(`Đã bày tỏ cảm xúc ${text}`)
+        toast.success(`${t('story.reactSuccess')} ${text}`)
       } else {
-        toast.success('Đã gửi phản hồi thành công!')
+        toast.success(t('story.replySuccess'))
       }
     } catch (err) {
       console.error('Lỗi khi gửi phản hồi Story:', err)
-      toast.error('Gửi phản hồi thất bại!')
+      toast.error(t('story.replyError'))
     }
   }
 
@@ -306,7 +309,7 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
       const storyId = activeStory.id || activeStory._id
       try {
         await storyService.reactStory(storyId, emoji)
-        toast.success(`Đã bày tỏ cảm xúc ${emoji}`)
+        toast.success(`${t('story.reactSuccess')} ${emoji}`)
       } catch (err) {
         console.error('Lỗi khi bày tỏ cảm xúc Story:', err)
       }
@@ -377,7 +380,7 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
           <button
             type="button"
             onClick={handlePrev}
-            className="absolute left-3 lg:left-4 z-20 flex items-center justify-center w-12 h-12 rounded-full bg-slate-950/40 hover:bg-slate-900/80 border border-white/5 text-white/40 hover:text-white transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-lg backdrop-blur-xs"
+            className="hidden md:flex absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-slate-950/40 hover:bg-slate-900/80 border border-white/5 text-white/40 hover:text-white transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-lg backdrop-blur-xs"
           >
             <FiChevronLeft size={24} />
           </button>
@@ -388,7 +391,7 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
           <button
             type="button"
             onClick={handleNext}
-            className="absolute right-3 lg:right-4 z-20 flex items-center justify-center w-12 h-12 rounded-full bg-slate-950/40 hover:bg-slate-900/80 border border-white/5 text-white/40 hover:text-white transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-lg backdrop-blur-xs"
+            className="hidden md:flex absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-slate-950/40 hover:bg-slate-900/80 border border-white/5 text-white/40 hover:text-white transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-lg backdrop-blur-xs"
           >
             <FiChevronRight size={24} />
           </button>
@@ -432,6 +435,7 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
           reactionEmojis={reactionEmojis}
           setShowViewersList={setShowViewersList}
           shouldPause={shouldPause}
+          onClose={onClose}
         />
 
         {/* Mobile Viewers Sheet Trigger Button (Bottom bar) */}
@@ -441,7 +445,7 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
             onClick={() => setShowViewersList(true)}
             className="lg:hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-xs font-semibold text-white/90 hover:text-white transition cursor-pointer"
           >
-            <span>👀 {activeStory?.viewers?.length || 0} lượt xem</span>
+            <span>👀 {activeStory?.viewers?.length || 0} {t('story.views')}</span>
           </button>
         )}
 
@@ -457,8 +461,8 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-30 flex items-center justify-center w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 border border-white/10 text-white/70 hover:text-white transition cursor-pointer"
-          title="Đóng"
+          className="hidden md:flex absolute top-4 right-4 z-30 items-center justify-center w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 border border-white/10 text-white/70 hover:text-white transition cursor-pointer"
+          title={t('story.close')}
         >
           <FiX size={18} />
         </button>
@@ -468,7 +472,7 @@ const StoryViewerModal = ({ isOpen, onClose, groups = [], initialGroupIndex = 0,
       {/* Confirm Deletion Modal */}
       <ConfirmModal
         isOpen={showConfirmDelete}
-        message="Bạn có chắc chắn muốn xóa tin này không? Hành động này không thể hoàn tác."
+        message={t('story.deleteConfirm')}
         onConfirm={handleConfirmDelete}
         onCancel={() => setShowConfirmDelete(false)}
       />

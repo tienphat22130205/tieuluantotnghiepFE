@@ -1,13 +1,41 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AiOutlineTeam, AiOutlineSearch, AiOutlineMessage } from 'react-icons/ai'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
+import { useChatHeadStore } from '@/features/chat/store/useChatHeadStore'
 
 /**
  * FriendsTab – Nội dung tab "Bạn bè" chi tiết với ô tìm kiếm nhanh và card bạn bè phong cách hiện đại.
  */
 const FriendsTab = ({ friendCount = 0, friends = [] }) => {
+  const navigate = useNavigate()
+  const { openChatHead } = useChatHeadStore()
   const [searchTerm, setSearchTerm] = useState('')
+
+  const handleMessageFriend = (friend, e) => {
+    e.preventDefault()
+    const targetId = String(friend._id || friend.id)
+    const targetFriend = {
+      _id: targetId,
+      id: targetId,
+      full_name: friend.full_name || friend.fullName || friend.username || 'Người dùng',
+      username: friend.username || '',
+      avatar: friend.avatar || null,
+      isOnline: Boolean(friend.isOnline),
+    }
+
+    if (window.innerWidth < 768) {
+      navigate(`/chat?friendId=${targetId}`)
+    } else {
+      openChatHead(targetFriend)
+      window.dispatchEvent(new CustomEvent('chat:open'))
+      window.dispatchEvent(
+        new CustomEvent('chat:select-friend', {
+          detail: { friendId: targetId, friend: targetFriend },
+        })
+      )
+    }
+  }
 
   const normalizedFriends = useMemo(() => {
     return (friends || []).filter((friend) => friend && typeof friend === 'object')
@@ -97,13 +125,14 @@ const FriendsTab = ({ friendCount = 0, friends = [] }) => {
                   </div>
                 </Link>
 
-                <Link
-                  to={`/chat?userId=${friendId}`}
+                <button
+                  type="button"
+                  onClick={(e) => handleMessageFriend(friend, e)}
                   title="Nhắn tin"
                   className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 transition shrink-0 cursor-pointer shadow-xs"
                 >
                   <AiOutlineMessage size={18} />
-                </Link>
+                </button>
               </div>
             )
           })}

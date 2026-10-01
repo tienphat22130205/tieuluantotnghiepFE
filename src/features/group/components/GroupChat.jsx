@@ -3,10 +3,12 @@ import { useSelector } from 'react-redux'
 import useGroupChat from '../hooks/useGroupChat'
 import { Avatar } from '@/components/ui'
 import { AiOutlineSend } from 'react-icons/ai'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const GroupChat = ({ groupId }) => {
   const { messages, sendMessage } = useGroupChat(groupId)
   const { user } = useSelector((state) => state.auth)
+  const { t, language } = usePreferences()
   const currentUserId = user?.id || user?._id
 
   const [text, setText] = useState('')
@@ -39,7 +41,7 @@ const GroupChat = ({ groupId }) => {
   const formatTime = (timeStr) => {
     if (!timeStr) return ''
     const date = new Date(timeStr)
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString(language === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })
   }
 
   return (
@@ -49,7 +51,7 @@ const GroupChat = ({ groupId }) => {
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
             <span className="text-3xl">💬</span>
-            <p className="text-xs font-normal">Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!</p>
+            <p className="text-xs font-normal">{t('groups.noChatMessages', 'Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!')}</p>
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -109,7 +111,7 @@ const GroupChat = ({ groupId }) => {
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Nhập nội dung tin nhắn..."
+          placeholder={t('groups.chatInputPlaceholder', 'Nhập nội dung tin nhắn...')}
           className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/20"
         />
         <button

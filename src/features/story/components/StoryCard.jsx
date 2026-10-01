@@ -1,6 +1,7 @@
-import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiTrash, FiSend, FiEye } from 'react-icons/fi'
+import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiTrash, FiSend, FiEye, FiX } from 'react-icons/fi'
 import { Avatar } from '@/components/ui'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const getSpotifyEmbedWithAutoplay = (url) => {
   if (!url) return '';
@@ -33,10 +34,12 @@ const StoryCard = ({
   reactionEmojis = [],
   setShowViewersList,
   shouldPause,
+  onClose,
   children,
 }) => {
   const activeStory = propActiveStory || story
   const displayAuthor = activeGroup?.user || author
+  const { t } = usePreferences()
 
   if (!activeStory) return null
   return (
@@ -152,16 +155,18 @@ const StoryCard = ({
           {/* Header Action controls */}
           <div className="flex items-center gap-1 bg-black/20 backdrop-blur-xs rounded-full p-1 border border-white/5">
             <button
+              type="button"
               onClick={() => setIsPaused(!isPaused)}
               className="p-2 rounded-full hover:bg-white/10 text-white transition cursor-pointer"
-              title={isPaused ? 'Phát' : 'Tạm dừng'}
+              title={isPaused ? t('story.play') : t('story.pause')}
             >
               {isPaused ? <FiPlay size={16} /> : <FiPause size={16} />}
             </button>
             <button
+              type="button"
               onClick={() => setIsMuted(!isMuted)}
               className="p-2 rounded-full hover:bg-white/10 text-white transition cursor-pointer"
-              title={isMuted ? 'Bật âm' : 'Tắt âm'}
+              title={isMuted ? t('story.unmute') : t('story.mute')}
             >
               {isMuted ? <FiVolumeX size={16} /> : <FiVolume2 size={16} />}
             </button>
@@ -170,9 +175,19 @@ const StoryCard = ({
                 type="button"
                 onClick={handleDeleteClick}
                 className="p-2 rounded-full hover:bg-red-500/20 text-red-400 hover:text-red-500 transition cursor-pointer"
-                title="Xóa tin này"
+                title={t('story.deleteStory')}
               >
                 <FiTrash size={16} />
+              </button>
+            )}
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="md:hidden p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition cursor-pointer"
+                title={t('story.closeStory')}
+              >
+                <FiX size={16} />
               </button>
             )}
           </div>
@@ -181,14 +196,21 @@ const StoryCard = ({
 
       {/* Spotify Mini Player – compact, shown at bottom of story */}
       {activeStory.spotifyUrl && (
-        <div className="absolute bottom-[130px] left-4 right-4 z-20">
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className={`absolute ${isMyStory ? 'bottom-[72px]' : 'bottom-[142px]'} left-3 right-3 sm:left-4 sm:right-4 z-30 pointer-events-auto`}
+        >
           <iframe
             id="spotify-story-iframe"
             key={activeStory.id || activeStory._id}
             title="Spotify Player"
             src={getSpotifyEmbedWithAutoplay(activeStory.spotifyUrl)}
             width="100%"
-            height="80"
+            height={activeStory.spotifyUrl.includes('/album/') ? "152" : "80"}
             frameBorder="0"
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             style={{ borderRadius: '12px', border: 'none' }}
@@ -253,7 +275,7 @@ const StoryCard = ({
             <form onSubmit={handleSendReply} className="flex gap-2">
               <input
                 type="text"
-                placeholder="Gửi tin nhắn..."
+                placeholder={t('story.sendReplyPlaceholder')}
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 className="flex-1 bg-white/10 hover:bg-white/15 focus:bg-white/20 border border-white/10 rounded-full px-4 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-white/30 transition-all"

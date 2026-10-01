@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import userService from '../services/userService'
@@ -31,13 +31,22 @@ import {
 
 const useProfilePage = (userId) => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user: currentUser } = useSelector((state) => state.auth)
   const feedPosts = useSelector((state) => state.posts.posts)
 
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
   const [relationshipStatus, setRelationshipStatus] = useState(initialRelationshipState)
-  const [activeTab, setActiveTab] = useState('posts')
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'posts')
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && ['posts', 'about', 'photos', 'friends', 'saved'].includes(tabParam)) {
+      setActiveTab(tabParam)
+    }
+  }, [searchParams])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isEditingProfile, setIsEditingProfile] = useState(false)
@@ -53,7 +62,6 @@ const useProfilePage = (userId) => {
     lng: '',
   })
 
-  const navigate = useNavigate()
   const currentUserId = getUserId(currentUser)
   const currentUsername = currentUser?.username ? String(currentUser.username).toLowerCase().replace(/^@/, '') : ''
   const cleanRouteParam = userId ? String(userId).toLowerCase().replace(/^@/, '') : ''

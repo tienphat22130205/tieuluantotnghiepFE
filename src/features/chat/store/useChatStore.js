@@ -17,9 +17,16 @@ import {
 
 console.log('✅ [useChatStore] New version loaded successfully')
 
-const conversationByFriendId = new Map()
-const friendByConversationId = new Map()
+export const conversationByFriendId = new Map()
+export const friendByConversationId = new Map()
 let joinedConversationId = null
+
+export const registerConversationFriendMapping = (friendId, convoId) => {
+  if (friendId && convoId) {
+    conversationByFriendId.set(String(friendId), String(convoId))
+    friendByConversationId.set(String(convoId), String(friendId))
+  }
+}
 
 const toTimeLabel = (value) => {
   const date = new Date(value)
@@ -232,6 +239,24 @@ export const useChatStore = create((set, get) => ({
 
       set({ messages: normalized })
 
+      // Update friend preview in the presence store with the latest message
+      if (normalized.length > 0) {
+        const lastMsg = normalized[normalized.length - 1]
+        const isMine = Boolean(lastMsg.isMine || (lastMsg.senderId && String(lastMsg.senderId) === String(currentUserId)))
+        const rawContent = lastMsg.type === 'sticker' ? '[Sticker]' : (lastMsg.content || lastMsg.text || '')
+        const preview = rawContent ? (isMine ? `Bạn: ${rawContent}` : rawContent) : ''
+        get().updateFriendPreview(friendId, preview, {
+          incrementUnread: false,
+          resetUnread: true,
+          createdAt: lastMsg.createdAt,
+        })
+      } else {
+        get().updateFriendPreview(friendId, null, {
+          incrementUnread: false,
+          resetUnread: true,
+        })
+      }
+
       chatService.markConversationAsRead(convoId).catch(() => {})
     } catch (err) {
       console.error('Failed to open conversation:', err)
@@ -309,7 +334,8 @@ export const useChatStore = create((set, get) => ({
       set((state) => ({
         messages: mergeIncomingMessage(state.messages, optimistic),
       }))
-      get().updateFriendPreview(selectedConversation?._id, optimistic.content, {
+      const targetFriendId = selectedConversation?._id || selectedConversation?.id || friendByConversationId.get(String(activeConversationId))
+      get().updateFriendPreview(targetFriendId, `Bạn: ${optimistic.content}`, {
         incrementUnread: false,
         resetUnread: true,
         createdAt: optimistic.createdAt,
@@ -361,7 +387,8 @@ export const useChatStore = create((set, get) => ({
           messages: mergeIncomingMessage(state.messages, finalMsg),
         }
       })
-      get().updateFriendPreview(selectedConversation?._id, finalMsg.content, {
+      const targetFriendId = selectedConversation?._id || selectedConversation?.id || friendByConversationId.get(String(activeConversationId))
+      get().updateFriendPreview(targetFriendId, `Bạn: ${finalMsg.content}`, {
         incrementUnread: false,
         resetUnread: true,
         createdAt: finalMsg.createdAt,
@@ -434,7 +461,8 @@ export const useChatStore = create((set, get) => ({
       set((state) => ({
         messages: mergeIncomingMessage(state.messages, optimistic),
       }))
-      get().updateFriendPreview(selectedConversation?._id, '[Sticker]', {
+      const targetFriendId = selectedConversation?._id || selectedConversation?.id || friendByConversationId.get(String(activeConversationId))
+      get().updateFriendPreview(targetFriendId, 'Bạn: [Sticker]', {
         incrementUnread: false,
         resetUnread: true,
         createdAt: optimistic.createdAt,
@@ -489,7 +517,8 @@ export const useChatStore = create((set, get) => ({
           messages: mergeIncomingMessage(state.messages, finalMsg),
         }
       })
-      get().updateFriendPreview(selectedConversation?._id, '[Sticker]', {
+      const targetFriendId = selectedConversation?._id || selectedConversation?.id || friendByConversationId.get(String(activeConversationId))
+      get().updateFriendPreview(targetFriendId, 'Bạn: [Sticker]', {
         incrementUnread: false,
         resetUnread: true,
         createdAt: finalMsg.createdAt,
@@ -626,6 +655,9 @@ export const useChatStore = create((set, get) => ({
           (normalized.senderId && currentUserId && String(normalized.senderId) === String(currentUserId))
       )
 
+      const rawContent = normalized.type === 'sticker' ? '[Sticker]' : (normalized.content || '')
+      const preview = rawContent ? (isMine ? `Bạn: ${rawContent}` : rawContent) : ''
+
       const activeConvo = String(get().activeConversationId || '')
       const selectedFriend = String(get().selectedConversation?._id || get().selectedConversation?.id || '')
 
@@ -638,7 +670,7 @@ export const useChatStore = create((set, get) => ({
           messages: mergeIncomingMessage(state.messages, { ...normalized, isMine }),
         }))
         if (effectiveFriendId) {
-          get().updateFriendPreview(effectiveFriendId, normalized.content, {
+          get().updateFriendPreview(effectiveFriendId, preview, {
             incrementUnread: false,
             createdAt: normalized.createdAt,
           })
@@ -647,7 +679,7 @@ export const useChatStore = create((set, get) => ({
       }
 
       if (effectiveFriendId) {
-        get().updateFriendPreview(effectiveFriendId, normalized.content, {
+        get().updateFriendPreview(effectiveFriendId, preview, {
           incrementUnread: !isMine && Boolean(normalized.senderId),
           createdAt: normalized.createdAt,
         })
@@ -664,12 +696,20 @@ export const useChatStore = create((set, get) => ({
       const friendId = friendByConversationId.get(convoId)
       if (!friendId) return
 
-      const content =
+      const senderId =
+        payload?.lastMessage?.sender?._id ||
+        payload?.lastMessage?.sender ||
+        payload?.data?.lastMessage?.sender?._id ||
+        payload?.data?.lastMessage?.sender
+      const isMine = String(senderId) === String(currentUserId)
+
+      const rawContent =
         payload?.lastMessage?.content ||
         payload?.lastMessage?.text ||
         payload?.data?.lastMessage?.content ||
         payload?.data?.lastMessage?.text ||
         ''
+      const preview = rawContent ? (isMine ? `Bạn: ${rawContent}` : rawContent) : ''
 
       const createdAt =
         payload?.lastMessage?.createdAt ||
@@ -689,7 +729,7 @@ export const useChatStore = create((set, get) => ({
       const parsedUnread = Number(unreadCountRaw)
       const hasUnread = Number.isFinite(parsedUnread)
 
-      get().updateFriendPreview(friendId, content, {
+      get().updateFriendPreview(friendId, preview, {
         createdAt,
         forceUnreadCount: hasUnread ? parsedUnread : null,
       })

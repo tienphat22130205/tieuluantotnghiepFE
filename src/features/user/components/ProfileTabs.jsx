@@ -4,10 +4,11 @@ import {
   AiOutlinePicture,
   AiOutlineTeam,
 } from 'react-icons/ai'
+import { BsBookmark } from 'react-icons/bs'
 
 /**
- * ProfileTabs – Thanh chuyển tab (Bài viết, Giới thiệu, Ảnh, Bạn bè) tích hợp Badge đếm số lượng.
- * Props: activeTab, onTabChange, postsCount, photosCount, friendCount
+ * ProfileTabs – Thanh chuyển tab (Bài viết, Giới thiệu, Ảnh, Bạn bè, Đã lưu) tích hợp Badge đếm số lượng.
+ * Props: activeTab, onTabChange, postsCount, photosCount, friendCount, isMyProfile, savedCount
  */
 const ProfileTabs = ({
   activeTab,
@@ -15,6 +16,8 @@ const ProfileTabs = ({
   postsCount = null,
   photosCount = null,
   friendCount = null,
+  isMyProfile = false,
+  savedCount = null,
 }) => {
   const tabs = [
     {
@@ -41,6 +44,16 @@ const ProfileTabs = ({
       icon: AiOutlineTeam,
       count: friendCount,
     },
+    ...(isMyProfile
+      ? [
+          {
+            id: 'saved',
+            label: 'Đã lưu',
+            icon: BsBookmark,
+            count: savedCount,
+          },
+        ]
+      : []),
   ]
 
   return (

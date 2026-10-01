@@ -134,25 +134,28 @@ const ChatFriendsListPanel = ({
 
       <div className="flex-1 min-h-0 overflow-y-auto py-1">
         {isLoading && (
-          <div className="px-4 py-6 text-sm text-gray-500">Đang tải danh sách bạn bè...</div>
+          <div className="px-4 py-6 text-sm text-gray-500">{t('chat.loadingFriends', 'Đang tải danh sách bạn bè...')}</div>
         )}
 
         {!isLoading && sortedFriends.length === 0 && (
           <div className="px-4 py-6 text-sm text-gray-500">
-            {searchKeyword.trim() ? 'Không tìm thấy bạn bè phù hợp.' : 'Bạn chưa có bạn bè nào để hiển thị.'}
+            {searchKeyword.trim()
+              ? t('chat.noFriendsMatch', 'Không tìm thấy bạn bè phù hợp.')
+              : t('chat.noFriendsDisplay', 'Bạn chưa có bạn bè nào để hiển thị.')}
           </div>
         )}
 
         {!isLoading && sortedFriends.map((friend) => {
           const unreadCount = Number(friend.newMessagesCount || 0)
           const hasUnread = unreadCount > 0
-          const previewText = hasUnread
-            ? `${unreadCount} tin nhắn`
-            : friend.lastMessagePreview
-              ? friend.lastMessagePreview
-              : 'Chưa có tin nhắn'
+          const rawPreview = friend.lastMessagePreview
+          const previewText = rawPreview
+            ? (rawPreview.startsWith('Bạn: ') ? `${t('chat.you', 'Bạn:')} ${rawPreview.slice(5)}` : rawPreview)
+            : hasUnread
+              ? `${unreadCount} ${t('chat.messages', 'tin nhắn')}`
+              : t('chat.noMessages', 'Chưa có tin nhắn')
           const messageAge = formatMessageAge(friend.lastMessageAt)
-          const previewWithAge = messageAge ? `${previewText} · ${messageAge}` : previewText
+          const previewWithAge = messageAge && rawPreview ? `${previewText} · ${messageAge}` : previewText
 
           return (
             <button
