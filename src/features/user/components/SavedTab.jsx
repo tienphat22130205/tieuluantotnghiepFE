@@ -54,7 +54,7 @@ const SavedTab = () => {
       const content = String(post.content || post.text || post.caption || '').toLowerCase()
       const author = post.user || post.author || {}
       const name = String(
-        author.full_name || author.fullName || author.username || `${author.firstName || ''} ${author.lastName || ''}`
+        author.full_name || author.fullName || `${author.firstName || ''} ${author.lastName || ''}`.trim() || author.name || author.username || ''
       ).toLowerCase()
       return content.includes(q) || name.includes(q)
     })

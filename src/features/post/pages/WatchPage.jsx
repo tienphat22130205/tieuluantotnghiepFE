@@ -134,8 +134,51 @@ const WatchPage = () => {
     ? comments[activeCommentVideoId] || INITIAL_COMMENTS[activeCommentVideoId] || []
     : []
 
+  // Filter and sort videos based on activeTab and selectedTag
+  const displayedVideos = videos
+    .filter((vid) => {
+      if (selectedTag) {
+        const tagLower = selectedTag.replace('#', '').toLowerCase()
+        const matchesTag = vid.tag?.toLowerCase().includes(tagLower)
+        const matchesTitle = vid.title?.toLowerCase().includes(tagLower)
+        if (!matchesTag && !matchesTitle) return false
+      }
+      if (activeTab === 'following') {
+        return !!followedUsers[vid.user.username]
+      }
+      if (activeTab === 'relax') {
+        const relaxTags = ['sunset', 'nature', 'ocean', 'chill']
+        return relaxTags.includes(vid.tag?.toLowerCase()) || vid.title?.toLowerCase().includes('bình yên')
+      }
+      return true
+    })
+    .sort((a, b) => {
+      if (activeTab === 'trending') {
+        const likesA = likesCount[a.id] ?? a.likes
+        const likesB = likesCount[b.id] ?? b.likes
+        return likesB - likesA
+      }
+      return 0
+    })
+
+  // Keyboard navigation for video switching (ArrowUp / ArrowDown)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (activeCommentVideoId) return
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const container = document.getElementById('watch-feed-container')
+        if (!container) return
+        const delta = e.key === 'ArrowDown' ? container.clientHeight * 0.85 : -container.clientHeight * 0.85
+        container.scrollBy({ top: delta, behavior: 'smooth' })
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeCommentVideoId])
+
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-6rem)] bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden relative">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-5.5rem)] bg-slate-100/70 dark:bg-slate-950 rounded-3xl border border-slate-200/90 dark:border-slate-800/80 shadow-md dark:shadow-2xl overflow-hidden relative transition-colors duration-200">
       {/* ── Left Sidebar (Desktop Navigation & Creator Highlights) ── */}
       <WatchSidebar
         activeTab={activeTab}
@@ -147,19 +190,45 @@ const WatchPage = () => {
       />
 
       {/* ── Main Stream Section (Center Feed) ── */}
-      <main className="flex-1 flex flex-col bg-slate-950/95 relative min-w-0">
+      <main className="flex-1 flex flex-col bg-slate-100/70 dark:bg-slate-950 relative min-w-0 h-full overflow-hidden transition-colors duration-200">
         {/* Mobile Top Filter Header */}
         <WatchMobileHeader activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {isLoading ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3 p-12 text-white">
-            <div className="w-12 h-12 rounded-full border-4 border-slate-700 border-t-primary-500 animate-spin" />
-            <p className="text-sm text-slate-300 font-medium animate-pulse">Đang tải video thịnh hành...</p>
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 p-12 text-slate-700 dark:text-white">
+            <div className="w-12 h-12 rounded-full border-4 border-slate-300 dark:border-slate-700 border-t-primary-500 animate-spin" />
+            <p className="text-sm text-slate-600 dark:text-slate-300 font-medium animate-pulse">Đang tải video thịnh hành...</p>
+          </div>
+        ) : displayedVideos.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center text-slate-800 dark:text-white">
+            <div className="w-16 h-16 rounded-full bg-slate-200/80 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-300 text-2xl font-bold shadow-xs">
+              🎬
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-slate-900 dark:text-white">Chưa có video nào</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
+                {activeTab === 'following'
+                  ? 'Bạn chưa theo dõi tác giả nào hoặc họ chưa đăng video. Hãy bấm theo dõi các tác giả ở cột bên trái nhé!'
+                  : 'Không tìm thấy video phù hợp với bộ lọc hiện tại.'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setActiveTab('for-you')
+                setSelectedTag(null)
+              }}
+              className="px-4 py-2 rounded-full bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer outline-none focus:outline-none focus:ring-0"
+            >
+              Xem tất cả video
+            </button>
           </div>
         ) : (
           /* Snap-scroll Video Stream */
-          <div className="flex-1 overflow-y-scroll snap-y snap-mandatory scrollbar-none flex flex-col items-center py-4 gap-6 px-2 sm:px-4">
-            {videos.map((vid) => (
+          <div
+            id="watch-feed-container"
+            className="flex-1 overflow-y-scroll snap-y snap-mandatory scrollbar-none flex flex-col items-center py-6 gap-8 px-2 sm:px-4"
+          >
+            {displayedVideos.map((vid) => (
               <WatchVideoItem
                 key={vid.id}
                 video={vid}
@@ -183,7 +252,7 @@ const WatchPage = () => {
 
       {/* ── Right Sidebar on Desktop (Up Next & Trending Playlist) ── */}
       <WatchPlaylistSidebar
-        videos={videos}
+        videos={displayedVideos.length > 0 ? displayedVideos : videos}
         likesCount={likesCount}
         onScrollToVideo={handleScrollToVideo}
       />

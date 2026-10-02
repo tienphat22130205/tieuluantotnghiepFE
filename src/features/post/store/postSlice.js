@@ -56,6 +56,17 @@ const normalizePostForUi = (post) => {
       ? sharedNormalizedImages
       : [shared.image_url || shared.imageUrl].filter(Boolean)
     const sharedAuthor = shared.user || shared.author || {}
+    const sharedAuthorFirstName = sharedAuthor.firstName || sharedAuthor.first_name || ''
+    const sharedAuthorLastName = sharedAuthor.lastName || sharedAuthor.last_name || ''
+    const sharedAuthorFullName =
+      sharedAuthor.full_name ||
+      sharedAuthor.fullName ||
+      sharedAuthor.name ||
+      `${sharedAuthorFirstName} ${sharedAuthorLastName}`.trim() ||
+      shared.authorName ||
+      sharedAuthor.username ||
+      shared.authorUsername ||
+      'Người dùng'
 
     return {
       ...shared,
@@ -66,11 +77,25 @@ const normalizePostForUi = (post) => {
       user: {
         _id: sharedAuthor._id || sharedAuthor.id || null,
         username: sharedAuthor.username || shared.authorUsername || 'user',
-        full_name: sharedAuthor.full_name || sharedAuthor.fullName || shared.authorName,
+        firstName: sharedAuthorFirstName,
+        lastName: sharedAuthorLastName,
+        full_name: sharedAuthorFullName,
         avatar: sharedAuthor.avatar || shared.authorAvatar || null,
       },
     }
   })()
+
+  const authorFirstName = author.firstName || author.first_name || ''
+  const authorLastName = author.lastName || author.last_name || ''
+  const authorFullName =
+    author.full_name ||
+    author.fullName ||
+    author.name ||
+    `${authorFirstName} ${authorLastName}`.trim() ||
+    post.authorName ||
+    author.username ||
+    post.authorUsername ||
+    'Người dùng'
 
   return {
     ...post,
@@ -102,7 +127,9 @@ const normalizePostForUi = (post) => {
     user: {
       _id: author._id || author.id || (typeof post.author === 'string' ? post.author : null),
       username: author.username || post.authorUsername || 'user',
-      full_name: author.full_name || author.fullName || post.authorName,
+      firstName: authorFirstName,
+      lastName: authorLastName,
+      full_name: authorFullName,
       avatar: author.avatar || post.authorAvatar || null,
     },
   }

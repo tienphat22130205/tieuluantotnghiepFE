@@ -39,6 +39,13 @@ const StoryCard = ({
 }) => {
   const activeStory = propActiveStory || story
   const displayAuthor = activeGroup?.user || author
+  const authorDisplayName =
+    displayAuthor?.full_name ||
+    displayAuthor?.fullName ||
+    `${displayAuthor?.firstName || displayAuthor?.first_name || ''} ${displayAuthor?.lastName || displayAuthor?.last_name || ''}`.trim() ||
+    displayAuthor?.name ||
+    displayAuthor?.username ||
+    'Người dùng'
   const { t } = usePreferences()
 
   if (!activeStory) return null
@@ -77,7 +84,7 @@ const StoryCard = ({
         ) : (
           <img
             src={resolveMediaUrl(activeStory.mediaUrl)}
-            alt={activeGroup.user.fullName}
+            alt={authorDisplayName}
             className={`w-full h-full object-${activeStory.objectFit || 'cover'}`}
             style={{ filter: activeStory.imageFilter && activeStory.imageFilter !== 'none' ? activeStory.imageFilter : undefined }}
           />
@@ -124,14 +131,14 @@ const StoryCard = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Avatar
-              src={activeGroup.user.avatar}
-              name={activeGroup.user.fullName}
+              src={displayAuthor?.avatar}
+              name={authorDisplayName}
               size="sm"
               className="border-2 border-white/60 shadow"
             />
             <div>
               <span className="text-sm font-bold text-white block leading-none">
-                {activeGroup.user.fullName}
+                {authorDisplayName}
               </span>
               <span className="text-[10px] text-slate-300 block mt-1 leading-none">
                 {activeStory.createdAt}

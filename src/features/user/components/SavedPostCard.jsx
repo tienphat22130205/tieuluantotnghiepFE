@@ -43,8 +43,9 @@ const SavedPostCard = memo(({ post, viewMode = 'grid' }) => {
   const displayName =
     author.full_name ||
     author.fullName ||
-    author.username ||
     `${author.firstName || ''} ${author.lastName || ''}`.trim() ||
+    author.name ||
+    author.username ||
     'Người dùng'
 
   const contentText = post.content || post.text || post.caption || ''
