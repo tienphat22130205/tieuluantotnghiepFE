@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import { HiOutlineDotsHorizontal, HiChevronRight } from 'react-icons/hi'
 import { FiMapPin } from 'react-icons/fi'
 import { Avatar } from '@/components/ui'
@@ -11,9 +12,27 @@ import { normalizePostLocation } from '@/utils/postLocation'
  * Props: user (object), createdAt (string), visibility (string), canManage, onEdit, onDelete
  */
 const PostCardHeader = ({ user, createdAt, visibility, location, canManage = false, onEdit, onDelete, group, isOverlay = false }) => {
+  const currentUser = useSelector((state) => state.auth?.user)
+  const isCurrentUser =
+    currentUser &&
+    (String(user?.id || user?._id || '') === String(currentUser?.id || currentUser?._id || '') ||
+     (user?.username && currentUser?.username && user.username === currentUser.username))
+
+  const currentUserDisplayName =
+    currentUser?.full_name ||
+    currentUser?.fullName ||
+    `${currentUser?.firstName || currentUser?.first_name || ''} ${currentUser?.lastName || currentUser?.last_name || ''}`.trim()
+
   const userIdentifier = user?.username ? String(user.username).replace(/^@/, '') : (user?.id || user?._id)
   const profilePath = userIdentifier ? `/profile/${userIdentifier}` : '#'
-  const displayName = user?.full_name || user?.fullName || user?.username || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'
+  const displayName =
+    user?.full_name ||
+    user?.fullName ||
+    `${user?.firstName || user?.first_name || ''} ${user?.lastName || user?.last_name || ''}`.trim() ||
+    user?.name ||
+    (isCurrentUser && currentUserDisplayName ? currentUserDisplayName : null) ||
+    user?.username ||
+    'Người dùng'
   const visibilityLabel = {
     public: 'Công khai',
     friends: 'Bạn bè',
@@ -51,7 +70,7 @@ const PostCardHeader = ({ user, createdAt, visibility, location, canManage = fal
             />
             <div className="absolute -bottom-1 -right-1 z-10">
               <Avatar
-                src={user?.avatar}
+                src={user?.avatar || (isCurrentUser ? currentUser?.avatar : null)}
                 name={displayName}
                 size="xs"
                 to={profilePath}
@@ -61,7 +80,7 @@ const PostCardHeader = ({ user, createdAt, visibility, location, canManage = fal
           </div>
         ) : (
           <Avatar
-            src={user?.avatar}
+            src={user?.avatar || (isCurrentUser ? currentUser?.avatar : null)}
             name={displayName}
             size="md"
             to={profilePath}

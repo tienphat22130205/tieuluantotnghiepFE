@@ -9,11 +9,12 @@ import {
   AiOutlineCalendar,
   AiOutlineLink,
 } from 'react-icons/ai'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Avatar, Button } from '@/components/ui'
 import { useState, useRef } from 'react'
 import { PROFILE_ACTION_LABELS } from '@/constants/messages'
 import { formatDate } from '@/utils/formatDate'
+import { useChatHeadStore } from '@/features/chat/store/useChatHeadStore'
 import ChangeAvatarModal from './ChangeAvatarModal'
 
 /**
@@ -32,8 +33,40 @@ const ProfileInfo = ({
   onAvatarRemove,
   isUploadingAvatar,
 }) => {
+  const navigate = useNavigate()
+  const { openChatHead } = useChatHeadStore()
   const [isChangeAvatarOpen, setIsChangeAvatarOpen] = useState(false)
   const fileInputRef = useRef(null)
+
+  const handleMessageUser = () => {
+    if (!profile) return
+    const targetId = String(profile._id || profile.id)
+    const targetFriend = {
+      _id: targetId,
+      id: targetId,
+      full_name:
+        profile.full_name ||
+        profile.fullName ||
+        `${profile.firstName || ''} ${profile.lastName || ''}`.trim() ||
+        profile.username ||
+        'Người dùng',
+      username: profile.username || '',
+      avatar: profile.avatar || null,
+      isOnline: Boolean(profile.isOnline),
+    }
+
+    if (window.innerWidth < 768) {
+      navigate(`/chat?friendId=${targetId}`)
+    } else {
+      openChatHead(targetFriend)
+      window.dispatchEvent(new CustomEvent('chat:open'))
+      window.dispatchEvent(
+        new CustomEvent('chat:select-friend', {
+          detail: { friendId: targetId, friend: targetFriend },
+        })
+      )
+    }
+  }
 
   const handleAvatarChange = (event) => {
     const file = event.target.files?.[0]
@@ -188,7 +221,8 @@ const ProfileInfo = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 sm:flex-initial cursor-pointer rounded-xl font-semibold text-xs sm:text-sm py-2 px-4"
+                onClick={handleMessageUser}
+                className="flex-1 sm:flex-initial cursor-pointer rounded-xl font-semibold text-xs sm:text-sm py-2 px-4 hover:bg-primary-50 hover:text-primary-600 hover:border-primary-200 transition"
               >
                 <AiOutlineMessage size={16} />
                 Nhắn tin

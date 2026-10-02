@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 import { timeAgo } from '@/utils/formatDate'
 
@@ -7,16 +8,42 @@ import { timeAgo } from '@/utils/formatDate'
  * Props: post
  */
 const PostCardBody = ({ post }) => {
+  const currentUser = useSelector((state) => state.auth?.user)
   const author = post?.user || post?.author || {}
+  const isCurrentUser =
+    currentUser &&
+    (String(author?.id || author?._id || '') === String(currentUser?.id || currentUser?._id || '') ||
+     (author?.username && currentUser?.username && author.username === currentUser.username))
+
+  const currentUserDisplayName =
+    currentUser?.full_name ||
+    currentUser?.fullName ||
+    `${currentUser?.firstName || currentUser?.first_name || ''} ${currentUser?.lastName || currentUser?.last_name || ''}`.trim()
+
+  const displayName =
+    author.full_name ||
+    author.fullName ||
+    `${author.firstName || author.first_name || ''} ${author.lastName || author.last_name || ''}`.trim() ||
+    author.name ||
+    (isCurrentUser && currentUserDisplayName ? currentUserDisplayName : null) ||
+    author.username ||
+    'Người dùng'
+
   const postUserIdentifier = author.username ? String(author.username).replace(/^@/, '') : (author.id || author._id)
   const profilePath = postUserIdentifier ? `/profile/${postUserIdentifier}` : '#'
   const content = post?.caption || post?.content || ''
   const createdAt = post?.createdAt || post?.created_at
-  const handleName = author.username ? `@${author.username}` : (author.full_name || 'Người dùng')
 
   const sharedPostId = post?.sharedPost?._id || post?.sharedPost?.id || null
   const sharedPostPath = sharedPostId ? `/post/${sharedPostId}` : null
-  const sharedPostUserName = post?.sharedPost?.user?.username || post?.sharedPost?.user?.full_name || 'Người dùng'
+  const sharedAuthor = post?.sharedPost?.user || post?.sharedPost?.author || {}
+  const sharedPostUserName =
+    sharedAuthor.full_name ||
+    sharedAuthor.fullName ||
+    `${sharedAuthor.firstName || sharedAuthor.first_name || ''} ${sharedAuthor.lastName || sharedAuthor.last_name || ''}`.trim() ||
+    sharedAuthor.name ||
+    sharedAuthor.username ||
+    'Người dùng'
   const sharedPostCaption = post?.sharedPost?.caption || post?.sharedPost?.content || ''
   const sharedPostImage = resolveMediaUrl(
     post?.sharedPost?.image_url || (Array.isArray(post?.sharedPost?.images) ? post.sharedPost.images[0] : null)
@@ -37,9 +64,9 @@ const PostCardBody = ({ post }) => {
         <p className="text-sm text-slate-900 leading-relaxed font-normal">
           <Link
             to={profilePath}
-            className="font-bold mr-1 text-slate-900 hover:text-primary-600"
+            className="font-bold mr-1.5 text-slate-900 hover:text-primary-600 inline"
           >
-            {handleName}
+            {displayName}
           </Link>
           {content}
         </p>
@@ -51,7 +78,7 @@ const PostCardBody = ({ post }) => {
 
           {sharedPostPath ? (
             <Link to={sharedPostPath} className="block border-t border-slate-200 px-3 py-2.5 hover:bg-slate-100/70">
-              <p className="text-xs font-bold text-slate-700">@{sharedPostUserName}</p>
+              <p className="text-xs font-bold text-slate-700">{sharedPostUserName}</p>
               {sharedPostCaption ? (
                 <p className="mt-1 line-clamp-2 text-sm text-slate-700">{sharedPostCaption}</p>
               ) : (
@@ -69,7 +96,7 @@ const PostCardBody = ({ post }) => {
             </Link>
           ) : (
             <div className="border-t border-slate-200 px-3 py-2.5">
-              <p className="text-xs font-bold text-slate-700">@{sharedPostUserName}</p>
+              <p className="text-xs font-bold text-slate-700">{sharedPostUserName}</p>
               {sharedPostCaption ? (
                 <p className="mt-1 line-clamp-2 text-sm text-slate-700">{sharedPostCaption}</p>
               ) : (

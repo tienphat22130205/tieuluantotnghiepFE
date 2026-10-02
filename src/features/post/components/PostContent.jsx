@@ -29,8 +29,9 @@ const PostContent = ({ post, isLiked, onLike, inDetailModal = false }) => {
   const displayName =
     postUser.full_name ||
     postUser.fullName ||
-    postUser.username ||
     `${postUser.first_name || postUser.firstName || ''} ${postUser.last_name || postUser.lastName || ''}`.trim() ||
+    postUser.name ||
+    postUser.username ||
     'Người dùng'
   const visibilityLabel = {
     public: 'Công khai',
@@ -105,9 +106,16 @@ const PostContent = ({ post, isLiked, onLike, inDetailModal = false }) => {
     }
 
     const sharedUser = source?.user || source?.author || {}
+    const sharedUserName =
+      sharedUser.full_name ||
+      sharedUser.fullName ||
+      `${sharedUser.firstName || sharedUser.first_name || ''} ${sharedUser.lastName || sharedUser.last_name || ''}`.trim() ||
+      sharedUser.name ||
+      sharedUser.username ||
+      'Người dùng'
     return {
       id: source?._id || source?.id || sharedPostRefId,
-      userName: sharedUser.username || sharedUser.full_name || sharedUser.fullName || 'Người dùng',
+      userName: sharedUserName,
       caption: source?.caption || source?.content || '',
       image: resolveMediaUrl(
         source?.image_url || (Array.isArray(source?.images) ? source.images[0] : null)
@@ -195,7 +203,7 @@ const PostContent = ({ post, isLiked, onLike, inDetailModal = false }) => {
 
             {sharedPostPath ? (
               <Link to={sharedPostPath} className="block border-t border-slate-200 px-3 py-2.5 hover:bg-slate-100/70">
-                <p className="text-xs font-bold text-slate-700">@{sharedPostPreview.userName}</p>
+                <p className="text-xs font-bold text-slate-700">{sharedPostPreview.userName}</p>
                 {sharedPostPreview.caption ? (
                   <p className="mt-1 line-clamp-2 text-sm text-slate-700">{sharedPostPreview.caption}</p>
                 ) : (
@@ -213,7 +221,7 @@ const PostContent = ({ post, isLiked, onLike, inDetailModal = false }) => {
               </Link>
             ) : (
               <div className="border-t border-slate-200 px-3 py-2.5">
-                <p className="text-xs font-bold text-slate-700">@{sharedPostPreview.userName}</p>
+                <p className="text-xs font-bold text-slate-700">{sharedPostPreview.userName}</p>
                 <p className="mt-1 text-sm text-slate-500">Không tìm thấy dữ liệu chi tiết bài viết gốc.</p>
               </div>
             )}

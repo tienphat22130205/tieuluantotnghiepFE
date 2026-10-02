@@ -1,25 +1,21 @@
 import { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { FiX, FiMusic, FiImage, FiType, FiUploadCloud } from 'react-icons/fi'
+import { FiX, FiMusic, FiImage, FiType, FiUploadCloud, FiPlay, FiPause } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import storyService from '../services/storyService'
-
-const localPopularSongs = [
-  { id: 's-8', title: 'Buông', artist: 'Hngle', spotifyUrl: 'https://open.spotify.com/embed/album/6ub8yuzsgJbYRdTd0ZgmLp?utm_source=generator&theme=0' },
-  { id: 's-9', title: 'Không Buông', artist: 'Hngle', spotifyUrl: 'https://open.spotify.com/embed/album/6XkJNJGMV0VxaaxlfB3ss3?utm_source=generator&theme=0' },
-  { id: 's-10', title: 'Tìm Em', artist: 'Hngle ft. Bảo Anh', spotifyUrl: 'https://open.spotify.com/embed/album/4qCaDixeJX4LXWMZs6rVyl?utm_source=generator&theme=0' },
-  { id: 's-11', title: 'Ngày Em Đẹp Nhất', artist: 'Tama', spotifyUrl: 'https://open.spotify.com/embed/track/0DtarPcErIh4skfFtxzomo?utm_source=generator&theme=0' },
-  { id: 's-12', title: 'Cuối Cùng Thì - LoFi', artist: 'Vu Trung Quan, Tama', spotifyUrl: 'https://open.spotify.com/embed/track/4NX93ZGvM0oVZ5nGo0ZuJZ?utm_source=generator&theme=0' },
-  { id: 's-13', title: 'Lời Tạm Biệt Chưa Nói', artist: 'GREY D, Orange', spotifyUrl: 'https://open.spotify.com/embed/track/5k1fqShYVOdPHIq0RBKwrN?utm_source=generator&theme=0' },
-  { id: 's-14', title: 'Thanh Xuân', artist: 'Da LAB', spotifyUrl: 'https://open.spotify.com/embed/track/3b34161QoxLwsqhWSPy9i5?utm_source=generator&theme=0' }
-]
+import { popularSongs as localPopularSongs } from '../data/mockStories'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
   if (!isOpen) return null
 
+  const { t } = usePreferences()
+
   const [storyType, setStoryType] = useState('image') // 'image' | 'text'
   const [selectedMusic, setSelectedMusic] = useState(null)
   const [musicSearch, setMusicSearch] = useState('')
+  const [previewingSong, setPreviewingSong] = useState(null)
+  const [isChipPlaying, setIsChipPlaying] = useState(false)
   const [textContent, setTextContent] = useState('')
   const [textColor, setTextColor] = useState('#ffffff')
   const [bgColor, setBgColor] = useState('linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
@@ -35,13 +31,13 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
   const fileInputRef = useRef(null)
 
   const filterPresets = [
-    { id: 'none',    label: 'Gốc',      style: 'none' },
-    { id: 'warm',    label: 'Ấm',       style: 'sepia(0.35) saturate(1.4) brightness(1.05)' },
-    { id: 'cool',    label: 'Lạnh',     style: 'hue-rotate(200deg) saturate(1.2) brightness(1.02)' },
-    { id: 'faded',   label: 'Nhạt',     style: 'brightness(1.1) contrast(0.85) saturate(0.7)' },
-    { id: 'bw',      label: 'Đen trắng',style: 'grayscale(1) contrast(1.1)' },
-    { id: 'vivid',   label: 'Sặc sỡ',  style: 'saturate(1.9) contrast(1.1)' },
-    { id: 'dreamy',  label: 'Mộng mơ', style: 'brightness(1.08) saturate(1.3) hue-rotate(15deg)' },
+    { id: 'none',    label: t('story.filters.none'),      style: 'none' },
+    { id: 'warm',    label: t('story.filters.warm'),      style: 'sepia(0.35) saturate(1.4) brightness(1.05)' },
+    { id: 'cool',    label: t('story.filters.cool'),      style: 'hue-rotate(200deg) saturate(1.2) brightness(1.02)' },
+    { id: 'faded',   label: t('story.filters.faded'),     style: 'brightness(1.1) contrast(0.85) saturate(0.7)' },
+    { id: 'bw',      label: t('story.filters.bw'),        style: 'grayscale(1) contrast(1.1)' },
+    { id: 'vivid',   label: t('story.filters.vivid'),     style: 'saturate(1.9) contrast(1.1)' },
+    { id: 'dreamy',  label: t('story.filters.dreamy'),    style: 'brightness(1.08) saturate(1.3) hue-rotate(15deg)' },
   ]
 
   const colorPresets = [
@@ -88,9 +84,19 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
     }
   }
 
+  const togglePreviewSong = (song) => {
+    if (previewingSong?.id === song.id) {
+      setPreviewingSong(null)
+    } else {
+      setPreviewingSong(song)
+    }
+  }
+
   const handleSelectSong = (song) => {
     setSelectedMusic(song)
     setShowMusicList(false)
+    setPreviewingSong(null)
+    setIsChipPlaying(true)
   }
 
   const handleSubmit = async (e) => {
@@ -162,7 +168,7 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
           {storyType === 'text' ? (
             <div className="w-full h-full flex items-center justify-center p-8 text-center" style={{ background: bgColor }}>
               <textarea
-                placeholder="Nhập nội dung tin..."
+                placeholder={t('story.typeContentPlaceholder')}
                 value={textContent}
                 onChange={(e) => setTextContent(e.target.value)}
                 className="bg-transparent text-center text-xl font-bold w-full h-full flex items-center resize-none focus:outline-none"
@@ -192,7 +198,7 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
             >
               <FiUploadCloud size={56} className="text-slate-500" />
               <span className="text-sm text-slate-400 text-center px-10 leading-relaxed">
-                Nhấn để chọn ảnh hoặc video
+                {t('story.uploadHint')}
               </span>
             </div>
           )}
@@ -215,7 +221,7 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
                   storyType !== 'text' ? 'bg-white text-slate-800' : 'bg-black/40 text-white border border-white/20'
                 }`}
               >
-                Ảnh/Video
+                {t('story.photoVideo')}
               </button>
               <button
                 onClick={() => { setStoryType('text'); setMediaPreview(null) }}
@@ -223,7 +229,7 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
                   storyType === 'text' ? 'bg-white text-slate-800' : 'bg-black/40 text-white border border-white/20'
                 }`}
               >
-                Tin chữ
+                {t('story.textStory')}
               </button>
             </div>
           </div>
@@ -235,7 +241,7 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
                 <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white shadow-lg">
                   <FiImage size={20} />
                 </div>
-                <span className="text-white text-[10px] font-semibold drop-shadow">Ảnh</span>
+                <span className="text-white text-[10px] font-semibold drop-shadow">{t('story.photo')}</span>
               </button>
             )}
 
@@ -246,7 +252,7 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
                 }`}>
                   <FiType size={20} />
                 </div>
-                <span className="text-white text-[10px] font-semibold drop-shadow">Style</span>
+                <span className="text-white text-[10px] font-semibold drop-shadow">{t('story.style')}</span>
               </button>
             )}
 
@@ -272,21 +278,53 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
               }`}>
                 <FiMusic size={20} />
               </div>
-              <span className="text-white text-[10px] font-semibold drop-shadow">Nhạc</span>
+              <span className="text-white text-[10px] font-semibold drop-shadow">{t('story.music')}</span>
             </button>
           </div>
 
           {/* Music chip overlay above bottom bar */}
           {selectedMusic && (
-            <div className="absolute bottom-2 left-4 right-4 z-20 flex items-center gap-2.5 bg-black/70 backdrop-blur-md rounded-2xl px-3 py-2.5 border border-white/10">
-              <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                <FiMusic size={13} className="text-white animate-spin" style={{ animationDuration: '6s' }} />
-              </div>
-              <div className="flex-1 min-w-0">
+            <div className="absolute bottom-2 left-4 right-4 z-20 flex items-center gap-2.5 bg-black/75 backdrop-blur-md rounded-2xl px-3 py-2.5 border border-white/10 shadow-lg">
+              <button
+                type="button"
+                onClick={() => setIsChipPlaying(!isChipPlaying)}
+                className="w-8 h-8 rounded-full bg-emerald-500 hover:bg-emerald-600 flex items-center justify-center shrink-0 hover:scale-105 active:scale-95 transition cursor-pointer text-white shadow-md shadow-emerald-500/30"
+                title={isChipPlaying ? t('story.pause') : t('story.play')}
+              >
+                {isChipPlaying ? (
+                  <FiPause size={14} className="text-white" />
+                ) : (
+                  <FiPlay size={14} className="text-white ml-0.5" />
+                )}
+              </button>
+              <div
+                className="flex-1 min-w-0 cursor-pointer"
+                onClick={() => setIsChipPlaying(!isChipPlaying)}
+              >
                 <span className="text-xs font-bold text-white block truncate">{selectedMusic.title || 'Spotify Link'}</span>
-                <span className="text-[10px] text-slate-300 block truncate">{selectedMusic.artist || ''}</span>
+                <span className="text-[10px] text-slate-300 block truncate">{selectedMusic.artist || t('story.tapToToggleMusic')}</span>
               </div>
-              <button onClick={() => setSelectedMusic(null)} className="text-white/60 hover:text-white text-lg leading-none cursor-pointer shrink-0 px-1">✕</button>
+              <button
+                type="button"
+                onClick={() => { setSelectedMusic(null); setIsChipPlaying(false) }}
+                className="text-white/60 hover:text-white text-lg leading-none cursor-pointer shrink-0 px-1"
+                title={t('story.removeMusic')}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Hidden/compact player for selected music in mobile preview */}
+          {isChipPlaying && selectedMusic?.spotifyUrl && (
+            <div className="hidden">
+              <iframe
+                title="Selected Music Preview"
+                src={selectedMusic.spotifyUrl.includes('autoplay=1') ? selectedMusic.spotifyUrl : `${selectedMusic.spotifyUrl}${selectedMusic.spotifyUrl.includes('?') ? '&' : '?'}autoplay=1`}
+                width="1"
+                height="1"
+                allow="autoplay; encrypted-media"
+              />
             </div>
           )}
         </div>
@@ -298,19 +336,19 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
             onChange={(e) => setDuration(Number(e.target.value))}
             className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none cursor-pointer"
           >
-            <option value={5} className="text-black bg-white">5 giây</option>
-            <option value={10} className="text-black bg-white">10 giây</option>
-            <option value={15} className="text-black bg-white">15 giây</option>
-            <option value={30} className="text-black bg-white">30 giây</option>
-            <option value={60} className="text-black bg-white">1 phút</option>
-            <option value={180} className="text-black bg-white">3 phút</option>
+            <option value={5} className="text-black bg-white">{t('story.durations.5s')}</option>
+            <option value={10} className="text-black bg-white">{t('story.durations.10s')}</option>
+            <option value={15} className="text-black bg-white">{t('story.durations.15s')}</option>
+            <option value={30} className="text-black bg-white">{t('story.durations.30s')}</option>
+            <option value={60} className="text-black bg-white">{t('story.durations.60s')}</option>
+            <option value={180} className="text-black bg-white">{t('story.durations.180s')}</option>
           </select>
           <button
             onClick={handleSubmit}
             disabled={isLoading || (storyType !== 'text' && !mediaPreview) || (storyType === 'text' && !textContent.trim())}
             className="bg-primary-600 hover:bg-primary-700 disabled:bg-slate-700 disabled:opacity-60 text-white font-bold px-7 py-2.5 rounded-xl text-sm cursor-pointer transition shadow-lg"
           >
-            {isLoading ? 'Đang tải...' : 'Đăng tin'}
+            {isLoading ? t('story.publishing') : t('story.publish')}
           </button>
         </div>
 
@@ -318,12 +356,22 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
         {showMusicList && (
           <>
             <div className="absolute inset-0 z-30 bg-black/40" onClick={() => setShowMusicList(false)} />
-            <div className="absolute inset-x-0 bottom-0 z-40 bg-white rounded-t-3xl shadow-2xl p-4 max-h-[65vh] overflow-y-auto">
-              <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-4" />
-              <h3 className="text-sm font-bold text-slate-800 mb-3">🎵 Chọn nhạc nền</h3>
+            <div className="absolute inset-x-0 bottom-0 z-40 bg-white rounded-t-3xl shadow-2xl p-4 max-h-[70vh] flex flex-col overflow-hidden">
+              <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-3 shrink-0" />
+              <div className="flex items-center justify-between mb-3 shrink-0">
+                <h3 className="text-sm font-bold text-slate-800">🎵 {t('story.selectMusic')}</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowMusicList(false)}
+                  className="text-xs text-slate-400 hover:text-slate-600 font-semibold px-2 py-1"
+                >
+                  {t('story.close')}
+                </button>
+              </div>
+
               <input
                 type="text"
-                placeholder="Tìm bài hát hoặc dán link Spotify..."
+                placeholder={t('story.searchMusicPlaceholder')}
                 value={musicSearch}
                 onChange={(e) => {
                   const val = e.target.value
@@ -334,36 +382,92 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
                     setMusicSearch('')
                   }
                 }}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm mb-3 focus:outline-none focus:border-primary-500"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm mb-3 focus:outline-none focus:border-primary-500 shrink-0"
               />
-              <div className="space-y-1">
-                {filteredSongs.map((song) => (
-                  <div
-                    key={song.id}
-                    onClick={() => handleSelectSong(song)}
-                    className="flex items-center justify-between px-3 py-3 hover:bg-slate-50 active:bg-slate-100 rounded-xl cursor-pointer transition-colors"
-                  >
-                    <div>
-                      <span className="text-sm font-bold text-slate-700 block">{song.title}</span>
-                      <span className="text-xs text-slate-400 block">{song.artist}</span>
-                    </div>
-                    <span className="text-xs text-primary-500 font-bold">Chọn</span>
+
+              {/* Active preview player inside bottom sheet */}
+              {previewingSong && previewingSong.spotifyUrl && (
+                <div className="mb-3 p-2 bg-slate-900 rounded-2xl text-white shadow-md shrink-0">
+                  <div className="flex items-center justify-between px-1 mb-1.5">
+                    <span className="text-xs font-semibold text-emerald-400 truncate">
+                      🎵 {t('story.previewPlaying')} {previewingSong.title} - {previewingSong.artist}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewingSong(null)}
+                      className="text-xs text-white/60 hover:text-white px-1 font-bold"
+                    >
+                      ✕
+                    </button>
                   </div>
-                ))}
+                  <iframe
+                    title="Spotify Preview"
+                    src={previewingSong.spotifyUrl.includes('autoplay=1') ? previewingSong.spotifyUrl : `${previewingSong.spotifyUrl}${previewingSong.spotifyUrl.includes('?') ? '&' : '?'}autoplay=1`}
+                    width="100%"
+                    height={previewingSong.spotifyUrl.includes('/album/') ? "152" : "80"}
+                    frameBorder="0"
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    style={{ borderRadius: '12px', border: 'none' }}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1.5 overflow-y-auto flex-1 pr-1">
+                {filteredSongs.map((song) => {
+                  const isCurrent = previewingSong?.id === song.id
+                  return (
+                    <div
+                      key={song.id}
+                      className="flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors gap-2.5 border border-slate-100/60"
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          togglePreviewSong(song)
+                        }}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all ${
+                          isCurrent
+                            ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:scale-105 active:scale-95'
+                        }`}
+                        title={isCurrent ? t('story.stopPreview') : t('story.preview')}
+                      >
+                        {isCurrent ? <FiPause size={15} /> : <FiPlay size={15} className="ml-0.5" />}
+                      </button>
+
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => handleSelectSong(song)}
+                      >
+                        <span className="text-sm font-bold text-slate-800 block truncate">{song.title}</span>
+                        <span className="text-xs text-slate-400 block truncate">{song.artist}</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSong(song)}
+                        className="text-xs text-primary-600 hover:text-white hover:bg-primary-600 font-bold px-3 py-1.5 bg-primary-50 rounded-xl cursor-pointer shrink-0 transition-colors"
+                      >
+                        {t('story.choose')}
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
               {selectedMusic?.isCustom && (
                 <div className="mt-4 p-3 bg-emerald-50 rounded-2xl border border-emerald-100 grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Tên bài</label>
-                    <input type="text" placeholder="Tên bài hát..."
+                    <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">{t('story.songName')}</label>
+                    <input type="text" placeholder={t('story.songNamePlaceholder')}
                       value={selectedMusic.title}
                       onChange={(e) => setSelectedMusic({ ...selectedMusic, title: e.target.value })}
                       className="w-full bg-white border border-emerald-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Ca sĩ</label>
-                    <input type="text" placeholder="Ca sĩ..."
+                    <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">{t('story.artist')}</label>
+                    <input type="text" placeholder={t('story.artistPlaceholder')}
                       value={selectedMusic.artist}
                       onChange={(e) => setSelectedMusic({ ...selectedMusic, artist: e.target.value })}
                       className="w-full bg-white border border-emerald-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none"
@@ -582,22 +686,22 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
             )}
 
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Thời lượng phát tin</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">{t('story.duration')}</label>
               <select value={duration} onChange={(e) => setDuration(Number(e.target.value))}
                 className="w-full border border-slate-200 rounded-2xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-primary-500 bg-white cursor-pointer"
               >
-                <option value={5}>5 giây (5s - Mặc định)</option>
-                <option value={10}>10 giây (10s)</option>
-                <option value={15}>15 giây (15s)</option>
-                <option value={30}>30 giây (30s)</option>
-                <option value={60}>1 phút (60s)</option>
-                <option value={180}>3 phút (180s)</option>
-                <option value={300}>5 phút (300s - Tối đa)</option>
+                <option value={5}>{t('story.durations.5s')}</option>
+                <option value={10}>{t('story.durations.10s')}</option>
+                <option value={15}>{t('story.durations.15s')}</option>
+                <option value={30}>{t('story.durations.30s')}</option>
+                <option value={60}>{t('story.durations.60s')}</option>
+                <option value={180}>{t('story.durations.180s')}</option>
+                <option value={300}>{t('story.durations.300s')}</option>
               </select>
             </div>
 
             <div className="space-y-3">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Nhạc nền kèm theo</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">{t('story.backgroundMusic')}</label>
               {selectedMusic ? (
                 <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3.5 space-y-3">
                   <div className="flex items-center justify-between">
@@ -607,25 +711,25 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
                       </div>
                       <div className="min-w-0">
                         <span className="text-sm font-semibold text-emerald-800 block truncate max-w-[200px]">{selectedMusic.title || 'Dán link Spotify'}</span>
-                        <span className="text-xs text-emerald-600 block truncate max-w-[200px]">{selectedMusic.artist || 'Nhập thông tin bên dưới'}</span>
+                        <span className="text-xs text-emerald-600 block truncate max-w-[200px]">{selectedMusic.artist || ''}</span>
                       </div>
                     </div>
                     <button type="button" onClick={() => setSelectedMusic(null)}
                       className="text-emerald-500 hover:text-emerald-700 text-xs font-semibold hover:underline cursor-pointer shrink-0"
-                    >Gỡ nhạc</button>
+                    >{t('story.removeMusic')}</button>
                   </div>
                   {selectedMusic.isCustom && (
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t border-emerald-100/50">
                       <div>
-                        <label className="block text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">Tên bài hát</label>
-                        <input type="text" placeholder="Tên bài hát..." value={selectedMusic.title}
+                        <label className="block text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">{t('story.songName')}</label>
+                        <input type="text" placeholder={t('story.songNamePlaceholder')} value={selectedMusic.title}
                           onChange={(e) => setSelectedMusic({ ...selectedMusic, title: e.target.value })}
                           className="w-full bg-white border border-emerald-200 rounded-xl px-2.5 py-1.5 text-xs text-emerald-800 focus:outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">Ca sĩ</label>
-                        <input type="text" placeholder="Ca sĩ..." value={selectedMusic.artist}
+                        <label className="block text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">{t('story.artist')}</label>
+                        <input type="text" placeholder={t('story.artistPlaceholder')} value={selectedMusic.artist}
                           onChange={(e) => setSelectedMusic({ ...selectedMusic, artist: e.target.value })}
                           className="w-full bg-white border border-emerald-200 rounded-xl px-2.5 py-1.5 text-xs text-emerald-800 focus:outline-none focus:border-emerald-500"
                         />
@@ -638,11 +742,22 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
                   <button type="button" onClick={() => setShowMusicList(!showMusicList)}
                     className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:border-slate-300 rounded-2xl py-3 text-sm text-slate-700 font-semibold hover:bg-slate-50 transition cursor-pointer"
                   >
-                    <FiMusic size={16} className="text-slate-500" />Thêm nhạc vào tin
+                    <FiMusic size={16} className="text-slate-500" />{t('story.addMusic')}
                   </button>
                   {showMusicList && (
-                    <div className="absolute left-0 right-0 mt-2 z-30 bg-white border border-slate-100 shadow-xl rounded-2xl p-3 max-h-[290px] overflow-y-auto">
-                      <input type="text" placeholder="Tìm bài hát hoặc dán link Spotify..."
+                    <div className="absolute left-0 right-0 mt-2 z-30 bg-white border border-slate-100 shadow-xl rounded-2xl p-3 max-h-[340px] overflow-y-auto">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-700">🎵 {t('story.chooseSong')}</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowMusicList(false)}
+                          className="text-[11px] text-slate-400 hover:text-slate-600 font-semibold"
+                        >
+                          {t('story.close')}
+                        </button>
+                      </div>
+
+                      <input type="text" placeholder={t('story.searchMusicPlaceholder')}
                         value={musicSearch}
                         onChange={(e) => {
                           const val = e.target.value
@@ -655,18 +770,73 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
                         }}
                         className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs mb-2.5 focus:outline-none focus:border-primary-500"
                       />
-                      <div className="space-y-1">
-                        {filteredSongs.map((song) => (
-                          <div key={song.id} onClick={() => handleSelectSong(song)}
-                            className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl cursor-pointer group transition-colors"
-                          >
-                            <div>
-                              <span className="text-xs font-bold text-slate-700 block group-hover:text-primary-600">{song.title}</span>
-                              <span className="text-[10px] text-slate-400 block">{song.artist}</span>
-                            </div>
-                            <span className="text-[10px] text-primary-500 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Chọn</span>
+
+                      {/* Active preview in desktop dropdown */}
+                      {previewingSong && previewingSong.spotifyUrl && (
+                        <div className="mb-2 p-2 bg-slate-900 rounded-xl text-white">
+                          <div className="flex items-center justify-between px-1 mb-1">
+                            <span className="text-[11px] font-semibold text-emerald-400 truncate">
+                              🎵 {t('story.previewPlaying')} {previewingSong.title}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setPreviewingSong(null)}
+                              className="text-[11px] text-white/60 hover:text-white"
+                            >
+                              ✕
+                            </button>
                           </div>
-                        ))}
+                          <iframe
+                            title="Spotify Preview Desktop"
+                            src={previewingSong.spotifyUrl.includes('autoplay=1') ? previewingSong.spotifyUrl : `${previewingSong.spotifyUrl}${previewingSong.spotifyUrl.includes('?') ? '&' : '?'}autoplay=1`}
+                            width="100%"
+                            height="80"
+                            frameBorder="0"
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            style={{ borderRadius: '10px', border: 'none' }}
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-1">
+                        {filteredSongs.map((song) => {
+                          const isCurrent = previewingSong?.id === song.id
+                          return (
+                            <div
+                              key={song.id}
+                              className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition-colors gap-2"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1" onClick={() => handleSelectSong(song)}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    togglePreviewSong(song)
+                                  }}
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all ${
+                                    isCurrent
+                                      ? 'bg-emerald-500 text-white shadow-sm'
+                                      : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                  }`}
+                                  title={isCurrent ? t('story.stopPreview') : t('story.preview')}
+                                >
+                                  {isCurrent ? <FiPause size={12} /> : <FiPlay size={12} className="ml-0.5" />}
+                                </button>
+                                <div className="min-w-0 cursor-pointer">
+                                  <span className="text-xs font-bold text-slate-700 block truncate hover:text-primary-600">{song.title}</span>
+                                  <span className="text-[10px] text-slate-400 block truncate">{song.artist}</span>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectSong(song)}
+                                className="text-[10px] text-primary-600 hover:text-primary-700 font-bold px-2 py-1 bg-primary-50 rounded-lg shrink-0 cursor-pointer"
+                              >
+                                {t('story.choose')}
+                              </button>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
@@ -678,11 +848,11 @@ const CreateStoryModal = ({ isOpen, onClose, onSuccess }) => {
           <div className="mt-6 pt-4 border-t border-slate-100 flex gap-3">
             <button type="button" onClick={onClose}
               className="flex-1 py-3 text-center text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-2xl transition-colors cursor-pointer"
-            >Hủy</button>
+            >{t('story.cancel')}</button>
             <button type="submit" onClick={handleSubmit}
               disabled={isLoading || (storyType !== 'text' && !mediaPreview) || (storyType === 'text' && !textContent.trim())}
               className="flex-1 py-3 text-center text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed rounded-2xl shadow transition-all cursor-pointer"
-            >{isLoading ? 'Đang tải...' : 'Đăng tin'}</button>
+            >{isLoading ? t('story.publishing') : t('story.publish')}</button>
           </div>
         </div>
 

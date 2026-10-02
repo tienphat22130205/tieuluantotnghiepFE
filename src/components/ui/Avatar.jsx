@@ -52,12 +52,12 @@ const Avatar = ({
   }
 
   const dotSizeClass = dotSizes[size] || dotSizes.md
-  const defaultSizeClass = className.includes('w-') ? '' : (sizes[size] || sizes.md)
+  const hasCustomWidth = /(?:^|\s)w-[\w\d/[\]]+/.test(className)
+  const defaultSizeClass = hasCustomWidth ? '' : (sizes[size] || sizes.md)
 
   const avatarContent = (
     <div
-      className={`relative inline-flex shrink-0 aspect-square items-center justify-center rounded-full border-0 outline-none ring-0 select-none ${defaultSizeClass} ${className}`}
-      style={{ border: 'none', outline: 'none' }}
+      className={`relative inline-flex shrink-0 aspect-square items-center justify-center rounded-full select-none ${defaultSizeClass} ${className}`}
     >
       {/* Khung avatar tròn hoàn hảo (overflow-hidden nằm tại đây để không cắt xén chấm online) */}
       <div

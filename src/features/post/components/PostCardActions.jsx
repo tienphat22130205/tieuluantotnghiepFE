@@ -131,11 +131,32 @@ const PostCardActions = ({
         <button
           type="button"
           onClick={onShareClick}
-          className="p-1 text-slate-800 hover:text-primary-600 transition-colors cursor-pointer"
+          className="p-1 text-slate-800 dark:text-slate-200 hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
           title="Chia sẻ"
         >
           <AiOutlineSend size={21} className="-rotate-12" />
         </button>
+
+        {/* Bookmark / Save Button */}
+        <motion.button
+          type="button"
+          onClick={onSave}
+          className={`p-1 transition-colors cursor-pointer ${
+            saved
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400'
+          }`}
+          whileTap={{ scale: 0.85 }}
+          animate={saved ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+          transition={{ duration: 0.25 }}
+          title={saved ? 'Bỏ lưu bài viết' : 'Lưu bài viết vào danh sách yêu thích'}
+        >
+          {saved ? (
+            <BsBookmarkFill size={20} className="text-blue-600 dark:text-blue-400" />
+          ) : (
+            <BsBookmark size={20} />
+          )}
+        </motion.button>
       </div>
 
       {/* Likers Stack & Count Badge (for text-only posts) */}

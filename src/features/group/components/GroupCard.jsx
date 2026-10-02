@@ -13,16 +13,38 @@ const GroupCard = ({ group }) => {
   const { t } = usePreferences()
   const currentUserId = user?.id || user?._id
 
+  const isCreator = Boolean(
+    currentUserId &&
+    (String(group.creator?._id || group.creator) === String(currentUserId))
+  )
+
+  const initialStatus =
+    group.memberStatus ||
+    (group.isJoined ? 'approved' : null) ||
+    (group.myRole ? 'approved' : null) ||
+    (group.myMembership?.status ? group.myMembership.status : null) ||
+    (isCreator ? 'approved' : null)
+
   // Local state for join/leave toggle to reflect instantly in search cards
-  const [localStatus, setLocalStatus] = useState(group.memberStatus || (group.isJoined ? 'approved' : null))
+  const [localStatus, setLocalStatus] = useState(initialStatus)
   const [loading, setLoading] = useState(false)
 
   const coverUrl = resolveMediaUrl(group.coverImage) || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500&auto=format&fit=crop&q=60'
   const avatarUrl = resolveMediaUrl(group.avatar) || ''
 
-  const isJoined = localStatus === 'approved' || localStatus === 'admin' || localStatus === 'moderator'
-  const isPending = localStatus === 'pending'
-  const isAdmin = localStatus === 'admin' || String(group.creator?._id || group.creator) === String(currentUserId)
+  const isJoined =
+    localStatus === 'approved' ||
+    localStatus === 'admin' ||
+    localStatus === 'moderator' ||
+    Boolean(group.isJoined) ||
+    Boolean(group.myRole) ||
+    isCreator
+
+  const isPending = localStatus === 'pending' || group.memberStatus === 'pending'
+  const isAdmin =
+    localStatus === 'admin' ||
+    group.myRole === 'admin' ||
+    isCreator
 
   const handleAction = async (e) => {
     e.preventDefault()
@@ -101,9 +123,21 @@ const GroupCard = ({ group }) => {
           <h4 className="font-bold text-slate-900 dark:text-white text-sm leading-snug line-clamp-1">
             {group.name}
           </h4>
-          <span className="inline-block text-[11px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded-md">
-            {group.membersCount || group.memberCount || 1} {t('groups.members')}
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-block text-[11px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded-md">
+              {group.membersCount || group.memberCount || 1} {t('groups.members')}
+            </span>
+            {isJoined && (
+              <span className="inline-block text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">
+                {isAdmin ? t('groups.admin') : t('groups.joined')}
+              </span>
+            )}
+            {isPending && (
+              <span className="inline-block text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md">
+                {t('groups.pending')}
+              </span>
+            )}
+          </div>
           {group.description && (
             <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
               {group.description}
@@ -111,26 +145,21 @@ const GroupCard = ({ group }) => {
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={handleAction}
-          disabled={loading}
-          className={`w-full py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-xs ${
-            isJoined
-              ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 dark:hover:text-red-400'
-              : isPending
-              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50'
-              : 'bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/10'
-          }`}
-        >
-          {loading
-            ? '...'
-            : isJoined
-            ? (isAdmin ? 'Quản trị' : t('groups.joined'))
-            : isPending
-            ? 'Đang chờ duyệt'
-            : t('groups.join')}
-        </button>
+        {/* Action Button: Ẩn nút "Tham gia" khi đã tham gia nhóm */}
+        {!isJoined && (
+          <button
+            type="button"
+            onClick={handleAction}
+            disabled={loading}
+            className={`w-full py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-xs ${
+              isPending
+                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50'
+                : 'bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/10'
+            }`}
+          >
+            {loading ? '...' : isPending ? t('groups.pending') : t('groups.join')}
+          </button>
+        )}
       </div>
     </Link>
   )

@@ -7,6 +7,7 @@ import postService from '../../services/postService'
 import { mockComments, mockToken } from '@/utils/mockData'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 import { getSocket, socketDebugLog } from '@/services/socketClient'
+import { isPostSaved, toggleSavePost } from '../../utils/savedPostsStorage'
 
 const normalizeCommentUser = (rawUser, currentUser) => {
   const raw = rawUser && typeof rawUser === 'object' ? rawUser : null
@@ -147,7 +148,8 @@ const usePostCardController = (post) => {
   const navigate = useNavigate()
   const { user, token } = useSelector((state) => state.auth)
 
-  const [saved, setSaved] = useState(false)
+  const postId = post?._id || post?.id
+  const [saved, setSaved] = useState(() => isPostSaved(postId))
   const [comments, setComments] = useState(Array.isArray(post.comments) ? post.comments : [])
   const [commentsCount, setCommentsCount] = useState(post.comments_count || 0)
   const [newComment, setNewComment] = useState('')
@@ -168,6 +170,20 @@ const usePostCardController = (post) => {
   const postAuthorId = post?.user?._id || post?.user?.id
   const canManage = Boolean(currentUserId && postAuthorId && String(currentUserId) === String(postAuthorId))
   const groupId = post.group?._id || post.group?.id || (typeof post.group === 'string' ? post.group : null)
+
+  // Sync saved state with storage and global events
+  useEffect(() => {
+    setSaved(isPostSaved(postId))
+
+    const handleSavedUpdate = (e) => {
+      if (e.detail?.postId === String(postId)) {
+        setSaved(Boolean(e.detail?.saved))
+      }
+    }
+
+    window.addEventListener('zivo_saved_posts_updated', handleSavedUpdate)
+    return () => window.removeEventListener('zivo_saved_posts_updated', handleSavedUpdate)
+  }, [postId])
 
   useEffect(() => {
     if (Array.isArray(post.comments)) {
@@ -196,7 +212,17 @@ const usePostCardController = (post) => {
   }, [post.images, post.image_url])
 
   const handleLike = () => dispatch(toggleLike({ postId: post._id, isLiked, currentUserId, groupId }))
-  const handleSave = () => setSaved((prev) => !prev)
+
+  const handleSave = () => {
+    const result = toggleSavePost(post)
+    setSaved(result.saved)
+    if (result.saved) {
+      toast.success('Đã lưu bài viết vào danh sách Yêu thích!')
+    } else {
+      toast.info('Đã gỡ bài viết khỏi danh sách Đã lưu')
+    }
+  }
+
   const handleEditPost = () => navigate(`/post/${post._id}/edit`)
 
   const handleImageClick = (index, e) => {

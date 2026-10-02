@@ -1,0 +1,8 @@
+export { default as ProfileSettingsTab } from './ProfileSettingsTab'
+export { default as PasswordSettingsTab } from './PasswordSettingsTab'
+export { default as PrivacySettingsTab } from './PrivacySettingsTab'
+export { default as AppearanceSettingsTab } from './AppearanceSettingsTab'
+export { default as NotificationsSettingsTab } from './NotificationsSettingsTab'
+export { default as AccountSettingsTab } from './AccountSettingsTab'
+export { default as SettingsMobileView } from './SettingsMobileView'
+export { default as SettingsDesktopView } from './SettingsDesktopView'

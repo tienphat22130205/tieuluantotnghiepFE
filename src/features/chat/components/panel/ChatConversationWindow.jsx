@@ -9,6 +9,7 @@ import formatLastSeenText from '@/utils/formatLastSeenText'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
 import StickerPicker from '../StickerPicker'
 import { useCallStore } from '@/features/chat/store/useCallStore'
+import { usePreferences } from '@/context/PreferencesContext'
 
 const REACTION_EMOJIS = {
   like: '👍',
@@ -17,23 +18,6 @@ const REACTION_EMOJIS = {
   wow: '😮',
   sad: '😢',
   angry: '😡',
-}
-
-
-const getStatusLabel = (status) => {
-  if (!status) return ''
-  switch (status) {
-    case 'Đã xem':
-      return 'Seen'
-    case 'Đang gửi':
-      return 'Sending...'
-    case 'Gửi lỗi':
-      return 'Failed'
-    case 'Đã gửi':
-      return 'Sent'
-    default:
-      return status
-  }
 }
 
 const ChatConversationWindow = ({
@@ -54,6 +38,27 @@ const ChatConversationWindow = ({
 }) => {
   const { user } = useSelector((state) => state.auth)
   const { makeCall } = useCallStore()
+  const { t } = usePreferences()
+
+  const getStatusLabel = (status) => {
+    if (!status) return ''
+    switch (status) {
+      case 'Đã xem':
+      case 'Seen':
+        return t('chat.statusSeen', 'Đã xem')
+      case 'Đang gửi':
+      case 'Sending...':
+        return t('chat.statusSending', 'Đang gửi...')
+      case 'Gửi lỗi':
+      case 'Failed':
+        return t('chat.statusFailed', 'Gửi lỗi')
+      case 'Đã gửi':
+      case 'Sent':
+        return t('chat.statusSent', 'Đã gửi')
+      default:
+        return status
+    }
+  }
   const currentUserId = String(user?._id || user?.id || '')
   const messagesContainerRef = useRef(null)
   const navigate = useNavigate()
@@ -209,13 +214,13 @@ const ChatConversationWindow = ({
           <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-3 py-3 bg-gray-50/40">
             {isMessagesLoading && (
               <div className="h-full flex items-center justify-center text-center text-sm text-gray-500">
-                Đang tải tin nhắn...
+                {t('chat.loadingMessages', 'Đang tải tin nhắn...')}
               </div>
             )}
 
             {!isMessagesLoading && messages.length === 0 && (
               <div className="h-full flex items-center justify-center text-center text-sm text-gray-500">
-                Chưa có tin nhắn nào. Hãy gửi lời chào trước.
+                {t('chat.noMessagesGreet', 'Chưa có tin nhắn nào. Hãy gửi lời chào trước.')}
               </div>
             )}
 
@@ -571,7 +576,7 @@ const ChatConversationWindow = ({
                   <button
                     type="button"
                     className="text-zinc-400 bg-zinc-700/50 hover:bg-zinc-700 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition"
-                    title="Thêm cảm xúc"
+                    title={t('chat.addReaction', 'Thêm cảm xúc')}
                   >
                     <span className="text-lg font-bold leading-none">+</span>
                   </button>
