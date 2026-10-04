@@ -26,6 +26,7 @@ const ChatWindow = ({
   onBackToList,
   onMakeCall,
   onSendMessage,
+  onSendImage,
   onSendSticker,
   onToggleReaction,
   onInputKeyDown,
@@ -145,6 +146,7 @@ const ChatWindow = ({
             setShowStickers={setShowStickers}
             isSending={isSending}
             onSendMessage={onSendMessage}
+            onSendImage={onSendImage}
             onSendSticker={onSendSticker}
             onCancelReply={() => setReplyToMessage(null)}
             onInputKeyDown={onInputKeyDown}

@@ -13,6 +13,25 @@ const chatService = {
 
   sendMessage: (conversationId, content, payload = {}) => api.post(`/chats/conversations/${conversationId}/messages`, { content, ...payload }),
 
+  sendImageMessage: (conversationId, file, caption = '', payload = {}) => {
+    const formData = new FormData()
+    formData.append('image', file)
+    if (caption) {
+      formData.append('content', caption)
+    }
+    if (payload.replyTo) {
+      formData.append('replyTo', payload.replyTo)
+    }
+    if (payload.storyReply) {
+      formData.append('storyReply', typeof payload.storyReply === 'string' ? payload.storyReply : JSON.stringify(payload.storyReply))
+    }
+    return api.post(`/chats/conversations/${conversationId}/messages`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+
   markConversationAsRead: (conversationId) => api.patch(`/chats/conversations/${conversationId}/read`),
 
   toggleMessageReaction: (messageId, type) => api.patch(`/chats/messages/${messageId}/react`, { type }),

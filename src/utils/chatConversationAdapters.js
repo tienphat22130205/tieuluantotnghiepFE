@@ -157,7 +157,8 @@ export const normalizeChatMessage = (message, options = {}) => {
       ...replyTo,
       _id: replyTo?._id || replyTo?.id,
       content: replyTo?.content || replyTo?.text || '',
-      type: replyTo?.type || 'text',
+      type: replyTo?.type || (replyTo?.mediaUrl ? 'image' : 'text'),
+      mediaUrl: replyTo?.mediaUrl || replyTo?.media_url || null,
       sticker: replyTo?.sticker || null,
       sender: typeof replySender === 'object' && replySender !== null
         ? replySender
@@ -165,10 +166,39 @@ export const normalizeChatMessage = (message, options = {}) => {
     }
   }
 
+  let normalizedSender = sender
+  if (typeof sender === 'object' && sender !== null) {
+    const rawFirst = (sender.firstName || sender.first_name || '').trim()
+    const rawLast = (sender.lastName || sender.last_name || '').trim()
+    const fullName =
+      sender.full_name ||
+      sender.fullName ||
+      (rawFirst || rawLast ? `${rawFirst} ${rawLast}`.trim() : '') ||
+      sender.name ||
+      sender.username ||
+      ''
+
+    normalizedSender = {
+      ...sender,
+      _id: sender._id || sender.id || sender.userId,
+      full_name: fullName,
+    }
+  }
+
   return {
     ...message,
     _id: message?._id || message?.id,
+    conversationId:
+      message?.conversationId ||
+      (typeof message?.conversation === 'object' && message?.conversation !== null
+        ? message?.conversation?._id || message?.conversation?.id
+        : message?.conversation) ||
+      null,
+    sender: normalizedSender,
     content: message?.content || message?.text || '',
+    type: message?.type || (message?.mediaUrl || message?.media_url ? 'image' : 'text'),
+    mediaUrl: message?.mediaUrl || message?.media_url || null,
+    sticker: message?.sticker || null,
     createdAt: message?.createdAt || message?.created_at || new Date().toISOString(),
     senderId: senderId ? String(senderId) : null,
     isMine: Boolean(forceMine || message?.isMine || message?.is_mine),

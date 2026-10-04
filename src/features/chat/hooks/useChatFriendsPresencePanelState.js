@@ -4,6 +4,7 @@ import useChatFriendsInitialData from './useChatFriendsInitialData'
 import useChatPanelUiState from './useChatPanelUiState'
 import { useChatStore } from '../store/useChatStore'
 import { usePresenceStore } from '../store/usePresenceStore'
+import { useChatHeadStore } from '../store/useChatHeadStore'
 import { getSocket } from '@/services/socketClient'
 
 const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
@@ -32,6 +33,7 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     openConversation,
     closeConversation,
     sendMessage: storeSendMessage,
+    sendImage: storeSendImage,
     sendSticker: storeSendSticker,
     toggleReaction: storeToggleReaction,
     setReplyToMessage,
@@ -39,15 +41,30 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
 
   const selectedFriendId = selectedConversation?._id || selectedConversation?.id || null
 
+  const targetHead = useChatHeadStore((state) =>
+    state.chatHeads.find((h) => String(h.id) === String(selectedFriendId))
+  )
+  const isCurrentChatUnread = Boolean(targetHead?.isUnread || (targetHead?.unreadCount > 0))
+
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/chat')) {
       return
     }
 
     if (selectedFriendId && selectedConversation) {
-      openConversation(selectedConversation, token, currentUserId)
+      const head = useChatHeadStore.getState().chatHeads.find(
+        (h) => String(h.id) === String(selectedFriendId)
+      )
+      const shouldMarkAsRead = !head?.isUnread
+      openConversation(selectedConversation, token, currentUserId, { markAsRead: shouldMarkAsRead })
     }
   }, [selectedFriendId, token, currentUserId])
+
+  const handleMarkAsRead = () => {
+    if (selectedFriendId) {
+      useChatStore.getState().markCurrentConversationAsRead(selectedFriendId, token)
+    }
+  }
 
   const handleExplicitCloseConversation = () => {
     handleCloseConversation()
@@ -59,6 +76,10 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     if (!content) return
     storeSendMessage(content, currentUserId, user?.username)
     setMessageInput('')
+  }
+
+  const sendImage = (file, caption) => {
+    storeSendImage(file, caption, currentUserId, user?.username)
   }
 
   const sendSticker = (stickerUrl) => {
@@ -135,6 +156,7 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     setMessageInput,
     setSearchKeyword,
     sendMessage,
+    sendImage,
     sendSticker,
     toggleReaction,
     replyToMessage,
@@ -143,6 +165,8 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
     handleMinimize,
     handleCloseConversation: handleExplicitCloseConversation,
     handleSelectFriend,
+    isUnread: isCurrentChatUnread,
+    onMarkAsRead: handleMarkAsRead,
   }
 }
 

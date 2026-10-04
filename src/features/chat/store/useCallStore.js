@@ -39,20 +39,51 @@ const playRingtoneBeep = (isIncoming) => {
     if (audioCtx.state === 'suspended') audioCtx.resume()
 
     const ctx = audioCtx
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
+    const now = ctx.currentTime
 
-    osc.type = 'sine'
-    osc.frequency.setValueAtTime(isIncoming ? 440 : 480, ctx.currentTime)
+    if (isIncoming) {
+      // Âm thanh chuông gọi đến to, rõ và du dương (Melodic phone chime)
+      const notes = [
+        { freq: 523.25, time: 0, dur: 0.22 }, // C5
+        { freq: 659.25, time: 0.24, dur: 0.22 }, // E5
+        { freq: 783.99, time: 0.48, dur: 0.38 }, // G5
+        { freq: 659.25, time: 0.90, dur: 0.22 }, // E5
+        { freq: 783.99, time: 1.14, dur: 0.45 }, // G5
+      ]
 
-    gain.gain.setValueAtTime(0.1, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
+      notes.forEach(({ freq, time, dur }) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'triangle'
+        osc.frequency.setValueAtTime(freq, now + time)
 
-    osc.connect(gain)
-    gain.connect(ctx.destination)
+        // Âm lượng to hơn đáng kể (gain 0.42 thay vì 0.1)
+        gain.gain.setValueAtTime(0.001, now + time)
+        gain.gain.linearRampToValueAtTime(0.42, now + time + 0.03)
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + time + dur)
 
-    osc.start()
-    osc.stop(ctx.currentTime + 0.8)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.start(now + time)
+        osc.stop(now + time + dur)
+      })
+    } else {
+      // Âm thanh tút tút khi gọi đi (Outgoing dial tone)
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(480, now)
+
+      gain.gain.setValueAtTime(0.2, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.8)
+    }
   } catch (e) {
     console.warn('Web Audio synthesis error:', e)
   }
@@ -61,10 +92,11 @@ const playRingtoneBeep = (isIncoming) => {
 const startSound = (type) => {
   stopSounds()
   try {
-    playRingtoneBeep(type === 'incoming')
+    const isIncoming = type === 'incoming'
+    playRingtoneBeep(isIncoming)
     ringInterval = setInterval(() => {
-      playRingtoneBeep(type === 'incoming')
-    }, 2000)
+      playRingtoneBeep(isIncoming)
+    }, isIncoming ? 2500 : 2000)
   } catch (e) {
     console.warn('Sound start error:', e)
   }
