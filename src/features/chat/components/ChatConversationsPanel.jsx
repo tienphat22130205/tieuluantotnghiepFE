@@ -15,6 +15,7 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
     messageInput,
     searchKeyword,
     sendMessage,
+    sendImage,
     sendSticker,
     toggleReaction,
     setMessageInput,
@@ -25,6 +26,8 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
     handleSelectFriend,
     replyToMessage,
     setReplyToMessage,
+    isUnread,
+    onMarkAsRead,
   } = useChatFriendsPresencePanelState({ isOpen, onClose })
 
   return (
@@ -63,11 +66,14 @@ const ChatConversationsPanel = ({ isOpen, onClose }) => {
         onBack={handleMinimize}
         onClose={handleCloseConversation}
         onSendMessage={sendMessage}
+        onSendImage={sendImage}
         onChangeMessage={setMessageInput}
         onSendSticker={sendSticker}
         onToggleReaction={toggleReaction}
         replyToMessage={replyToMessage}
         onSetReplyToMessage={setReplyToMessage}
+        isUnread={isUnread}
+        onMarkAsRead={onMarkAsRead}
       />
 
       {/* Bong bóng Chat (Chat Heads) ở góc dưới bên phải màn hình */}

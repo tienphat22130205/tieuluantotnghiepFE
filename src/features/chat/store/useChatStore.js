@@ -4,6 +4,10 @@ import { getSocket } from '@/services/socketClient'
 import { usePresenceStore } from './usePresenceStore'
 import { useChatHeadStore } from './useChatHeadStore'
 import {
+  playIncomingMessageSound,
+  showIncomingMessageNotification,
+} from '../utils/chatNotification'
+import {
   extractConversationsPayload,
   extractConversationPayload,
   extractMessagesPayload,
@@ -94,7 +98,9 @@ const mergeIncomingMessage = (prev, incoming) => {
     const tempIndex = prev.findIndex(
       (item) =>
         String(item._id || '').startsWith('temp-') &&
-        (item.content === incoming.content || (incoming.type === 'sticker' && item.type === 'sticker'))
+        (item.content === incoming.content ||
+          (incoming.type === 'sticker' && item.type === 'sticker') ||
+          (incoming.type === 'image' && item.type === 'image'))
     )
     if (tempIndex !== -1) {
       const existing = prev[tempIndex]
@@ -152,8 +158,28 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  openConversation: async (friend, token, currentUserId) => {
+  markCurrentConversationAsRead: async (friendId, token) => {
+    if (!friendId) return
+    const idStr = String(friendId)
+    const convoId = conversationByFriendId.get(idStr) || get().activeConversationId
+
+    useChatHeadStore.getState().markHeadAsRead(idStr)
+
+    get().updateFriendPreview(idStr, null, {
+      incrementUnread: false,
+      resetUnread: true,
+    })
+
+    if (convoId) {
+      chatService.markConversationAsRead(convoId).catch((err) => {
+        console.warn('Failed to mark conversation as read:', err)
+      })
+    }
+  },
+
+  openConversation: async (friend, token, currentUserId, options = {}) => {
     if (!friend) return
+    const { markAsRead = true } = options
     const friendId = String(
       (typeof friend === 'object' ? friend._id || friend.id : friend) || ''
     )
@@ -178,11 +204,21 @@ export const useChatStore = create((set, get) => ({
       if (typeof friend === 'object') {
         set({ selectedConversation: friend })
       }
+      if (markAsRead) {
+        useChatHeadStore.getState().markHeadAsRead(friendId)
+        get().updateFriendPreview(friendId, null, {
+          incrementUnread: false,
+          resetUnread: true,
+        })
+        if (convoId) {
+          chatService.markConversationAsRead(convoId).catch(() => {})
+        }
+      }
       return
     }
 
     const targetHead = useChatHeadStore.getState().chatHeads.find((h) => String(h.id) === friendId)
-    if (targetHead && targetHead.unreadCount > 0) {
+    if (markAsRead && targetHead && targetHead.unreadCount > 0) {
       useChatHeadStore.getState().markHeadAsRead(friendId)
     }
     set({ isMessagesLoading: true, selectedConversation: typeof friend === 'object' ? friend : null })
@@ -221,11 +257,13 @@ export const useChatStore = create((set, get) => ({
 
       set({ activeConversationId: String(convoId) })
 
-      // Clear unread badge locally via presence store
-      get().updateFriendPreview(friendId, null, {
-        incrementUnread: false,
-        resetUnread: true,
-      })
+      if (markAsRead) {
+        // Clear unread badge locally via presence store
+        get().updateFriendPreview(friendId, null, {
+          incrementUnread: false,
+          resetUnread: true,
+        })
+      }
 
       const messagesResponse = await chatService.getConversationMessages(convoId, {
         page: 1,
@@ -247,17 +285,19 @@ export const useChatStore = create((set, get) => ({
         const preview = rawContent ? (isMine ? `Bạn: ${rawContent}` : rawContent) : ''
         get().updateFriendPreview(friendId, preview, {
           incrementUnread: false,
-          resetUnread: true,
+          resetUnread: markAsRead,
           createdAt: lastMsg.createdAt,
         })
-      } else {
+      } else if (markAsRead) {
         get().updateFriendPreview(friendId, null, {
           incrementUnread: false,
           resetUnread: true,
         })
       }
 
-      chatService.markConversationAsRead(convoId).catch(() => {})
+      if (markAsRead) {
+        chatService.markConversationAsRead(convoId).catch(() => {})
+      }
     } catch (err) {
       console.error('Failed to open conversation:', err)
       if (!get().messages || get().messages.length === 0) {
@@ -536,6 +576,144 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  sendImage: async (file, caption = '', currentUserId, userUsername) => {
+    const { activeConversationId, selectedConversation, replyToMessage } = get()
+    if (!file || !activeConversationId) return
+
+    set({ isSending: true })
+    const tempId = createTempMessageId()
+    const localBlobUrl = URL.createObjectURL(file)
+
+    const optimisticReplyTo = replyToMessage
+      ? {
+          _id: replyToMessage._id || replyToMessage.id,
+          content: replyToMessage.text || replyToMessage.content || '',
+          type: replyToMessage.type || 'text',
+          mediaUrl: replyToMessage.mediaUrl || null,
+          sticker: replyToMessage.sticker || null,
+          sender:
+            typeof replyToMessage.sender === 'object' && replyToMessage.sender !== null
+              ? replyToMessage.sender
+              : {
+                  _id:
+                    replyToMessage.sender === 'me'
+                      ? currentUserId
+                      : replyToMessage.senderId || selectedConversation?._id,
+                  username:
+                    replyToMessage.sender === 'me'
+                      ? userUsername
+                      : selectedConversation?.username || 'user',
+                  full_name:
+                    replyToMessage.sender === 'me'
+                      ? 'Bạn'
+                      : selectedConversation?.full_name || selectedConversation?.fullName || 'Người dùng',
+                },
+        }
+      : null
+
+    const optimistic = normalizeChatMessage(
+      {
+        _id: tempId,
+        content: caption || '[Hình ảnh]',
+        type: 'image',
+        mediaUrl: localBlobUrl,
+        createdAt: new Date().toISOString(),
+        senderId: currentUserId,
+        isMine: true,
+        status: 'sending',
+        replyTo: optimisticReplyTo,
+      },
+      {
+        fallbackSenderId: currentUserId,
+        forceMine: true,
+      }
+    )
+
+    if (optimistic) {
+      set((state) => ({
+        messages: mergeIncomingMessage(state.messages, optimistic),
+      }))
+      const targetFriendId = selectedConversation?._id || selectedConversation?.id || friendByConversationId.get(String(activeConversationId))
+      get().updateFriendPreview(targetFriendId, caption ? `Bạn: [Hình ảnh] ${caption}` : 'Bạn: [Hình ảnh]', {
+        incrementUnread: false,
+        resetUnread: true,
+        createdAt: optimistic.createdAt,
+      })
+    }
+
+    try {
+      const response = await chatService.sendImageMessage(
+        activeConversationId,
+        file,
+        caption,
+        {
+          replyTo: replyToMessage?._id || replyToMessage?.id || null,
+        }
+      )
+
+      const rawMsgData =
+        response?.data?.message ||
+        response?.messageDoc ||
+        (response?.data && (response.data._id || response.data.mediaUrl) ? response.data : null) ||
+        (response?._id ? response : null)
+
+      const normalized = normalizeChatMessage(rawMsgData, {
+        fallbackSenderId: currentUserId,
+        forceMine: true,
+      })
+
+      const resolvedReplyTo =
+        normalized?.replyTo && typeof normalized.replyTo === 'object' && (normalized.replyTo.content || normalized.replyTo.text)
+          ? normalized.replyTo
+          : optimisticReplyTo
+
+      const finalId = normalized?._id || rawMsgData?._id || tempId
+
+      const finalMsg = {
+        ...optimistic,
+        ...normalized,
+        _id: finalId,
+        content: normalized?.content || caption || '[Hình ảnh]',
+        text: normalized?.content || caption || '[Hình ảnh]',
+        type: 'image',
+        mediaUrl: normalized?.mediaUrl || rawMsgData?.mediaUrl || localBlobUrl,
+        status: 'sent',
+        replyTo: resolvedReplyTo,
+      }
+
+      set((state) => {
+        const hasTemp = state.messages.some((m) => String(m._id) === String(tempId))
+        if (hasTemp) {
+          return {
+            messages: state.messages.map((m) =>
+              String(m._id) === String(tempId) ? finalMsg : m
+            ),
+          }
+        }
+        return {
+          messages: mergeIncomingMessage(state.messages, finalMsg),
+        }
+      })
+
+      const targetFriendId = selectedConversation?._id || selectedConversation?.id || friendByConversationId.get(String(activeConversationId))
+      get().updateFriendPreview(targetFriendId, caption ? `Bạn: [Hình ảnh] ${caption}` : 'Bạn: [Hình ảnh]', {
+        incrementUnread: false,
+        resetUnread: true,
+        createdAt: finalMsg.createdAt,
+      })
+      set({ replyToMessage: null })
+    } catch (err) {
+      console.error('Failed to send image message:', err)
+      set((state) => ({
+        messages: state.messages.map((m) =>
+          String(m._id) === String(tempId) ? { ...m, status: 'failed' } : m
+        ),
+      }))
+    } finally {
+      set({ isSending: false })
+    }
+  },
+
   toggleReaction: async (messageId, emojiType, currentUserId, userUsername) => {
     try {
       set((state) => ({
@@ -602,7 +780,11 @@ export const useChatStore = create((set, get) => ({
     const { messages } = get()
     return messages
       .filter(
-        (message) => String(message?.content || '').trim().length > 0 || message.type === 'sticker'
+        (message) =>
+          String(message?.content || '').trim().length > 0 ||
+          message.type === 'sticker' ||
+          message.type === 'image' ||
+          Boolean(message?.mediaUrl)
       )
       .map((message) => {
         const isMine =
@@ -635,7 +817,9 @@ export const useChatStore = create((set, get) => ({
         payload?.conversationId ||
           payload?.data?.conversationId ||
           payload?.message?.conversationId ||
-          payload?.message?.conversation ||
+          (typeof payload?.message?.conversation === 'object' && payload?.message?.conversation !== null
+            ? payload?.message?.conversation?._id || payload?.message?.conversation?.id
+            : payload?.message?.conversation) ||
           ''
       )
       if (!convoId) return
@@ -643,32 +827,104 @@ export const useChatStore = create((set, get) => ({
       const normalized = normalizeChatMessage(payload?.message || payload?.data?.message || payload)
       if (!normalized) return
 
+      const myId = String(currentUserId || '')
       const friendId = friendByConversationId.get(convoId)
       const effectiveFriendId =
         friendId ||
-        (normalized.senderId && String(normalized.senderId) !== String(currentUserId)
+        (normalized.senderId && String(normalized.senderId) !== myId
           ? String(normalized.senderId)
           : null)
 
       const isMine = Boolean(
         normalized.isMine ||
-          (normalized.senderId && currentUserId && String(normalized.senderId) === String(currentUserId))
+          (normalized.senderId && myId && String(normalized.senderId) === myId)
       )
 
-      const rawContent = normalized.type === 'sticker' ? '[Sticker]' : (normalized.content || '')
+      const rawContent = normalized.type === 'sticker'
+        ? '[Sticker]'
+        : (normalized.type === 'image' || normalized.mediaUrl)
+        ? (normalized.content && normalized.content !== '[Hình ảnh]' ? `[Hình ảnh] ${normalized.content}` : '[Hình ảnh]')
+        : (normalized.content || '')
       const preview = rawContent ? (isMine ? `Bạn: ${rawContent}` : rawContent) : ''
 
       const activeConvo = String(get().activeConversationId || '')
       const selectedFriend = String(get().selectedConversation?._id || get().selectedConversation?.id || '')
 
       const isChatActive =
-        (activeConvo && (activeConvo === convoId || (effectiveFriendId && activeConvo === effectiveFriendId))) ||
+        (activeConvo && (activeConvo === convoId || activeConvo === String(normalized.conversationId || '') || (effectiveFriendId && activeConvo === effectiveFriendId))) ||
         (selectedFriend && effectiveFriendId && selectedFriend === effectiveFriendId)
 
-      if (isChatActive) {
+      // Xử lý thông báo & âm thanh khi có tin nhắn từ người khác gửi đến
+      if (!isMine) {
+        // 1. Luôn phát âm thanh chuông tin nhắn mới (nhẹ nhàng, trong trẻo)
+        playIncomingMessageSound()
+
+        // 2. Hiển thị thông báo (Desktop / In-app Toast) nếu khung chat chưa mở hoặc tab đang ẩn
+        if (!isChatActive || (typeof document !== 'undefined' && document.hidden)) {
+          const allFriends = usePresenceStore.getState().friends || []
+          const foundFriend =
+            allFriends.find((f) => String(f._id || f.id) === String(effectiveFriendId)) ||
+            useChatHeadStore.getState().chatHeads.find((h) => String(h.id) === String(effectiveFriendId))?.friend ||
+            null
+
+          // Lấy chính xác tên hiển thị trên khung chat (full_name)
+          const senderName =
+            foundFriend?.full_name ||
+            foundFriend?.fullName ||
+            normalized.sender?.full_name ||
+            normalized.sender?.fullName ||
+            foundFriend?.username ||
+            normalized.sender?.username ||
+            'Tin nhắn mới'
+
+          const senderAvatar =
+            foundFriend?.avatar || normalized.sender?.avatar || ''
+
+          showIncomingMessageNotification({
+            senderName,
+            content: rawContent || 'Đã gửi cho bạn một tin nhắn',
+            avatar: senderAvatar,
+            onClick: () => {
+              const targetFriend = foundFriend || {
+                _id: effectiveFriendId,
+                full_name: senderName,
+                avatar: senderAvatar,
+              }
+              if (effectiveFriendId) {
+                useChatHeadStore.getState().openChatHead(targetFriend)
+                get().markCurrentConversationAsRead(effectiveFriendId)
+              }
+            },
+          })
+
+          // 3. Tự động xuất hiện form chat ở góc dưới bên phải ở trạng thái CHƯA ĐỌC
+          if (effectiveFriendId) {
+            const targetFriend = foundFriend || {
+              _id: effectiveFriendId,
+              full_name: senderName,
+              avatar: senderAvatar,
+            }
+            useChatHeadStore.getState().openChatHeadAsUnread(targetFriend)
+          }
+        }
+      }
+
+      // Đưa tin nhắn vào danh sách nếu cuộc trò chuyện đang mở trên màn hình
+      const currentActiveConvo = String(get().activeConversationId || '')
+      const shouldAppendToMessages =
+        isChatActive ||
+        (currentActiveConvo &&
+          (currentActiveConvo === convoId ||
+            currentActiveConvo === String(normalized.conversationId || '') ||
+            (effectiveFriendId && currentActiveConvo === effectiveFriendId)))
+
+      if (shouldAppendToMessages) {
         set((state) => ({
           messages: mergeIncomingMessage(state.messages, { ...normalized, isMine }),
         }))
+      }
+
+      if (isChatActive) {
         if (effectiveFriendId) {
           get().updateFriendPreview(effectiveFriendId, preview, {
             incrementUnread: false,

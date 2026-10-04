@@ -49,6 +49,48 @@ export const useChatHeadStore = create(
         })
       },
 
+      // Mở một cuộc trò chuyện nhưng giữ trạng thái CHƯA ĐỌC (dùng khi có tin nhắn mới đến mà chưa mở khung chat)
+      openChatHeadAsUnread: (friend, count = 1) => {
+        if (!friend) return
+        const friendId = String(friend._id || friend.id)
+        if (!friendId) return
+
+        const currentHeads = get().chatHeads
+        const existingIndex = currentHeads.findIndex((h) => String(h.id) === friendId)
+        let updatedHeads
+
+        if (existingIndex > -1) {
+          updatedHeads = currentHeads.map((h) =>
+            String(h.id) === friendId
+              ? {
+                  ...h,
+                  friend: { ...h.friend, ...friend },
+                  isMinimized: false,
+                  unreadCount: (h.unreadCount || 0) + count,
+                  isUnread: true,
+                }
+              : h
+          )
+        } else {
+          const trimmed = currentHeads.length >= 4 ? currentHeads.slice(1) : currentHeads
+          updatedHeads = [
+            ...trimmed,
+            {
+              id: friendId,
+              friend,
+              isMinimized: false,
+              unreadCount: count,
+              isUnread: true,
+            },
+          ]
+        }
+
+        set({
+          chatHeads: updatedHeads,
+          activeChatHeadId: friendId,
+        })
+      },
+
       // Thu nhỏ khung chat thành avatar bubble (ấn nút mũi tên ←)
       minimizeChatHead: (friendId) => {
         const targetId = String(friendId)
@@ -114,17 +156,11 @@ export const useChatHeadStore = create(
       // Xóa số lượng chưa đọc khi đã xem
       markHeadAsRead: (friendId) => {
         const targetId = String(friendId)
-        set((state) => {
-          const target = state.chatHeads.find((h) => String(h.id) === targetId)
-          if (!target || !target.unreadCount || target.unreadCount <= 0) {
-            return state
-          }
-          return {
-            chatHeads: state.chatHeads.map((h) =>
-              String(h.id) === targetId ? { ...h, unreadCount: 0 } : h
-            ),
-          }
-        })
+        set((state) => ({
+          chatHeads: state.chatHeads.map((h) =>
+            String(h.id) === targetId ? { ...h, unreadCount: 0, isUnread: false } : h
+          ),
+        }))
       },
     }),
     {

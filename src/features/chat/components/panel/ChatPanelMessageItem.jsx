@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { Avatar } from '@/components/ui'
 import { FaReply } from 'react-icons/fa'
 import { FiPhone, FiVideo, FiPhoneOff, FiPhoneMissed } from 'react-icons/fi'
-import { AiOutlineSmile, AiOutlineClose } from 'react-icons/ai'
+import { AiOutlineSmile } from 'react-icons/ai'
 import { resolveMediaUrl } from '@/utils/mediaUrl'
-import { REACTION_EMOJIS, getStatusLabel } from '../constants/chatConstants'
+import { REACTION_EMOJIS, getStatusLabel } from '../../constants/chatConstants'
 
-const ChatMessageItem = ({
+const ChatPanelMessageItem = ({
   msg,
   index,
   totalMessages,
@@ -15,105 +13,62 @@ const ChatMessageItem = ({
   selectedConversation,
   isSelected,
   activeReactionMessageId,
+  setActiveReactionMessageId,
   onToggleDetails,
   onReply,
-  onToggleReaction,
-  onOpenReactionPicker,
+  onReaction,
   onTouchStart,
   onTouchEnd,
   onTouchMove,
+  getStatusText,
 }) => {
-  const msgId = msg._id || msg.id || `local-${index}`
+  const msgId = msg._id || `${msg.sender}-${msg.createdAt}`
   const isLast = index === totalMessages - 1
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
-
-  useEffect(() => {
-    if (!isLightboxOpen) return
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setIsLightboxOpen(false)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isLightboxOpen])
 
   return (
     <div className="flex flex-col w-full">
-      {/* Lightbox Modal (Centered Fullscreen Portal) */}
-      {isLightboxOpen && typeof document !== 'undefined' && createPortal(
-        <div
-          className="fixed inset-0 z-[999999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 md:p-8 select-none animate-fade-in"
-          onClick={() => setIsLightboxOpen(false)}
-        >
-          {/* Close button */}
-          <button
-            type="button"
-            className="absolute top-6 right-6 text-white/80 hover:text-white p-3 rounded-full bg-black/50 hover:bg-black/80 transition-all cursor-pointer z-10 shadow-lg border border-white/10"
-            onClick={() => setIsLightboxOpen(false)}
-            title="Đóng xem ảnh (Esc)"
-          >
-            <AiOutlineClose size={22} />
-          </button>
-
-          {/* Centered Image */}
-          <div
-            className="relative flex items-center justify-center max-w-[90vw] max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={resolveMediaUrl(msg.mediaUrl)}
-              alt="Xem ảnh lớn"
-              className="max-w-[85vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl transition duration-200"
-            />
-          </div>
-        </div>,
-        document.body
-      )}
-
       {/* Centered time when selected */}
       {isSelected && (
-        <div className="w-full flex justify-center mb-2.5 select-none animate-fade-in">
-          <span className="text-[11px] font-semibold text-slate-500 bg-slate-100/80 px-2.5 py-0.5 rounded-full border border-slate-200/50 shadow-sm">
+        <div className="w-full flex justify-center mb-2 select-none animate-fade-in">
+          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100/80 px-2 py-0.5 rounded-full border border-slate-200/50 shadow-sm">
             {msg.fullTime || msg.time || (msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')}
           </span>
         </div>
       )}
 
       <div
-        id={`msg-${msg._id}`}
-        className={`group relative flex items-end gap-2.5 mb-4 ${
-          msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'
-        }`}
+        id={msg._id ? `msg-${msg._id}` : undefined}
+        className={`group relative mb-4 flex items-end gap-1.5 ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
       >
         {msg.sender !== 'me' && (
-          <Avatar
-            src={selectedConversation?.avatar}
-            name={selectedConversation?.full_name}
-            size="xs"
-            online={false}
-            className="mb-1 shrink-0"
-          />
+          <div className="mr-0.5 shrink-0">
+            <Avatar
+              src={selectedConversation?.avatar}
+              name={selectedConversation?.full_name}
+              size="xs"
+              online={false}
+            />
+          </div>
         )}
 
-        {/* Message Bubble or Sticker Content */}
-        <div className={`relative flex flex-col max-w-[65%] ${msg.sender === 'me' ? 'items-end' : 'items-start'}`}>
+        {/* Message Bubble */}
+        <div className={`relative flex flex-col max-w-[70%] ${msg.sender === 'me' ? 'items-end' : 'items-start'}`}>
           {msg.replyTo && (
             <>
               {/* Reply Label */}
-              <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-1 select-none whitespace-nowrap">
-                <FaReply size={10} className="scale-x-[-1]" />
+              <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-1 select-none whitespace-nowrap">
+                <FaReply size={9} className="scale-x-[-1]" />
                 <span>
                   {msg.sender === 'me' ? 'Bạn' : selectedConversation?.full_name} đã trả lời{' '}
                   {msg.replyTo.sender?._id === currentUserId
-                    ? msg.sender === 'me' ? 'chính mình' : 'bạn'
+                    ? (msg.sender === 'me' ? 'chính mình' : 'bạn')
                     : selectedConversation?.full_name}
                 </span>
               </div>
 
               {/* Parent Message Bubble */}
               <div
-                className={`mb-1 px-3 py-1.5 rounded-2xl text-xs max-w-full opacity-60 border select-none cursor-pointer hover:opacity-85 transition bg-slate-100 text-slate-600 border-slate-200 ${
+                className={`mb-1 px-2.5 py-1 rounded-2xl text-[11px] max-w-full opacity-60 border select-none cursor-pointer hover:opacity-85 transition bg-slate-100 text-slate-600 border-slate-200 ${
                   msg.sender === 'me' ? 'rounded-br-none' : 'rounded-bl-none'
                 }`}
                 onClick={() => {
@@ -127,7 +82,7 @@ const ChatMessageItem = ({
                   }
                 }}
               >
-                <p className="truncate max-w-[200px] leading-tight">
+                <p className="truncate max-w-[160px] leading-tight">
                   {msg.replyTo.type === 'sticker'
                     ? '[Nhãn dán]'
                     : (msg.replyTo.type === 'image' || msg.replyTo.mediaUrl)
@@ -143,10 +98,7 @@ const ChatMessageItem = ({
               className={`mb-1 relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 group/story shadow-sm select-none cursor-pointer hover:brightness-95 transition-all ${
                 msg.sender === 'me' ? 'rounded-br-none' : 'rounded-bl-none'
               }`}
-              style={{
-                width: '100px',
-                height: '150px',
-              }}
+              style={{ width: '100px', height: '150px' }}
             >
               {msg.storyReply.bgColor ? (
                 <div
@@ -172,7 +124,6 @@ const ChatMessageItem = ({
                 />
               )}
 
-              {/* Blurry gradient / overlay */}
               <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px] flex flex-col justify-between p-2">
                 <span className="text-[8px] text-white/95 font-bold bg-black/55 rounded-full px-1.5 py-0.5 self-start border border-white/5 whitespace-nowrap">
                   Phản hồi tin
@@ -186,7 +137,7 @@ const ChatMessageItem = ({
 
           {msg.type === 'call' || (msg.text && msg.text.includes('Cuộc gọi')) ? (
             <div
-              className={`rounded-2xl px-4 py-2.5 text-xs font-semibold border flex items-center gap-2 shadow-sm select-none cursor-pointer hover:opacity-90 transition ${
+              className={`rounded-2xl px-3.5 py-2 text-xs font-semibold border flex items-center gap-2 shadow-sm select-none cursor-pointer hover:opacity-90 transition ${
                 msg.text?.includes('nhỡ') || msg.text?.includes('từ chối')
                   ? 'bg-red-50 text-red-600 border-red-200'
                   : msg.sender === 'me'
@@ -199,13 +150,13 @@ const ChatMessageItem = ({
               onTouchMove={onTouchMove}
             >
               {msg.text?.includes('video') ? (
-                <FiVideo size={16} />
+                <FiVideo size={15} />
               ) : msg.text?.includes('nhỡ') ? (
-                <FiPhoneMissed size={16} />
+                <FiPhoneMissed size={15} />
               ) : msg.text?.includes('từ chối') ? (
-                <FiPhoneOff size={16} />
+                <FiPhoneOff size={15} />
               ) : (
-                <FiPhone size={16} />
+                <FiPhone size={15} />
               )}
               <span>{msg.text}</span>
             </div>
@@ -222,33 +173,36 @@ const ChatMessageItem = ({
                 alt="Sticker"
                 className={`object-contain select-none rounded-lg ${
                   msg.sticker.includes('giphy.com')
-                    ? 'max-w-[200px] max-h-[200px] md:max-w-[240px] md:max-h-[240px] shadow-sm border border-slate-100 bg-slate-50/20 p-1'
-                    : 'w-24 h-24'
+                    ? 'max-w-[140px] max-h-[140px] shadow-sm border border-gray-100/60 bg-gray-50/20 p-1'
+                    : 'w-20 h-20'
                 }`}
               />
             </div>
           ) : (msg.type === 'image' || msg.mediaUrl) ? (
             <div
-              className={`rounded-2xl overflow-hidden shadow-sm transition flex flex-col ${
+              className={`rounded-2xl overflow-hidden shadow-sm flex flex-col ${
                 msg.sender === 'me'
                   ? 'bg-primary-600 text-white rounded-br-md'
-                  : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
+                  : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md'
               }`}
             >
               <div
-                className="relative overflow-hidden max-w-[280px] sm:max-w-[340px] max-h-[380px] bg-slate-100 flex items-center justify-center cursor-pointer"
-                onClick={() => setIsLightboxOpen(true)}
+                className="relative overflow-hidden max-w-[210px] sm:max-w-[250px] max-h-[260px] bg-slate-100 flex items-center justify-center cursor-pointer"
+                onClick={onToggleDetails}
+                onTouchStart={onTouchStart?.(msg)}
+                onTouchEnd={onTouchEnd}
+                onTouchMove={onTouchMove}
               >
                 <img
                   src={resolveMediaUrl(msg.mediaUrl)}
                   alt="Ảnh tin nhắn"
-                  className="w-full h-auto object-cover max-h-[380px] cursor-pointer"
+                  className="w-full h-auto object-cover max-h-[260px] cursor-pointer"
                   loading="lazy"
                 />
               </div>
               {msg.text && msg.text !== '[Hình ảnh]' && (
                 <div
-                  className="px-3.5 py-2 text-sm leading-relaxed cursor-pointer"
+                  className="px-3 py-1.5 text-xs leading-relaxed cursor-pointer"
                   onClick={onToggleDetails}
                   onTouchStart={onTouchStart?.(msg)}
                   onTouchEnd={onTouchEnd}
@@ -260,10 +214,10 @@ const ChatMessageItem = ({
             </div>
           ) : (
             <div
-              className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm leading-relaxed cursor-pointer ${
+              className={`rounded-2xl px-3 py-2 text-sm relative cursor-pointer ${
                 msg.sender === 'me'
-                  ? 'bg-primary-600 text-white rounded-br-md font-medium'
-                  : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
+                  ? 'bg-primary-600 text-white rounded-br-md font-medium shadow-sm'
+                  : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
               }`}
               onClick={onToggleDetails}
               onTouchStart={onTouchStart?.(msg)}
@@ -277,8 +231,8 @@ const ChatMessageItem = ({
           {/* Reactions list pill under message bubble */}
           {Array.isArray(msg.reactions) && msg.reactions.length > 0 && (
             <div
-              className={`absolute bottom-[-10px] bg-white border border-slate-100 rounded-full px-1.5 py-0.5 shadow-sm flex items-center gap-0.5 text-[10px] select-none z-10 cursor-pointer ${
-                msg.sender === 'me' ? 'right-3' : 'left-3'
+              className={`absolute bottom-[-10px] bg-white border border-gray-100 rounded-full px-1.5 py-0.5 shadow-sm flex items-center gap-0.5 text-[9px] select-none z-10 cursor-pointer ${
+                msg.sender === 'me' ? 'right-2' : 'left-2'
               }`}
               title={msg.reactions.map((r) => `${r.user?.username || 'Người dùng'}: ${REACTION_EMOJIS[r.type]}`).join('\n')}
             >
@@ -292,34 +246,38 @@ const ChatMessageItem = ({
           )}
         </div>
 
-        {/* Reaction Trigger Button (visible on hover) */}
+        {/* Reaction Trigger Button */}
         <div
-          className={`opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center px-0.5 shrink-0 gap-1 relative ${
-            msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'
+          className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center px-0.5 shrink-0 gap-0.5 relative ${
+            msg.sender === 'me' ? 'order-first flex-row-reverse' : 'order-last flex-row'
           }`}
         >
           <button
             type="button"
             onClick={() => onReply(msg)}
-            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-200 cursor-pointer"
+            className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-100 cursor-pointer"
             title="Phản hồi"
           >
-            <FaReply size={12} />
+            <FaReply size={10} />
           </button>
 
           <button
             type="button"
-            onClick={() => onOpenReactionPicker(msg._id)}
-            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-200 cursor-pointer"
+            onClick={() =>
+              setActiveReactionMessageId(
+                activeReactionMessageId === msg._id ? null : msg._id
+              )
+            }
+            className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 bg-white shadow-sm border border-gray-100 cursor-pointer"
             title="Bày tỏ cảm xúc"
           >
-            <AiOutlineSmile size={15} />
+            <AiOutlineSmile size={14} />
           </button>
 
           {/* Reactions bar popover */}
           {activeReactionMessageId === msg._id && (
             <div
-              className={`absolute bottom-full mb-1.5 bg-white border border-gray-200 rounded-full shadow-lg px-2.5 py-1 flex items-center gap-2 z-[90] ${
+              className={`absolute bottom-full mb-1 bg-white border border-gray-200 rounded-full shadow-lg px-2 py-1 flex items-center gap-1.5 z-[90] ${
                 msg.sender === 'me' ? 'right-0' : 'left-0'
               }`}
             >
@@ -328,10 +286,10 @@ const ChatMessageItem = ({
                   key={type}
                   type="button"
                   onClick={() => {
-                    onToggleReaction(msg._id, type)
-                    onOpenReactionPicker(null)
+                    onReaction?.(msg._id, type)
+                    setActiveReactionMessageId(null)
                   }}
-                  className="hover:scale-130 active:scale-95 transition text-base cursor-pointer"
+                  className="hover:scale-130 active:scale-95 transition text-sm cursor-pointer"
                 >
                   {emoji}
                 </button>
@@ -346,8 +304,8 @@ const ChatMessageItem = ({
         <div className={`w-full flex justify-end transition-all duration-200 select-none ${
           isSelected || isLast ? 'h-4 opacity-100 mb-2' : 'h-0 opacity-0 overflow-hidden pointer-events-none'
         }`}>
-          <span className="text-[10px] text-slate-400 font-medium pr-3.5">
-            {getStatusLabel(msg.deliveryStatus)}
+          <span className="text-[9px] text-slate-450 font-medium pr-1">
+            {getStatusText ? getStatusText(msg.deliveryStatus) : getStatusLabel(msg.deliveryStatus)}
           </span>
         </div>
       )}
@@ -355,4 +313,4 @@ const ChatMessageItem = ({
   )
 }
 
-export default ChatMessageItem
+export default ChatPanelMessageItem

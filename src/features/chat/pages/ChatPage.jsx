@@ -139,6 +139,7 @@ const ChatPage = () => {
     openConversation,
     closeConversation,
     sendMessage: storeSendMessage,
+    sendImage: storeSendImage,
     sendSticker: storeSendSticker,
     toggleReaction: storeToggleReaction,
     setReplyToMessage,
@@ -163,6 +164,10 @@ const ChatPage = () => {
     if (!content) return
     storeSendMessage(content, currentUserId, user?.username)
     setMessageInput('')
+  }
+
+  const sendImage = (file, caption) => {
+    storeSendImage(file, caption, currentUserId, user?.username)
   }
 
   const sendSticker = (stickerUrl) => {
@@ -269,6 +274,7 @@ const ChatPage = () => {
         onBackToList={() => setSelectedFriendId(null)}
         onMakeCall={makeCall}
         onSendMessage={sendMessage}
+        onSendImage={sendImage}
         onSendSticker={sendSticker}
         onToggleReaction={toggleReaction}
         onInputKeyDown={handleInputKeyDown}
