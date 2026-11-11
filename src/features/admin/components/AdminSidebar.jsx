@@ -1,13 +1,14 @@
-import { BarChart3, ClipboardCheck, FileText, Lock, MessageSquareText, Users } from 'lucide-react'
+import { BarChart3, Bell, ClipboardCheck, FileText, Lock, MessageSquareText, Users } from 'lucide-react'
 import { usePreferences } from '@/context/PreferencesContext'
 
 const menuIcons = {
+  dashboard: BarChart3,
+  notifications: Bell,
   users: Users,
   unbanRequests: ClipboardCheck,
   posts: FileText,
   comments: MessageSquareText,
   stats: BarChart3,
-  dashboard: BarChart3,
 }
 
 const AdminSidebar = ({
@@ -18,16 +19,18 @@ const AdminSidebar = ({
   onClose,
   isDesktopCollapsed,
   lockedSectionIds = [],
+  badgeCounts = {},
 }) => {
   const { t } = usePreferences()
 
   const labelMap = {
-    dashboard: t('admin.dashboard'),
-    users: t('admin.usersManagement'),
-    unbanRequests: t('admin.unbanRequests'),
-    posts: t('admin.postsModeration'),
-    comments: t('admin.commentsManagement'),
-    stats: t('admin.documentStats'),
+    dashboard: t('admin.dashboard') || 'Dashboard',
+    notifications: t('admin.notifications') || 'Thông báo Realtime',
+    users: t('admin.usersManagement') || 'Quản lý người dùng',
+    unbanRequests: t('admin.unbanRequests') || 'Yêu cầu mở khóa',
+    posts: t('admin.postsModeration') || 'Kiểm duyệt bài viết',
+    comments: t('admin.commentsManagement') || 'Quản lý bình luận',
+    stats: t('admin.documentStats') || 'Thống kê tài liệu',
   }
 
   return (
@@ -69,6 +72,7 @@ const AdminSidebar = ({
             const Icon = menuIcons[item.id] || Users
             const isActive = activeSection === item.id
             const isLocked = lockedSectionIds.includes(item.id)
+            const count = Number(badgeCounts[item.id] || 0)
 
             const stateClasses = isLocked
               ? 'bg-slate-100/60 text-slate-400 border border-slate-200/60 dark:bg-slate-950/40 dark:text-slate-600 dark:border-slate-800/60 cursor-not-allowed'
@@ -86,20 +90,37 @@ const AdminSidebar = ({
                 }}
                 title={labelMap[item.id] || item.label}
                 disabled={isLocked}
-                className={`w-full cursor-pointer rounded-xl py-3 text-left text-sm font-medium transition-all duration-150 ${
+                className={`relative w-full cursor-pointer rounded-xl py-3 text-left text-sm font-medium transition-all duration-150 ${
                   isDesktopCollapsed
                     ? 'flex items-center justify-center px-0'
                     : 'flex items-center gap-3 px-4'
                 } ${stateClasses}`}
               >
-                <Icon size={20} className="shrink-0" />
+                <div className="relative shrink-0">
+                  <Icon size={20} />
+                  {isDesktopCollapsed && count > 0 && (
+                    <span className="absolute -top-1 -right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
+                  )}
+                </div>
+
                 <div
                   className={`flex min-w-0 items-center justify-between overflow-hidden transition-all duration-200 ${
                     isDesktopCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-auto opacity-100 flex-1'
                   }`}
                 >
                   <span className="truncate whitespace-nowrap">{labelMap[item.id] || item.label}</span>
-                  {isLocked && <Lock size={14} className="shrink-0 ml-1.5" aria-label="Bị khóa với kiểm duyệt viên" />}
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    {count > 0 && (
+                      <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold leading-none ${
+                        isActive
+                          ? 'bg-white text-blue-600'
+                          : 'bg-red-500 text-white'
+                      }`}>
+                        {count > 99 ? '99+' : count}
+                      </span>
+                    )}
+                    {isLocked && <Lock size={14} className="shrink-0 text-slate-400 dark:text-slate-500" aria-label="Bị khóa với kiểm duyệt viên" />}
+                  </div>
                 </div>
               </button>
             )

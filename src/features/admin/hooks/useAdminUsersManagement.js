@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import adminUsersService from '../services/adminUsersService'
+import { getSocket } from '@/services/socketClient'
 
 /**
  * Custom hook quản lý logic Người dùng và Yêu cầu mở khóa (Unban requests) cho Admin.
  */
 export const useAdminUsersManagement = ({ activeSection, isModerator }) => {
+  const { token } = useSelector((state) => state.auth)
   const [users, setUsers] = useState([])
   const [isUsersLoading, setIsUsersLoading] = useState(false)
   const [usersError, setUsersError] = useState('')
@@ -126,6 +129,87 @@ export const useAdminUsersManagement = ({ activeSection, isModerator }) => {
       isMounted = false
     }
   }, [activeSection, unbanRequestsPagination.limit, unbanRequestsPagination.page, unbanStatusFilter, isModerator])
+
+  // Real-time synchronization for Users and Unban Requests
+  useEffect(() => {
+    if (isModerator || !token) return
+
+    const socket = getSocket(token)
+    if (!socket) return
+
+    const handleUnbanCreated = (payload) => {
+      const newReq = payload?.request
+      if (!newReq?.id) return
+
+      setUnbanRequests((prev) => {
+        const exists = prev.some((r) => r.id === newReq.id)
+        if (exists) return prev
+        return [newReq, ...prev]
+      })
+      setUnbanRequestsPagination((prev) => ({
+        ...prev,
+        totalItems: prev.totalItems + 1,
+      }))
+    }
+
+    const handleUnbanReviewed = (payload) => {
+      const { requestId, status, adminNote } = payload || {}
+      if (!requestId) return
+
+      setUnbanRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId
+            ? { ...r, status, adminNote: adminNote || r.adminNote, reviewedAt: new Date().toISOString() }
+            : r
+        )
+      )
+    }
+
+    const handleUserRegistered = (payload) => {
+      const newUser = payload?.user
+      if (!newUser?.id) return
+
+      setUsers((prev) => {
+        const exists = prev.some((u) => u.id === newUser.id)
+        if (exists) return prev
+        return [newUser, ...prev]
+      })
+      setUsersPagination((prev) => ({
+        ...prev,
+        totalItems: prev.totalItems + 1,
+      }))
+    }
+
+    const handleUserUpdated = (payload) => {
+      const { userId, role, status, isBanned, banReason, banUntil } = payload || {}
+      if (!userId) return
+
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.id !== userId) return u
+          return {
+            ...u,
+            role: role !== undefined ? role : u.role,
+            status: status !== undefined ? status : (isBanned ? 'locked' : 'active'),
+            lockReason: banReason !== undefined ? banReason : u.lockReason,
+            banUntil: banUntil !== undefined ? banUntil : u.banUntil,
+          }
+        })
+      )
+    }
+
+    socket.on('admin:unban_request_created', handleUnbanCreated)
+    socket.on('admin:unban_request_reviewed', handleUnbanReviewed)
+    socket.on('admin:user_registered', handleUserRegistered)
+    socket.on('admin:user_updated', handleUserUpdated)
+
+    return () => {
+      socket.off('admin:unban_request_created', handleUnbanCreated)
+      socket.off('admin:unban_request_reviewed', handleUnbanReviewed)
+      socket.off('admin:user_registered', handleUserRegistered)
+      socket.off('admin:user_updated', handleUserUpdated)
+    }
+  }, [isModerator, token])
 
   const roleLabelMap = useMemo(
     () => ({

@@ -295,6 +295,8 @@
     "title": "Zivo Admin",
     "subtitle": "Social Network Administration",
     "dashboard": "Dashboard",
+    "notifications": "Notifications",
+    "notificationsSubtitle": "Monitor and manage real-time events from users and system activities.",
     "usersManagement": "Users Management",
     "unbanRequests": "Unban Requests",
     "postsModeration": "Posts Moderation",

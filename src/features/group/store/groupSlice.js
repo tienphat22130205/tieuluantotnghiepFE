@@ -551,7 +551,21 @@ const groupSlice = createSlice({
         state.isLoading = false
         const payload = action.payload || {}
         state.currentGroup = payload.group || payload
-        state.memberStatus = payload.memberStatus || null
+
+        const myMembership = payload.myMembership || payload.membership || payload.group?.myMembership
+        if (myMembership) {
+          if (myMembership.status === 'pending') {
+            state.memberStatus = 'pending'
+          } else if (myMembership.status === 'approved') {
+            state.memberStatus = myMembership.role || 'approved'
+          } else {
+            state.memberStatus = myMembership.status || myMembership.role || null
+          }
+        } else if (payload.memberStatus) {
+          state.memberStatus = payload.memberStatus
+        } else {
+          state.memberStatus = null
+        }
       })
       .addCase(fetchGroupDetail.rejected, (state, action) => {
         state.isLoading = false

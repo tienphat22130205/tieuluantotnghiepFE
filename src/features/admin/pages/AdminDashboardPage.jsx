@@ -13,6 +13,7 @@ import {
   RoleConfirmModal,
   UnbanRequestsManagementPanel,
   UsersManagementPanel,
+  AdminNotificationsPanel,
 } from '../components'
 import { adminMenuItems } from '../constants/adminNavItems'
 import { logout } from '@/features/auth/store/authSlice'
@@ -22,11 +23,12 @@ import {
   useAdminUsersManagement,
   useAdminModeration,
   useAdminStats,
+  useAdminNotifications,
 } from '../hooks'
 
 /**
  * AdminDashboardPage – Trang quản trị hệ thống
- * Đã được tách logic vào các custom hook chuyên biệt (Users, Moderation, Stats).
+ * Đã được tối ưu Realtime qua Socket.io (Thông báo Realtime, Đồng bộ số liệu người dùng, bài viết, bình luận trực tiếp).
  */
 const AdminDashboardPage = () => {
   const dispatch = useDispatch()
@@ -45,14 +47,17 @@ const AdminDashboardPage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
 
-  // 1. Quản lý Người dùng & Yêu cầu mở khóa
+  // 1. Quản lý Người dùng & Yêu cầu mở khóa (Realtime)
   const usersMgmt = useAdminUsersManagement({ activeSection, isModerator })
 
-  // 2. Kiểm duyệt Bài viết & Bình luận
+  // 2. Kiểm duyệt Bài viết & Bình luận (Realtime)
   const moderation = useAdminModeration({ activeSection, isAdmin })
 
-  // 3. Thống kê & Tổng quan hệ thống
+  // 3. Thống kê & Tổng quan hệ thống (Realtime)
   const stats = useAdminStats({ isAdmin, isModerator })
+
+  // 4. Thông báo Quản trị Thời gian thực (Realtime Live Notifications)
+  const adminNotifs = useAdminNotifications({ isAdmin, isModerator })
 
   useEffect(() => {
     setActiveSection(defaultSection)
@@ -82,7 +87,21 @@ const AdminDashboardPage = () => {
 
   // Render panel theo từng section được chọn
   let activePanel
-  if (activeSection === 'posts') {
+  if (activeSection === 'notifications') {
+    activePanel = (
+      <AdminNotificationsPanel
+        notifications={adminNotifs.notifications}
+        unreadCount={adminNotifs.unreadCount}
+        isLoading={adminNotifs.isLoading}
+        isLiveConnected={adminNotifs.isLiveConnected}
+        onMarkAsRead={adminNotifs.markAsRead}
+        onMarkAllAsRead={adminNotifs.markAllAsRead}
+        onDeleteNotification={adminNotifs.deleteNotification}
+        onClearAll={adminNotifs.clearAll}
+        onNavigateSection={handleSelectSection}
+      />
+    )
+  } else if (activeSection === 'posts') {
     activePanel = (
       <PostsModerationPanel
         isAdminView={isAdmin}
@@ -178,6 +197,11 @@ const AdminDashboardPage = () => {
     stats: t('admin.moderatorLockedStats') || 'Vai trò kiểm duyệt viên không có quyền xem thống kê tài liệu.',
   }
 
+  const badgeCounts = {
+    notifications: adminNotifs.unreadCount,
+    unbanRequests: stats.userStats?.pendingUnbanRequests || 0,
+  }
+
   return (
     <div className="min-h-screen font-sans flex flex-col lg:flex-row bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
       <AdminSidebar
@@ -188,6 +212,7 @@ const AdminDashboardPage = () => {
         onClose={() => setIsSidebarOpen(false)}
         isDesktopCollapsed={isDesktopCollapsed}
         lockedSectionIds={isModerator ? moderatorLockedSectionIds : []}
+        badgeCounts={badgeCounts}
       />
 
       <main className="flex-1 min-w-0 flex flex-col gap-4 p-3 sm:p-4 lg:p-5 overflow-x-hidden">
@@ -197,6 +222,12 @@ const AdminDashboardPage = () => {
           onLogout={handleLogout}
           onToggleMenu={handleToggleMenu}
           isDesktopCollapsed={isDesktopCollapsed}
+          unreadNotificationsCount={adminNotifs.unreadCount}
+          notifications={adminNotifs.notifications}
+          onMarkNotificationAsRead={adminNotifs.markAsRead}
+          onMarkAllNotificationsAsRead={adminNotifs.markAllAsRead}
+          onSelectSection={handleSelectSection}
+          isLiveConnected={adminNotifs.isLiveConnected}
         />
 
         <AdminSummaryCards
