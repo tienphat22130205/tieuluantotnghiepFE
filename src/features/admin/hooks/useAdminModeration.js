@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import adminModerationService from '../services/adminModerationService'
+import { getSocket } from '@/services/socketClient'
 
 /**
  * Custom hook quản lý logic Kiểm duyệt Bài viết & Bình luận (Posts & Comments Moderation).
  */
 export const useAdminModeration = ({ activeSection, isAdmin }) => {
+  const { token } = useSelector((state) => state.auth)
   // Posts State
   const [posts, setPosts] = useState([])
   const [isPostsLoading, setIsPostsLoading] = useState(false)
@@ -128,6 +131,82 @@ export const useAdminModeration = ({ activeSection, isAdmin }) => {
       isMounted = false
     }
   }, [activeSection, commentsPagination.limit, commentsPagination.page, commentsFilters.search])
+
+  // Real-time synchronization for Posts and Comments moderation
+  useEffect(() => {
+    if (!token) return
+
+    const socket = getSocket(token)
+    if (!socket) return
+
+    const handlePostCreated = (payload) => {
+      const newPost = payload?.post
+      if (!newPost?.id) return
+
+      setPosts((prev) => {
+        const exists = prev.some((p) => p.id === newPost.id)
+        if (exists) return prev
+        return [newPost, ...prev]
+      })
+      setPostsPagination((prev) => ({
+        ...prev,
+        totalItems: prev.totalItems + 1,
+      }))
+    }
+
+    const handlePostDeleted = (payload) => {
+      const { postId } = payload || {}
+      if (!postId) return
+
+      setPosts((prev) =>
+        prev
+          .map((p) => (p.id === postId ? { ...p, isDeleted: true } : p))
+          .filter((p) => (postsFilters.filterDeleted ? true : !p.isDeleted))
+      )
+      setPostsPagination((prev) => ({
+        ...prev,
+        totalItems: Math.max(0, prev.totalItems - 1),
+      }))
+    }
+
+    const handleCommentCreated = (payload) => {
+      const newComment = payload?.comment
+      if (!newComment?.id) return
+
+      setComments((prev) => {
+        const exists = prev.some((c) => c.id === newComment.id)
+        if (exists) return prev
+        return [newComment, ...prev]
+      })
+      setCommentsPagination((prev) => ({
+        ...prev,
+        totalItems: prev.totalItems + 1,
+      }))
+    }
+
+    const handleCommentDeleted = (payload) => {
+      const { commentId } = payload || {}
+      if (!commentId) return
+
+      setComments((prev) => prev.filter((c) => c.id !== commentId))
+      setCommentsPagination((prev) => ({
+        ...prev,
+        totalItems: Math.max(0, prev.totalItems - 1),
+      }))
+    }
+
+    socket.on('admin:post_created', handlePostCreated)
+    socket.on('admin:post_deleted', handlePostDeleted)
+    socket.on('admin:comment_created', handleCommentCreated)
+    socket.on('admin:comment_deleted', handleCommentDeleted)
+
+    return () => {
+      socket.off('admin:post_created', handlePostCreated)
+      socket.off('admin:post_deleted', handlePostDeleted)
+      socket.off('admin:comment_created', handleCommentCreated)
+      socket.off('admin:comment_deleted', handleCommentDeleted)
+    }
+  }, [token, postsFilters.filterDeleted])
 
   const handleRefreshPosts = useCallback(async () => {
     setIsPostsLoading(true)

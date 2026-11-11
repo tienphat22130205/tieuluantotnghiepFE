@@ -187,27 +187,12 @@ const GroupDetailPage = () => {
 
           {/* Action triggers */}
           <div className="flex items-center justify-center gap-2.5 shrink-0 self-center md:self-end">
-            {!isAdmin ? (
-              <button
-                type="button"
-                onClick={isJoined || memberStatus === 'pending' ? handleLeaveGroup : handleJoinGroup}
-                className={`flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-extrabold transition border cursor-pointer ${
-                  isJoined
-                    ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
-                    : memberStatus === 'pending'
-                      ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'
-                      : 'bg-primary-600 text-white border-primary-500 hover:bg-primary-700'
-                }`}
-              >
-                <AiOutlineUsergroupAdd size={16} />
-                {isJoined ? 'Rời nhóm' : memberStatus === 'pending' ? 'Hủy yêu cầu tham gia' : 'Tham gia nhóm'}
-              </button>
-            ) : (
+            {isAdmin ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-extrabold px-4 py-2.5 rounded-full bg-primary-50 text-primary-600 border border-primary-100">
                   Quản trị viên
                 </span>
-                {currentGroup.creator?._id === currentUserId && (
+                {String(currentGroup.creator?._id || currentGroup.creator) === String(currentUserId) && (
                   <button
                     type="button"
                     onClick={handleDeleteGroup}
@@ -217,6 +202,40 @@ const GroupDetailPage = () => {
                   </button>
                 )}
               </div>
+            ) : isJoined ? (
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Đã tham gia
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLeaveGroup}
+                  className="flex items-center justify-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold bg-white text-slate-500 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition cursor-pointer"
+                  title="Rời khỏi nhóm này"
+                >
+                  <AiOutlineClose size={13} />
+                  Rời nhóm
+                </button>
+              </div>
+            ) : memberStatus === 'pending' ? (
+              <button
+                type="button"
+                onClick={handleLeaveGroup}
+                className="flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-extrabold bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
+              >
+                <AiOutlineClose size={14} />
+                Hủy yêu cầu tham gia
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleJoinGroup}
+                className="flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-extrabold bg-primary-600 text-white border border-primary-500 hover:bg-primary-700 transition cursor-pointer shadow-xs"
+              >
+                <AiOutlineUsergroupAdd size={16} />
+                Tham gia nhóm
+              </button>
             )}
           </div>
         </div>

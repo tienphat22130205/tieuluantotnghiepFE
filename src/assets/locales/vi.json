@@ -295,6 +295,8 @@
     "title": "Zivo Admin",
     "subtitle": "Quản trị mạng xã hội",
     "dashboard": "Dashboard",
+    "notifications": "Thông báo",
+    "notificationsSubtitle": "Theo dõi và quản lý các sự kiện thời gian thực từ người dùng và hệ thống.",
     "usersManagement": "Quản lý người dùng",
     "unbanRequests": "Yêu cầu mở khóa",
     "postsModeration": "Kiểm duyệt bài viết",

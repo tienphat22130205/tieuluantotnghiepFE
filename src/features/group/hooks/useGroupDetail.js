@@ -37,8 +37,32 @@ const useGroupDetail = (groupId) => {
     error,
   } = useSelector((state) => state.group)
 
-  const isJoined = memberStatus === 'approved' || memberStatus === 'admin' || memberStatus === 'moderator'
-  const isAdmin = memberStatus === 'admin' || (currentGroup && String(currentGroup.creator?._id || currentGroup.creator) === String(currentUserId))
+  const isCreator = Boolean(
+    currentGroup &&
+    currentUserId &&
+    String(currentGroup.creator?._id || currentGroup.creator) === String(currentUserId)
+  )
+
+  const rawStatus = String(memberStatus || currentGroup?.memberStatus || currentGroup?.myMembership?.status || '').toLowerCase()
+  const rawRole = String(currentGroup?.myMembership?.role || '').toLowerCase()
+
+  const isJoined = Boolean(
+    isCreator ||
+    rawStatus === 'approved' ||
+    rawStatus === 'admin' ||
+    rawStatus === 'moderator' ||
+    rawStatus === 'member' ||
+    rawRole === 'admin' ||
+    rawRole === 'moderator' ||
+    rawRole === 'member' ||
+    (currentGroup?.myMembership && currentGroup.myMembership.status === 'approved')
+  )
+
+  const isAdmin = Boolean(
+    isCreator ||
+    rawStatus === 'admin' ||
+    rawRole === 'admin'
+  )
 
   // Fetch initial group info & posts/members/etc.
   const loadGroupData = useCallback(() => {
