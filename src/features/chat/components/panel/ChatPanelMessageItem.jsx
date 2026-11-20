@@ -37,7 +37,7 @@ const ChatPanelMessageItem = ({
       )}
 
       <div
-        id={msg._id ? `msg-${msg._id}` : undefined}
+        id={msgId ? `msg-${msgId}` : undefined}
         className={`group relative mb-4 flex items-end gap-1.5 ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
       >
         {msg.sender !== 'me' && (

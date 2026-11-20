@@ -81,7 +81,7 @@ const ChatMessageItem = ({
       )}
 
       <div
-        id={`msg-${msg._id}`}
+        id={msgId ? `msg-${msgId}` : undefined}
         className={`group relative flex items-end gap-2.5 mb-4 ${
           msg.sender === 'me' ? 'flex-row-reverse' : 'flex-row'
         }`}

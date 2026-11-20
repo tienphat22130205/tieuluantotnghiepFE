@@ -23,6 +23,7 @@ const ChatConversationWindow = ({
   onSendSticker,
   replyToMessage = null,
   onSetReplyToMessage = () => {},
+  onToggleReaction,
   isUnread = false,
   onMarkAsRead = () => {},
 }) => {
@@ -81,7 +82,9 @@ const ChatConversationWindow = ({
       if (navigator.vibrate) {
         try {
           navigator.vibrate(50)
-        } catch (_err) {}
+        } catch (_err) {
+          // Ignore vibration failure on unsupported devices
+        }
       }
     }, 600)
   }

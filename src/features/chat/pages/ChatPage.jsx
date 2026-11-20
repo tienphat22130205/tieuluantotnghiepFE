@@ -116,7 +116,9 @@ const ChatPage = () => {
       if (navigator.vibrate) {
         try {
           navigator.vibrate(50)
-        } catch (_err) {}
+        } catch (_err) {
+          // Ignore vibration failure on unsupported devices
+        }
       }
     }, 600)
   }
@@ -147,17 +149,40 @@ const ChatPage = () => {
 
   const messages = useMemo(() => {
     return useChatStore.getState().getViewMessages(currentUserId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawMessages, currentUserId])
 
-  const activeSelectedFriendId = selectedConversation?._id || selectedConversation?.id || null
+  // Track the friendId of the conversation we have opened to prevent re-opening on every render
+  const lastOpenedFriendIdRef = useRef(null)
+  const isConversationLoaded = Boolean(selectedConversation)
 
   useEffect(() => {
-    if (activeSelectedFriendId && selectedConversation) {
-      openConversation(selectedConversation, token, currentUserId)
-    } else {
-      closeConversation(getSocket(token))
+    if (!selectedFriendId) {
+      if (lastOpenedFriendIdRef.current) {
+        lastOpenedFriendIdRef.current = null
+        closeConversation(getSocket(token))
+      }
+      return
     }
-  }, [activeSelectedFriendId, token, currentUserId, openConversation, closeConversation, selectedConversation])
+
+    const targetToOpen = selectedConversation || { _id: selectedFriendId, id: selectedFriendId }
+    const currentActiveConvo = useChatStore.getState().activeConversationId
+
+    if (lastOpenedFriendIdRef.current !== String(selectedFriendId) || !currentActiveConvo) {
+      lastOpenedFriendIdRef.current = String(selectedFriendId)
+      openConversation(targetToOpen, token, currentUserId)
+    } else if (selectedConversation && !useChatStore.getState().selectedConversation) {
+      useChatStore.setState({ selectedConversation })
+    }
+  }, [selectedFriendId, isConversationLoaded, token, currentUserId, openConversation, closeConversation, selectedConversation])
+
+  // Clean up socket and active conversation when unmounting ChatPage
+  useEffect(() => {
+    return () => {
+      lastOpenedFriendIdRef.current = null
+      useChatStore.getState().closeConversation(getSocket(token))
+    }
+  }, [token])
 
   const sendMessage = () => {
     const content = String(messageInput || '').trim()

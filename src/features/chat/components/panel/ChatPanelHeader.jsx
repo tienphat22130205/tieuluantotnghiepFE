@@ -30,9 +30,14 @@ const ChatPanelHeader = ({
           online={selectedConversation.isOnline}
         />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">
-            {selectedConversation.full_name}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold text-gray-900 truncate">
+              {selectedConversation.full_name}
+            </p>
+            {isUnread && (
+              <span className="w-2 h-2 rounded-full bg-primary-600 shrink-0" title="Tin nhắn chưa đọc" />
+            )}
+          </div>
           <p className="text-xs text-gray-500 truncate">
             {selectedConversation.isOnline
               ? 'Đang hoạt động'

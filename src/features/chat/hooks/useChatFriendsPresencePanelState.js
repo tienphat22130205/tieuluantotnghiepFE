@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux'
 import useChatFriendsInitialData from './useChatFriendsInitialData'
 import useChatPanelUiState from './useChatPanelUiState'
 import { useChatStore } from '../store/useChatStore'
-import { usePresenceStore } from '../store/usePresenceStore'
 import { useChatHeadStore } from '../store/useChatHeadStore'
 import { getSocket } from '@/services/socketClient'
 
@@ -58,6 +57,7 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
       const shouldMarkAsRead = !head?.isUnread
       openConversation(selectedConversation, token, currentUserId, { markAsRead: shouldMarkAsRead })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFriendId, token, currentUserId])
 
   const handleMarkAsRead = () => {
@@ -141,6 +141,7 @@ const useChatFriendsPresencePanelState = ({ isOpen, onClose }) => {
 
   const viewMessages = useMemo(() => {
     return useChatStore.getState().getViewMessages(currentUserId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, currentUserId])
 
   return {

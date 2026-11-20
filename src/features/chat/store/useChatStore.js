@@ -32,6 +32,29 @@ export const registerConversationFriendMapping = (friendId, convoId) => {
   }
 }
 
+export const ensureConversationId = async (state) => {
+  let convoId = state?.activeConversationId
+  if (convoId) return convoId
+
+  const friendId = state?.selectedConversation?._id || state?.selectedConversation?.id
+  if (!friendId) return null
+
+  convoId = conversationByFriendId.get(String(friendId)) || state?.selectedConversation?.conversationId || null
+  if (!convoId) {
+    try {
+      const convoResponse = await chatService.createOrGetDirectConversation(friendId)
+      const convo = extractConversationPayload(convoResponse)
+      convoId = resolveConversationId(convo)
+      if (convoId) {
+        registerConversationFriendMapping(friendId, convoId)
+      }
+    } catch (_err) {
+      console.warn('Failed to resolve conversation ID:', _err)
+    }
+  }
+  return convoId ? String(convoId) : null
+}
+
 const toTimeLabel = (value) => {
   const date = new Date(value)
   if (!Number.isFinite(date.getTime())) return '--:--'
@@ -158,7 +181,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  markCurrentConversationAsRead: async (friendId, token) => {
+  markCurrentConversationAsRead: async (friendId, _token) => {
     if (!friendId) return
     const idStr = String(friendId)
     const convoId = conversationByFriendId.get(idStr) || get().activeConversationId
@@ -206,10 +229,13 @@ export const useChatStore = create((set, get) => ({
       }
       if (markAsRead) {
         useChatHeadStore.getState().markHeadAsRead(friendId)
-        get().updateFriendPreview(friendId, null, {
-          incrementUnread: false,
-          resetUnread: true,
-        })
+        const targetFriend = usePresenceStore.getState().friends.find((f) => String(f._id || f.id) === String(friendId))
+        if (targetFriend && Number(targetFriend.newMessagesCount || 0) > 0) {
+          get().updateFriendPreview(friendId, null, {
+            incrementUnread: false,
+            resetUnread: true,
+          })
+        }
         if (convoId) {
           chatService.markConversationAsRead(convoId).catch(() => {})
         }
@@ -230,7 +256,7 @@ export const useChatStore = create((set, get) => ({
           const convoResponse = await chatService.createOrGetDirectConversation(friendId)
           const convo = extractConversationPayload(convoResponse)
           convoId = resolveConversationId(convo)
-        } catch (apiErr) {
+        } catch (_apiErr) {
           convoId = friendId
         }
 
@@ -322,8 +348,15 @@ export const useChatStore = create((set, get) => ({
   },
 
   sendMessage: async (content, currentUserId, userUsername) => {
-    const { activeConversationId, selectedConversation, replyToMessage } = get()
-    if (!content || !activeConversationId) return
+    if (!content) return
+    let { activeConversationId, selectedConversation, replyToMessage } = get()
+    if (!activeConversationId) {
+      activeConversationId = await ensureConversationId(get())
+      if (activeConversationId) {
+        set({ activeConversationId: String(activeConversationId) })
+      }
+    }
+    if (!activeConversationId) return
 
     set({ isSending: true })
     const tempId = createTempMessageId()
@@ -447,8 +480,15 @@ export const useChatStore = create((set, get) => ({
   },
 
   sendSticker: async (stickerUrl, currentUserId, userUsername) => {
-    const { activeConversationId, selectedConversation, replyToMessage } = get()
-    if (!stickerUrl || !activeConversationId) return
+    if (!stickerUrl) return
+    let { activeConversationId, selectedConversation, replyToMessage } = get()
+    if (!activeConversationId) {
+      activeConversationId = await ensureConversationId(get())
+      if (activeConversationId) {
+        set({ activeConversationId: String(activeConversationId) })
+      }
+    }
+    if (!activeConversationId) return
 
     set({ isSending: true })
     const tempId = createTempMessageId()
@@ -577,8 +617,15 @@ export const useChatStore = create((set, get) => ({
   },
 
   sendImage: async (file, caption = '', currentUserId, userUsername) => {
-    const { activeConversationId, selectedConversation, replyToMessage } = get()
-    if (!file || !activeConversationId) return
+    if (!file) return
+    let { activeConversationId, selectedConversation, replyToMessage } = get()
+    if (!activeConversationId) {
+      activeConversationId = await ensureConversationId(get())
+      if (activeConversationId) {
+        set({ activeConversationId: String(activeConversationId) })
+      }
+    }
+    if (!activeConversationId) return
 
     set({ isSending: true })
     const tempId = createTempMessageId()
@@ -740,7 +787,7 @@ export const useChatStore = create((set, get) => ({
       }))
 
       await chatService.toggleMessageReaction(messageId, emojiType)
-    } catch (err) {
+    } catch (_err) {
       // Revert/ignore
     }
   },

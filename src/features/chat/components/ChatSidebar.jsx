@@ -76,12 +76,13 @@ const ChatSidebar = ({
 
           {/* Friends Loop */}
           {unfilteredSortedFriends.map((friend) => {
+            const friendId = friend._id || friend.id
             const displayName = friend.full_name?.split(' ').slice(-2).join(' ') || friend.username || 'Bạn bè'
             return (
               <button
-                key={`h-page-${friend._id}`}
+                key={`h-page-${friendId}`}
                 type="button"
-                onClick={() => setSelectedFriendId(friend._id)}
+                onClick={() => setSelectedFriendId(friendId)}
                 className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group focus:outline-none"
               >
                 <div className="relative">
@@ -118,9 +119,10 @@ const ChatSidebar = ({
 
         {!isFriendsLoading &&
           sortedFriends.map((friend) => {
+            const friendId = friend._id || friend.id
             const unreadCount = Number(friend.newMessagesCount || 0)
             const hasUnread = unreadCount > 0
-            const isSelected = String(friend._id) === String(selectedFriendId)
+            const isSelected = String(friendId) === String(selectedFriendId)
             const rawPreview = friend.lastMessagePreview
             const previewText = rawPreview
               ? (rawPreview.startsWith('Bạn: ') ? `${t('chat.you', 'Bạn:')} ${rawPreview.slice(5)}` : rawPreview)
@@ -132,9 +134,9 @@ const ChatSidebar = ({
 
             return (
               <button
-                key={friend._id}
+                key={friendId}
                 type="button"
-                onClick={() => setSelectedFriendId(friend._id)}
+                onClick={() => setSelectedFriendId(friendId)}
                 className={`w-full flex items-center gap-3 px-4 py-3.5 transition text-left cursor-pointer ${
                   isSelected ? 'bg-primary-50/70 border-l-4 border-primary-600 pl-3' : 'hover:bg-slate-50'
                 }`}

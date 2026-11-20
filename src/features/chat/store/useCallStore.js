@@ -372,7 +372,7 @@ export const useCallStore = create((set, get) => ({
       }
 
       // 5. WebRTC ICE Candidate Received Event
-      const handleWebRtcIceCandidate = async ({ senderId, candidate }) => {
+      const handleWebRtcIceCandidate = async ({ senderId: _senderId, candidate }) => {
         try {
           if (rtcPeerConnection && rtcPeerConnection.remoteDescription) {
             await rtcPeerConnection.addIceCandidate(new RTCIceCandidate(candidate))
@@ -466,7 +466,9 @@ export const useCallStore = create((set, get) => ({
       try {
         const stored = getStoredAuthUser()
         if (stored) currentUser = typeof stored === 'string' ? JSON.parse(stored) : stored
-      } catch (_) {}
+      } catch (_) {
+        // Ignore JSON parse errors from local storage
+      }
     }
 
     const targetUserId = typeof targetUser === 'string'
