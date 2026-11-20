@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { AiOutlineClose, AiOutlineEdit } from 'react-icons/ai'
 import { Avatar } from '@/components/ui'
 import { useChatHeadStore } from '../store/useChatHeadStore'
@@ -7,7 +6,6 @@ import { usePresenceStore } from '../store/usePresenceStore'
 const FloatingChatHeads = ({ onOpenNewChat }) => {
   const { chatHeads, activeChatHeadId, toggleChatHead, closeChatHead } = useChatHeadStore()
   const onlineFriends = usePresenceStore((state) => state.friends)
-  const [hoveredHeadId, setHoveredHeadId] = useState(null)
 
   const handleOpenNew = () => {
     if (onOpenNewChat) {
@@ -50,8 +48,6 @@ const FloatingChatHeads = ({ onOpenNewChat }) => {
         return (
           <div
             key={friendId}
-            onMouseEnter={() => setHoveredHeadId(friendId)}
-            onMouseLeave={() => setHoveredHeadId(null)}
             className="pointer-events-auto relative group"
           >
             {/* Tooltip tên người bạn khi hover (nằm bên trái bong bóng) */}

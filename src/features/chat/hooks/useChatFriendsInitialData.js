@@ -55,7 +55,7 @@ const writeChatFriendsCache = (cacheKey, friends) => {
   }
 }
 
-const useChatFriendsInitialData = ({ isOpen }) => {
+const useChatFriendsInitialData = ({ isOpen: _isOpen } = {}) => {
   const authUserId = useSelector((state) => state.auth.user?._id || state.auth.user?.id || null)
   const cacheKey = getChatFriendsCacheKey(authUserId)
   const friends = usePresenceStore((state) => state.friends)
@@ -215,7 +215,7 @@ const useChatFriendsInitialData = ({ isOpen }) => {
     return () => {
       isMounted = false
     }
-  }, [cacheKey, authUserId])
+  }, [cacheKey, authUserId, setFriends])
 
   return {
     friends,
